@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 druid = { version = "0.7.0", features = ["im"] }
+epub = "1.2.3"
+html2text = "0.4.2"

@@ -1,0 +1,14 @@
+For each books in epub we have a collection of metadata.
+These are the medatada for pinocchio epub:
+
+rights: questo testo è distribuito con la licenza specificata al seguente indirizzo Internet: http://www.liberliber.it/online/opere/libri/licenze/
+title: Pinocchio
+type: text
+subject: FIC004000 FICTION / CLASSICI
+language: it
+Sigil version: 0.9.0
+creator: Carlo Collodi
+date: 2002-01-17
+source: Le avventure di Pinocchio : storia di un burattino / di Carlo Collodi
+identifier: urn:uuid:a25b8c36-342b-43e3-a805-3f5a69ce72fc
+cover: copertina.jpg
