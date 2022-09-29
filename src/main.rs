@@ -1,6 +1,12 @@
+mod components;
+
+use components::mainwindow::{
+    booklibrary::library::BookLibraryState,
+    header::HeaderState,
+    menu,
+    window::{CrabReaderWindow, CrabReaderWindowState},
+};
 use druid::{AppLauncher, Data, Lens, PlatformError, WindowDesc};
-mod window;
-use window::{CrabReaderWindow, CrabReaderWindowState};
 
 #[derive(Clone, Data, Lens)]
 struct HelloState {
@@ -10,13 +16,13 @@ struct HelloState {
 
 fn main() -> Result<(), PlatformError> {
     let state = CrabReaderWindowState {
-        header_state: window::HeaderState {
+        header_state: HeaderState {
             username: "Cocco".into(),
             nbooks: "69".into(),
         },
-        library_state: window::BookLibraryState {},
+        library_state: BookLibraryState {},
     };
-    let menu = window::make_menu();
+    let menu = menu::make_menu();
     let win = WindowDesc::new(CrabReaderWindow::build)
         .title("Crab Reader")
         .menu(menu);
