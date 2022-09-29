@@ -16,7 +16,10 @@ fn main() -> Result<(), PlatformError> {
         },
         library_state: window::BookLibraryState {},
     };
-    let win = WindowDesc::new(CrabReaderWindow::build).title("Crab Reader");
+    let menu = window::make_menu();
+    let win = WindowDesc::new(CrabReaderWindow::build)
+        .title("Crab Reader")
+        .menu(menu);
     AppLauncher::with_window(win).launch(state)?;
     Ok(())
 }
