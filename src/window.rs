@@ -13,11 +13,134 @@ pub struct HeaderState {
     pub nbooks: String,
 } // Placeholder
 
+impl Widget<HeaderState> for Header {
+    fn event(
+        &mut self,
+        ctx: &mut druid::EventCtx,
+        event: &druid::Event,
+        data: &mut HeaderState,
+        env: &druid::Env,
+    ) {
+        self.inner.event(ctx, event, data, env);
+    }
+
+    fn lifecycle(
+        &mut self,
+        ctx: &mut druid::LifeCycleCtx,
+        event: &druid::LifeCycle,
+        data: &HeaderState,
+        env: &druid::Env,
+    ) {
+        // This function should call `lifecycle` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        self.inner.lifecycle(ctx, event, data, env);
+    }
+
+    fn update(
+        &mut self,
+        ctx: &mut druid::UpdateCtx,
+        _old_data: &HeaderState,
+        data: &HeaderState,
+        env: &druid::Env,
+    ) {
+        // This function should call `update` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        self.inner.update(ctx, data, env);
+    }
+
+    fn layout(
+        &mut self,
+        ctx: &mut druid::LayoutCtx,
+        bc: &druid::BoxConstraints,
+        data: &HeaderState,
+        env: &druid::Env,
+    ) -> druid::Size {
+        // This function should call `update` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        // Can't be empty
+        self.inner.layout(ctx, bc, data, env);
+
+        if bc.is_height_bounded() && bc.is_width_bounded() {
+            bc.max()
+        } else {
+            bc.constrain((100.0, 100.0))
+        }
+    }
+
+    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &HeaderState, env: &druid::Env) {
+        // This function should call `update` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        // Can't be empty
+        self.inner.paint(ctx, data, env);
+    }
+}
+
 pub struct BookLibrary {
     pub inner: WidgetPod<BookLibraryState, Flex<BookLibraryState>>,
 } // Placeholder
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct BookLibraryState {} // Placeholder
+
+impl Widget<BookLibraryState> for BookLibrary {
+    fn event(
+        &mut self,
+        ctx: &mut druid::EventCtx,
+        event: &druid::Event,
+        data: &mut BookLibraryState,
+        env: &druid::Env,
+    ) {
+        self.inner.event(ctx, event, data, env);
+    }
+
+    fn lifecycle(
+        &mut self,
+        ctx: &mut druid::LifeCycleCtx,
+        event: &druid::LifeCycle,
+        data: &BookLibraryState,
+        env: &druid::Env,
+    ) {
+        // This function should call `lifecycle` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        self.inner.lifecycle(ctx, event, data, env);
+    }
+
+    fn update(
+        &mut self,
+        ctx: &mut druid::UpdateCtx,
+        _old_data: &BookLibraryState,
+        data: &BookLibraryState,
+        env: &druid::Env,
+    ) {
+        // This function should call `update` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        self.inner.update(ctx, data, env);
+    }
+
+    fn layout(
+        &mut self,
+        ctx: &mut druid::LayoutCtx,
+        bc: &druid::BoxConstraints,
+        data: &BookLibraryState,
+        env: &druid::Env,
+    ) -> druid::Size {
+        // This function should call `update` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        let size = self.inner.layout(ctx, bc, data, env);
+
+        // ??
+        if bc.is_height_bounded() && bc.is_width_bounded() {
+            bc.max()
+        } else {
+            bc.constrain(size)
+        }
+    }
+
+    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &BookLibraryState, env: &druid::Env) {
+        // This function should call `update` on all children widgets
+        // The key point is that we can decide wheter to or not for a single child
+        self.inner.paint(ctx, data, env);
+    }
+}
 
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct CrabReaderWindowState {
@@ -97,129 +220,6 @@ impl Widget<CrabReaderWindowState> for CrabReaderWindow {
         // Can't be empty
         self.header.paint(ctx, &data.header_state, env);
         self.library.paint(ctx, &data.library_state, env);
-    }
-}
-
-impl Widget<BookLibraryState> for BookLibrary {
-    fn event(
-        &mut self,
-        ctx: &mut druid::EventCtx,
-        event: &druid::Event,
-        data: &mut BookLibraryState,
-        env: &druid::Env,
-    ) {
-        self.inner.event(ctx, event, data, env);
-    }
-
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &BookLibraryState,
-        env: &druid::Env,
-    ) {
-        // This function should call `lifecycle` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.lifecycle(ctx, event, data, env);
-    }
-
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        _old_data: &BookLibraryState,
-        data: &BookLibraryState,
-        env: &druid::Env,
-    ) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.update(ctx, data, env);
-    }
-
-    fn layout(
-        &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
-        data: &BookLibraryState,
-        env: &druid::Env,
-    ) -> druid::Size {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        let size = self.inner.layout(ctx, bc, data, env);
-
-        // ??
-        if bc.is_height_bounded() && bc.is_width_bounded() {
-            bc.max()
-        } else {
-            bc.constrain(size)
-        }
-    }
-
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &BookLibraryState, env: &druid::Env) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.paint(ctx, data, env);
-    }
-}
-
-impl Widget<HeaderState> for Header {
-    fn event(
-        &mut self,
-        ctx: &mut druid::EventCtx,
-        event: &druid::Event,
-        data: &mut HeaderState,
-        env: &druid::Env,
-    ) {
-        self.inner.event(ctx, event, data, env);
-    }
-
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &HeaderState,
-        env: &druid::Env,
-    ) {
-        // This function should call `lifecycle` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.lifecycle(ctx, event, data, env);
-    }
-
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        _old_data: &HeaderState,
-        data: &HeaderState,
-        env: &druid::Env,
-    ) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.update(ctx, data, env);
-    }
-
-    fn layout(
-        &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
-        data: &HeaderState,
-        env: &druid::Env,
-    ) -> druid::Size {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
-        self.inner.layout(ctx, bc, data, env);
-
-        if bc.is_height_bounded() && bc.is_width_bounded() {
-            bc.max()
-        } else {
-            bc.constrain((100.0, 100.0))
-        }
-    }
-
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &HeaderState, env: &druid::Env) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
-        self.inner.paint(ctx, data, env);
     }
 }
 
