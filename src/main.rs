@@ -12,7 +12,7 @@ fn main() -> Result<(), PlatformError> {
     let state = CrabReaderWindowState {
         header_state: window::HeaderState {
             username: "Cocco".into(),
-            nbooks: 69,
+            nbooks: "69".into(),
         },
         library_state: window::BookLibraryState {},
     };

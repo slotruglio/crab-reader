@@ -1,7 +1,7 @@
 use druid::{
-    widget::{Container, Flex, Label},
-    Color, Command, Data, Env, Lens, LocalizedString, MenuDesc, MenuItem, Selector, Target,
-    UnitPoint, Widget, WidgetExt, WidgetPod,
+    widget::{Container, Flex, Label, LineBreaking, TextBox},
+    Color, Command, Data, Env, Lens, LensExt, LocalizedString, MenuDesc, MenuItem, Selector,
+    Target, UnitPoint, Widget, WidgetExt, WidgetPod,
 };
 
 pub struct Header {
@@ -10,7 +10,7 @@ pub struct Header {
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct HeaderState {
     pub username: String,
-    pub nbooks: u32,
+    pub nbooks: String,
 } // Placeholder
 
 pub struct BookLibrary {
@@ -224,6 +224,23 @@ impl Widget<HeaderState> for Header {
 }
 
 impl CrabReaderWindow {
+    pub fn user_input() -> impl Widget<CrabReaderWindowState> {
+        let username_input = TextBox::new()
+            .with_placeholder("Username")
+            .lens(CrabReaderWindowState::header_state.then(HeaderState::username));
+
+        let nbooks_input = TextBox::new()
+            .with_placeholder("Number of books")
+            .lens(CrabReaderWindowState::header_state.then(HeaderState::nbooks));
+
+        let row = Flex::row()
+            .with_child(username_input)
+            .with_child(nbooks_input)
+            .padding(5.0);
+
+        row
+    }
+
     pub fn build() -> Flex<CrabReaderWindowState> {
         let header = Header::build().padding(5.0);
         let container_header = Container::new(header)
@@ -231,6 +248,7 @@ impl CrabReaderWindow {
             .rounded(10.0)
             .lens(CrabReaderWindowState::header_state);
         let inner = Flex::column()
+            .with_child(Self::user_input())
             .with_child(container_header)
             .with_flex_child(
                 BookLibrary::build().lens(CrabReaderWindowState::library_state),
@@ -243,12 +261,15 @@ impl CrabReaderWindow {
 
 impl Header {
     pub fn build() -> Flex<HeaderState> {
-        let left_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
+        let mut left_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
             format!("Bentornato, {}", data.username).into()
         });
-        let right_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
+        left_label_inner.set_line_break_mode(LineBreaking::WordWrap);
+
+        let mut right_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
             format!("Hai {} libri da leggere.", data.nbooks).into()
         });
+        right_label_inner.set_line_break_mode(LineBreaking::WordWrap);
 
         let left_label = left_label_inner
             .padding(10.0)
