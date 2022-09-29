@@ -1,7 +1,7 @@
 use druid::{
-    widget::{Flex, Label},
-    Command, Data, Env, Lens, LocalizedString, MenuDesc, MenuItem, Selector, Target, UnitPoint,
-    Widget, WidgetExt, WidgetPod,
+    widget::{Container, Flex, Label},
+    Color, Command, Data, Env, Lens, LocalizedString, MenuDesc, MenuItem, Selector, Target,
+    UnitPoint, Widget, WidgetExt, WidgetPod,
 };
 
 pub struct Header {
@@ -25,8 +25,8 @@ pub struct CrabReaderWindowState {
     pub library_state: BookLibraryState,
 } // Placeholder
 pub struct CrabReaderWindow {
-    pub header: WidgetPod<HeaderState, Header>,
-    pub library: WidgetPod<BookLibraryState, BookLibrary>,
+    pub header: WidgetPod<HeaderState, Flex<HeaderState>>,
+    pub library: WidgetPod<BookLibraryState, Flex<BookLibraryState>>,
 }
 
 impl Widget<CrabReaderWindowState> for CrabReaderWindow {
@@ -59,17 +59,15 @@ impl Widget<CrabReaderWindowState> for CrabReaderWindow {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        old_data: &CrabReaderWindowState,
+        _old_data: &CrabReaderWindowState,
         data: &CrabReaderWindowState,
         env: &druid::Env,
     ) {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
         // I.E: if we're reading a book, we need not to call these two, but the lifecycle of the reader
-        if old_data != data {
-            self.header.update(ctx, &data.header_state, env);
-            self.library.update(ctx, &data.library_state, env);
-        }
+        self.header.update(ctx, &data.header_state, env);
+        self.library.update(ctx, &data.library_state, env);
     }
 
     fn layout(
@@ -79,11 +77,18 @@ impl Widget<CrabReaderWindowState> for CrabReaderWindow {
         data: &CrabReaderWindowState,
         env: &druid::Env,
     ) -> druid::Size {
-        // This function should call `update` on all children widgets
+        // This function should call `layout` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
-        self.header.layout(ctx, bc, &data.header_state, env);
-        self.library.layout(ctx, bc, &data.library_state, env)
+
+        let size_one = self.header.layout(ctx, bc, &data.header_state, env);
+        let size_two = self.library.layout(ctx, bc, &data.library_state, env);
+        let size = size_one + size_two;
+
+        if bc.is_height_bounded() && bc.is_width_bounded() {
+            bc.max()
+        } else {
+            bc.constrain(size)
+        }
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &CrabReaderWindowState, env: &druid::Env) {
@@ -121,16 +126,13 @@ impl Widget<BookLibraryState> for BookLibrary {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        old_data: &BookLibraryState,
+        _old_data: &BookLibraryState,
         data: &BookLibraryState,
         env: &druid::Env,
     ) {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
-        // For now, do nothing
-        if old_data != data {
-            self.inner.update(ctx, data, env);
-        }
+        self.inner.update(ctx, data, env);
     }
 
     fn layout(
@@ -142,14 +144,19 @@ impl Widget<BookLibraryState> for BookLibrary {
     ) -> druid::Size {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
-        self.inner.layout(ctx, bc, data, env)
+        let size = self.inner.layout(ctx, bc, data, env);
+
+        // ??
+        if bc.is_height_bounded() && bc.is_width_bounded() {
+            bc.max()
+        } else {
+            bc.constrain(size)
+        }
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &BookLibraryState, env: &druid::Env) {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
         self.inner.paint(ctx, data, env);
     }
 }
@@ -180,15 +187,13 @@ impl Widget<HeaderState> for Header {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        old_data: &HeaderState,
+        _old_data: &HeaderState,
         data: &HeaderState,
         env: &druid::Env,
     ) {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
-        if old_data != data {
-            self.inner.update(ctx, data, env);
-        }
+        self.inner.update(ctx, data, env);
     }
 
     fn layout(
@@ -201,7 +206,13 @@ impl Widget<HeaderState> for Header {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
         // Can't be empty
-        self.inner.layout(ctx, bc, data, env)
+        self.inner.layout(ctx, bc, data, env);
+
+        if bc.is_height_bounded() && bc.is_width_bounded() {
+            bc.max()
+        } else {
+            bc.constrain((100.0, 100.0))
+        }
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &HeaderState, env: &druid::Env) {
@@ -213,55 +224,63 @@ impl Widget<HeaderState> for Header {
 }
 
 impl CrabReaderWindow {
-    pub fn build() -> Self {
-        CrabReaderWindow {
-            header: WidgetPod::new(Header::build()),
-            library: WidgetPod::new(BookLibrary::build()),
-        }
+    pub fn build() -> Flex<CrabReaderWindowState> {
+        let header = Header::build().padding(5.0);
+        let container_header = Container::new(header)
+            .background(Color::RED)
+            .rounded(10.0)
+            .lens(CrabReaderWindowState::header_state);
+        let inner = Flex::column()
+            .with_child(container_header)
+            .with_flex_child(
+                BookLibrary::build().lens(CrabReaderWindowState::library_state),
+                1.0,
+            )
+            .padding(10.0);
+        Flex::row().with_flex_child(inner, 1.0)
     }
 }
 
 impl Header {
-    pub fn build() -> Self {
+    pub fn build() -> Flex<HeaderState> {
         let left_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
             format!("Bentornato, {}", data.username).into()
         });
         let right_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
-            format!("Hai {} libri", data.nbooks).into()
+            format!("Hai {} libri da leggere.", data.nbooks).into()
         });
 
         let left_label = left_label_inner
             .padding(10.0)
             .align_horizontal(UnitPoint::LEFT)
-            .align_vertical(UnitPoint::CENTER);
+            .align_vertical(UnitPoint::TOP);
         let right_label = right_label_inner
             .padding(10.0)
             .align_horizontal(UnitPoint::RIGHT)
-            .align_vertical(UnitPoint::CENTER);
+            .align_vertical(UnitPoint::TOP);
 
-        Header {
-            inner: WidgetPod::new(
-                Flex::row()
-                    .with_flex_child(left_label, 1.0)
-                    .with_flex_child(right_label, 1.0),
-            ),
-        }
+        Flex::row()
+            .with_flex_child(left_label, 1.0)
+            .with_flex_child(right_label, 1.0)
     }
 }
 
 impl BookLibrary {
-    pub fn build() -> Self {
+    pub fn build() -> Flex<BookLibraryState> {
         let mut library = Flex::column();
         for i in 0..10 {
-            let label = Label::new(format!("Book {}", i))
-                .padding(10.0)
-                .align_horizontal(UnitPoint::LEFT)
-                .align_vertical(UnitPoint::CENTER);
-            library.add_child(label);
+            let label = Label::new(format!("Book {}", i)).center();
+            let adjusted = label
+                .padding(2.0)
+                .background(Color::BLUE)
+                .rounded(5.0)
+                .center();
+            library.add_flex_child(adjusted, 2.0);
+            library.add_flex_spacer(0.2);
         }
-        BookLibrary {
-            inner: WidgetPod::new(library),
-        }
+
+        let container_library = Container::new(library.padding(10.0));
+        Flex::row().with_flex_child(container_library, 1.0)
     }
 }
 
