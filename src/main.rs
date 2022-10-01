@@ -8,22 +8,25 @@ use components::mainwindow::{
 use druid::{im::Vector, AppLauncher, PlatformError, WindowDesc};
 
 fn main() -> Result<(), PlatformError> {
-    let books = vec!["One Piece", "Naruto", "Bleach"];
-    let books_str = books.iter().map(|x| x.to_string()).collect::<Vec<String>>();
-    let books_state: Vector<BookState> = books_str
-        .into_iter()
+    let books: Vector<BookState> = vec!["One Piece", "Naruto", "Bleach"]
+        .iter()
+        .map(|x| x.to_string())
         .map(|x| BookState::new().with_title(x))
         .collect();
+
     let state = CrabReaderWindowState {
-        library_state: BookLibraryState::new().with_books(books_state),
+        library_state: BookLibraryState::new().with_books(books),
         username: "Cocco".into(),
     };
-    let w = state.widget();
+
+    let root = state.widget();
     let menu = menu::make_menu();
-    let win = WindowDesc::new(|| w)
+
+    let window = WindowDesc::new(|| root)
         .title("Crab Reader")
         .menu(menu)
         .window_size((1280., 720.));
-    AppLauncher::with_window(win).launch(state)?;
+
+    AppLauncher::with_window(window).launch(state)?;
     Ok(())
 }
