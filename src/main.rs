@@ -2,7 +2,6 @@ mod components;
 
 use components::mainwindow::{
     booklibrary::{book::BookState, library::BookLibraryState},
-    header::HeaderState,
     menu,
     window::CrabReaderWindowState,
 };
@@ -16,11 +15,8 @@ fn main() -> Result<(), PlatformError> {
         .map(|x| BookState::new().with_title(x).get())
         .collect();
     let state = CrabReaderWindowState {
-        header_state: HeaderState {
-            username: "Cocco".into(),
-            nbooks: "69".into(),
-        },
         library_state: BookLibraryState::new().with_books(books_state).get(),
+        username: "Cocco".into(),
     };
     let w = state.widget();
     let menu = menu::make_menu();

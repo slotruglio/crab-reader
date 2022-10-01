@@ -6,7 +6,7 @@ use super::book::BookState;
 
 #[derive(Clone, PartialEq, Data, Lens)]
 pub struct BookLibraryState {
-    books: Vector<BookState>,
+    pub books: Vector<BookState>,
 }
 
 impl BookLibraryState {

@@ -1,26 +1,23 @@
 use druid::{
     widget::{Flex, Label, LineBreaking},
-    Data, Env, Lens, UnitPoint, Widget, WidgetExt, WidgetPod,
+    Env, UnitPoint, Widget, WidgetExt, WidgetPod,
 };
 
+use super::window::CrabReaderWindowState;
+
 pub struct Header {
-    pub inner: WidgetPod<HeaderState, Flex<HeaderState>>,
-} // Placeholder
-#[derive(Clone, Data, Lens, PartialEq)]
-pub struct HeaderState {
-    pub username: String,
-    pub nbooks: String,
-} // Placeholder
+    pub inner: WidgetPod<CrabReaderWindowState, Flex<CrabReaderWindowState>>,
+}
 
 impl Header {
-    pub fn build() -> Flex<HeaderState> {
-        let mut left_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
+    pub fn build() -> Flex<CrabReaderWindowState> {
+        let mut left_label_inner = Label::dynamic(|data: &CrabReaderWindowState, _: &Env| {
             format!("Bentornato, {}", data.username).into()
         });
         left_label_inner.set_line_break_mode(LineBreaking::WordWrap);
 
-        let mut right_label_inner = Label::dynamic(|data: &HeaderState, _: &Env| {
-            format!("Hai {} libri da leggere.", data.nbooks).into()
+        let mut right_label_inner = Label::dynamic(|data: &CrabReaderWindowState, _: &Env| {
+            format!("Hai {} libri da leggere.", data.library_state.books.len()).into()
         });
         right_label_inner.set_line_break_mode(LineBreaking::WordWrap);
 
@@ -39,12 +36,12 @@ impl Header {
     }
 }
 
-impl Widget<HeaderState> for Header {
+impl Widget<CrabReaderWindowState> for Header {
     fn event(
         &mut self,
         ctx: &mut druid::EventCtx,
         event: &druid::Event,
-        data: &mut HeaderState,
+        data: &mut CrabReaderWindowState,
         env: &druid::Env,
     ) {
         self.inner.event(ctx, event, data, env);
@@ -54,7 +51,7 @@ impl Widget<HeaderState> for Header {
         &mut self,
         ctx: &mut druid::LifeCycleCtx,
         event: &druid::LifeCycle,
-        data: &HeaderState,
+        data: &CrabReaderWindowState,
         env: &druid::Env,
     ) {
         // This function should call `lifecycle` on all children widgets
@@ -65,8 +62,8 @@ impl Widget<HeaderState> for Header {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        _old_data: &HeaderState,
-        data: &HeaderState,
+        _old_data: &CrabReaderWindowState,
+        data: &CrabReaderWindowState,
         env: &druid::Env,
     ) {
         // This function should call `update` on all children widgets
@@ -78,7 +75,7 @@ impl Widget<HeaderState> for Header {
         &mut self,
         ctx: &mut druid::LayoutCtx,
         bc: &druid::BoxConstraints,
-        data: &HeaderState,
+        data: &CrabReaderWindowState,
         env: &druid::Env,
     ) -> druid::Size {
         // This function should call `update` on all children widgets
@@ -93,7 +90,7 @@ impl Widget<HeaderState> for Header {
         }
     }
 
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &HeaderState, env: &druid::Env) {
+    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &CrabReaderWindowState, env: &druid::Env) {
         // This function should call `update` on all children widgets
         // The key point is that we can decide wheter to or not for a single child
         // Can't be empty
