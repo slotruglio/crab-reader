@@ -42,13 +42,9 @@ impl BookState {
         }
     }
 
-    pub fn with_title(&mut self, title: String) -> &mut Self {
+    pub fn with_title(mut self, title: String) -> Self {
         self.title = title;
         self
-    }
-
-    pub fn get(&mut self) -> Self {
-        self.clone()
     }
 
     pub fn build(&self) -> BookWidget {

@@ -12,7 +12,7 @@ fn main() -> Result<(), PlatformError> {
     let books_str = books.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let books_state: Vector<BookState> = books_str
         .into_iter()
-        .map(|x| BookState::new().with_title(x).get())
+        .map(|x| BookState::new().with_title(x))
         .collect();
     let state = CrabReaderWindowState {
         library_state: BookLibraryState::new().with_books(books_state),
