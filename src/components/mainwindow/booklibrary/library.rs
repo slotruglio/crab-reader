@@ -1,15 +1,53 @@
-use druid::{
-    widget::{Container, Flex, Label},
-    Color, Data, Lens, Widget, WidgetExt, WidgetPod,
-};
+use druid::im::Vector;
+use druid::{widget::Flex, WidgetPod};
+use druid::{Data, Lens, LensExt, Widget, WidgetExt};
 
-pub struct BookLibrary {
-    pub inner: WidgetPod<BookLibraryState, Flex<BookLibraryState>>,
-} // Placeholder
-#[derive(Clone, Data, Lens, PartialEq)]
-pub struct BookLibraryState {} // Placeholder
+use super::book::BookState;
 
-impl Widget<BookLibraryState> for BookLibrary {
+#[derive(Clone, PartialEq, Data, Lens)]
+pub struct BookLibraryState {
+    books: Vector<BookState>,
+}
+
+impl BookLibraryState {
+    pub fn new() -> Self {
+        Self {
+            books: Vector::new(),
+        }
+    }
+
+    pub fn with_books(&mut self, books: Vector<BookState>) -> &mut Self {
+        self.books = books;
+        self
+    }
+
+    pub fn get(&mut self) -> Self {
+        self.clone()
+    }
+
+    pub fn build(&self) -> BookLibraryWidget {
+        let mut row = Flex::row();
+        for (idx, book) in self.books.iter().enumerate() {
+            row.add_flex_child(
+                book.clone()
+                    .build()
+                    .padding(5.0)
+                    .lens(BookLibraryState::books.index(idx)),
+                1.0,
+            );
+        }
+        BookLibraryWidget {
+            inner: WidgetPod::new(row),
+        }
+    }
+}
+
+#[derive(Lens)]
+pub struct BookLibraryWidget {
+    inner: WidgetPod<BookLibraryState, Flex<BookLibraryState>>,
+}
+
+impl Widget<BookLibraryState> for BookLibraryWidget {
     fn event(
         &mut self,
         ctx: &mut druid::EventCtx,
@@ -27,21 +65,19 @@ impl Widget<BookLibraryState> for BookLibrary {
         data: &BookLibraryState,
         env: &druid::Env,
     ) {
-        // This function should call `lifecycle` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
         self.inner.lifecycle(ctx, event, data, env);
     }
 
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        _old_data: &BookLibraryState,
+        old_data: &BookLibraryState,
         data: &BookLibraryState,
         env: &druid::Env,
     ) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.update(ctx, data, env);
+        if old_data != data {
+            self.inner.update(ctx, data, env);
+        }
     }
 
     fn layout(
@@ -51,40 +87,10 @@ impl Widget<BookLibraryState> for BookLibrary {
         data: &BookLibraryState,
         env: &druid::Env,
     ) -> druid::Size {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        let size = self.inner.layout(ctx, bc, data, env);
-
-        // ??
-        if bc.is_height_bounded() && bc.is_width_bounded() {
-            bc.max()
-        } else {
-            bc.constrain(size)
-        }
+        self.inner.layout(ctx, bc, data, env)
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &BookLibraryState, env: &druid::Env) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
         self.inner.paint(ctx, data, env);
-    }
-}
-
-impl BookLibrary {
-    pub fn build() -> Flex<BookLibraryState> {
-        let mut library = Flex::column();
-        for i in 0..10 {
-            let label = Label::new(format!("Book {}", i)).center();
-            let adjusted = label
-                .padding(2.0)
-                .background(Color::BLUE)
-                .rounded(5.0)
-                .center();
-            library.add_flex_child(adjusted, 2.0);
-            library.add_flex_spacer(0.2);
-        }
-
-        let container_library = Container::new(library.padding(10.0));
-        Flex::row().with_flex_child(container_library, 1.0)
     }
 }
