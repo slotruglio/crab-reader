@@ -1,5 +1,7 @@
 mod components;
+mod utils;
 
+use utils::epub;
 use components::book::Book;
 use druid::{AppLauncher, WindowDesc, Widget, PlatformError};
 use druid::widget::{Flex, Label, Scroll, Button};
@@ -29,7 +31,18 @@ fn build_ui() -> impl Widget<Book> {
 
 fn main() -> Result<(), PlatformError> {
 
+    let mut paths = Vec::new();
+    paths.push("/Users/slotruglio/pds/crab-reader/src/assets/books/pg69058-images.epub");
+    paths.push("/Users/slotruglio/pds/crab-reader/src/assets/books/collodi_pinocchio.epub");
+
+    for path in paths {
+        let _data = epub::get_metadata_from_epub(path);
+        println!("---new book---");
+    }
+
     let book = Book::new("/Users/slotruglio/pds/crab-reader/src/assets/books/pg69058-images.epub");
+    
+    
     AppLauncher::with_window(WindowDesc::new(|| build_ui())).launch(book)?;
     Ok(())
 }

@@ -6,7 +6,8 @@ use std::io::Write;
 use std::fs::File;
 use epub::doc::EpubDoc;
 
-
+/// Struct that models EPUB file
+/// Metadata are attributes
 #[derive(Clone, Data, Lens)]
 pub struct Book {
     title: String,
@@ -19,6 +20,8 @@ pub struct Book {
 }
 
 impl Book {
+    /// Method that instantiates a new Book from a epub file
+    /// given its path
     pub fn new(path: &str) -> Book {
         let mut book = EpubDoc::new(path).unwrap();
         
@@ -44,40 +47,32 @@ impl Book {
 
         Book{title, author, lang, cover: title_to_save, path: String::from(path), chapter_number: chapter_number, current_page: 0}
     }
-    fn get_widget_library(&self) -> impl Widget<()> {
-        let title = Label::new(self.title.clone());
-        let author = Label::new(self.author.clone());
-        let lang = Label::new(self.lang.clone());
-        let path = Label::new(self.path.clone());
-
-        Padding::new(
-            10.0, 
-            Container::new(
-                Flex::column()
-                .with_child(title)
-                .with_child(author)
-                .with_child(lang)
-                .with_child(path)
-                
-            ).border(Color::rgb8(255, 255, 255), 1.0)
-        )
-    }
+    
+    /// Method that returns the current chapter number
     pub fn get_chapter_number(&self) -> usize {
         self.chapter_number
     }
+    /// Method that set the chapter number
     pub fn set_chapter_number(&mut self, chapter: usize) {
         self.chapter_number = chapter;
         self.current_page = 0;
     }
+    /// Method that returns the number of 
+    /// the last page of the current chapter
     pub fn get_last_page(&self) -> usize {
         self.split_chapter_in_pages().len()-1 as usize
     }
+    /// Method that returns the current page number
     pub fn get_current_page(&self) -> usize {
         self.current_page
     }
+    /// Method that set the current page number
+    /// you can use it to change page
+    /// Example: go back and go forward
     pub fn set_chapter_current_page(&mut self, page: usize) {
         self.current_page = page;
     }
+    /// Method that returns the text of the current chapter
     pub fn get_chapter_text(&self) -> String {
         let mut book = EpubDoc::new(self.path.as_str()).unwrap();
         book.set_current_page(self.chapter_number).unwrap();
@@ -85,7 +80,8 @@ impl Book {
         let text = html2text::from_read(content.as_bytes(), 100);
         text
     }
-    
+    /// Method that splits the chapter in blocks of 12 lines ATM
+    /// and returns a vector of strings. Each string is a page of the chapter
     pub fn split_chapter_in_pages(&self) -> Vec<String> {
         // TODO() number_of_lines as parameter
         let number_of_lines = 12;
@@ -108,11 +104,12 @@ impl Book {
         pages
         
     }
+    /// Method that returns the page as String of the current chapter
     pub fn get_page_of_chapter(&self) -> String {
         let page = self.split_chapter_in_pages();
         page[self.current_page].clone()
     }
-
+    /*
     fn get_widget_chapter(&self) -> impl Widget<Book> {
         let chapter_number = Label::new(format!("Chapter {}", self.chapter_number));
         let chapter_text = Label::new(self.get_chapter_text());
@@ -130,4 +127,27 @@ impl Book {
             ).border(Color::rgb8(255, 255, 255), 1.0)
         )
     }
+    */
+
+    /*
+    /// Method that returns the widget of the preview of the book
+    fn get_widget_library(&self) -> impl Widget<()> {
+        let title = Label::new(self.title.clone());
+        let author = Label::new(self.author.clone());
+        let lang = Label::new(self.lang.clone());
+        let path = Label::new(self.path.clone());
+
+        Padding::new(
+            10.0, 
+            Container::new(
+                Flex::column()
+                .with_child(title)
+                .with_child(author)
+                .with_child(lang)
+                .with_child(path)
+                
+            ).border(Color::rgb8(255, 255, 255), 1.0)
+        )
+    }
+    */
 }

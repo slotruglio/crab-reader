@@ -1,3 +1,4 @@
+/*
 let mut main_view = Flex::column();
 
     for item in std::fs::read_dir("/Users/slotruglio/pds/crab-reader/src/assets/books/").unwrap() {
@@ -11,3 +12,4 @@ let mut main_view = Flex::column();
     }
 
     main_view
+ */
