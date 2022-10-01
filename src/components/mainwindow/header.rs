@@ -1,13 +1,11 @@
 use druid::{
     widget::{Flex, Label, LineBreaking},
-    Env, UnitPoint, Widget, WidgetExt, WidgetPod,
+    Env, UnitPoint, WidgetExt,
 };
 
 use super::window::CrabReaderWindowState;
 
-pub struct Header {
-    pub inner: WidgetPod<CrabReaderWindowState, Flex<CrabReaderWindowState>>,
-}
+pub struct Header;
 
 impl Header {
     pub fn build() -> Flex<CrabReaderWindowState> {
@@ -33,67 +31,5 @@ impl Header {
         Flex::row()
             .with_flex_child(left_label, 1.0)
             .with_flex_child(right_label, 1.0)
-    }
-}
-
-impl Widget<CrabReaderWindowState> for Header {
-    fn event(
-        &mut self,
-        ctx: &mut druid::EventCtx,
-        event: &druid::Event,
-        data: &mut CrabReaderWindowState,
-        env: &druid::Env,
-    ) {
-        self.inner.event(ctx, event, data, env);
-    }
-
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &CrabReaderWindowState,
-        env: &druid::Env,
-    ) {
-        // This function should call `lifecycle` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.lifecycle(ctx, event, data, env);
-    }
-
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        _old_data: &CrabReaderWindowState,
-        data: &CrabReaderWindowState,
-        env: &druid::Env,
-    ) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        self.inner.update(ctx, data, env);
-    }
-
-    fn layout(
-        &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
-        data: &CrabReaderWindowState,
-        env: &druid::Env,
-    ) -> druid::Size {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
-        self.inner.layout(ctx, bc, data, env);
-
-        if bc.is_height_bounded() && bc.is_width_bounded() {
-            bc.max()
-        } else {
-            bc.constrain((100.0, 100.0))
-        }
-    }
-
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &CrabReaderWindowState, env: &druid::Env) {
-        // This function should call `update` on all children widgets
-        // The key point is that we can decide wheter to or not for a single child
-        // Can't be empty
-        self.inner.paint(ctx, data, env);
     }
 }
