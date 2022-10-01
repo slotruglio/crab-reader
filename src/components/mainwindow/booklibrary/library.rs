@@ -25,7 +25,7 @@ impl BookLibraryState {
         self.clone()
     }
 
-    pub fn build(&self) -> BookLibraryWidget {
+    pub fn build(&self) -> Flex<BookLibraryState> {
         let mut row = Flex::row();
         for (idx, book) in self.books.iter().enumerate() {
             row.add_flex_child(
@@ -36,61 +36,6 @@ impl BookLibraryState {
                 1.0,
             );
         }
-        BookLibraryWidget {
-            inner: WidgetPod::new(row),
-        }
-    }
-}
-
-#[derive(Lens)]
-pub struct BookLibraryWidget {
-    inner: WidgetPod<BookLibraryState, Flex<BookLibraryState>>,
-}
-
-impl Widget<BookLibraryState> for BookLibraryWidget {
-    fn event(
-        &mut self,
-        ctx: &mut druid::EventCtx,
-        event: &druid::Event,
-        data: &mut BookLibraryState,
-        env: &druid::Env,
-    ) {
-        self.inner.event(ctx, event, data, env);
-    }
-
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &BookLibraryState,
-        env: &druid::Env,
-    ) {
-        self.inner.lifecycle(ctx, event, data, env);
-    }
-
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        old_data: &BookLibraryState,
-        data: &BookLibraryState,
-        env: &druid::Env,
-    ) {
-        if old_data != data {
-            self.inner.update(ctx, data, env);
-        }
-    }
-
-    fn layout(
-        &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
-        data: &BookLibraryState,
-        env: &druid::Env,
-    ) -> druid::Size {
-        self.inner.layout(ctx, bc, data, env)
-    }
-
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &BookLibraryState, env: &druid::Env) {
-        self.inner.paint(ctx, data, env);
+        row
     }
 }
