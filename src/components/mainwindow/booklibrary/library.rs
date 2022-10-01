@@ -7,12 +7,14 @@ use super::book::BookState;
 #[derive(Clone, PartialEq, Data, Lens)]
 pub struct BookLibraryState {
     pub books: Vector<BookState>,
+    pub selected_book: Option<BookState>,
 }
 
 impl BookLibraryState {
     pub fn new() -> Self {
         Self {
             books: Vector::new(),
+            selected_book: None,
         }
     }
 

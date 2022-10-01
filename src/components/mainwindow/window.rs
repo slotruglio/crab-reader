@@ -1,9 +1,9 @@
 use super::{booklibrary::library::BookLibraryState, header::Header};
 
 use druid::{
-    widget::{Container, Flex, Label, LineBreaking},
-    Color, Data, FontDescriptor, FontFamily, FontWeight, Lens, TextAlignment, Widget, WidgetExt,
-    WidgetPod,
+    widget::{Container, Either, Flex, Label, LineBreaking},
+    Color, Data, Env, FontDescriptor, FontFamily, FontWeight, Lens, TextAlignment, Widget,
+    WidgetExt, WidgetPod,
 };
 
 #[derive(Clone, Data, Lens, PartialEq)]
@@ -17,6 +17,44 @@ pub struct CrabReaderWindow {
     pub library: WidgetPod<BookLibraryState, Flex<BookLibraryState>>,
 }
 
+fn right_tray() -> impl Widget<BookLibraryState> {
+    let bg_color = Color::rgb8(122, 122, 122);
+    let round_factor = 5.0;
+    let pad_factor = 10.0;
+
+    let no_book_selected_widget = Label::new("Select a book to see more details.")
+        .with_text_color(Color::rgb8(230, 230, 230))
+        .with_text_size(22.0)
+        .with_line_break_mode(LineBreaking::WordWrap)
+        .with_font(
+            FontDescriptor::new(FontFamily::SYSTEM_UI)
+                .with_weight(FontWeight::MEDIUM)
+                .with_size(24.0),
+        )
+        .with_text_alignment(TextAlignment::End);
+
+    let book_selected_widget = Label::new("Book selected")
+        .with_text_color(Color::rgb8(230, 230, 230))
+        .with_text_size(22.0)
+        .with_line_break_mode(LineBreaking::WordWrap)
+        .with_font(
+            FontDescriptor::new(FontFamily::SYSTEM_UI)
+                .with_weight(FontWeight::MEDIUM)
+                .with_size(24.0),
+        )
+        .with_text_alignment(TextAlignment::End);
+
+    Either::new(
+        |data: &BookLibraryState, _env: &Env| data.selected_book.is_some(),
+        book_selected_widget,
+        no_book_selected_widget,
+    )
+    .center()
+    .background(bg_color)
+    .rounded(round_factor)
+    .padding(pad_factor)
+}
+
 impl CrabReaderWindowState {
     pub fn widget(&self) -> Flex<CrabReaderWindowState> {
         let bg_color = Color::rgb8(122, 122, 122);
@@ -25,17 +63,6 @@ impl CrabReaderWindowState {
 
         let lib = self.library_state.build();
         let header = Header::build().padding(pad_factor);
-
-        let right_label = Label::new("Select a book to see more details.")
-            .with_text_color(Color::rgb8(230, 230, 230))
-            .with_text_size(22.0)
-            .with_line_break_mode(LineBreaking::WordWrap)
-            .with_font(
-                FontDescriptor::new(FontFamily::SYSTEM_UI)
-                    .with_weight(FontWeight::MEDIUM)
-                    .with_size(24.0),
-            )
-            .with_text_alignment(TextAlignment::End);
 
         let container_header = Container::new(header)
             .background(bg_color.clone())
@@ -54,13 +81,7 @@ impl CrabReaderWindowState {
             .rounded(round_factor)
             .padding(pad_factor);
 
-        let inner_right = Flex::column()
-            .with_child(right_label)
-            .center()
-            .background(bg_color.clone())
-            .rounded(round_factor)
-            .padding(pad_factor)
-            .expand();
+        let inner_right = right_tray().lens(CrabReaderWindowState::library_state);
 
         let inner = Flex::row()
             .with_flex_child(inner_left, 3.0)
