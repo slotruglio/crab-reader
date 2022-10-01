@@ -15,7 +15,7 @@ fn main() -> Result<(), PlatformError> {
         .map(|x| BookState::new().with_title(x).get())
         .collect();
     let state = CrabReaderWindowState {
-        library_state: BookLibraryState::new().with_books(books_state).get(),
+        library_state: BookLibraryState::new().with_books(books_state),
         username: "Cocco".into(),
     };
     let w = state.widget();

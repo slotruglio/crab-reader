@@ -1,6 +1,6 @@
 use druid::im::Vector;
-use druid::{widget::Flex, WidgetPod};
-use druid::{Data, Lens, LensExt, Widget, WidgetExt};
+use druid::widget::Flex;
+use druid::{Data, Lens, LensExt, WidgetExt};
 
 use super::book::BookState;
 
@@ -16,13 +16,9 @@ impl BookLibraryState {
         }
     }
 
-    pub fn with_books(&mut self, books: Vector<BookState>) -> &mut Self {
+    pub fn with_books(mut self, books: Vector<BookState>) -> Self {
         self.books = books;
         self
-    }
-
-    pub fn get(&mut self) -> Self {
-        self.clone()
     }
 
     pub fn build(&self) -> Flex<BookLibraryState> {
