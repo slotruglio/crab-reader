@@ -104,6 +104,11 @@ impl Library {
     }
 
     pub fn unselect_current(&mut self) {
+        if let Some(old_selected) = self.selected {
+            if let Some(old_selected_book) = self.books.get_mut(old_selected as usize) {
+                old_selected_book.unselect();
+            }
+        }
         self.selected = None;
     }
 }
@@ -120,16 +125,12 @@ impl Widget<Library> for LibraryWidget {
         match event {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
-                    dbg!("Clicked on an empty spot of the library");
+                    data.unselect_current();
                 }
             }
             Event::Notification(cmd) => {
                 if cmd.is(SELECTED_BOOK) {
                     if let Some(idx) = cmd.get(SELECTED_BOOK) {
-                        println!(
-                            "Received notification of clicking on book with idx {}",
-                            cmd.get(SELECTED_BOOK).unwrap()
-                        );
                         let idx = *idx;
                         data.set_selected(idx);
                     }

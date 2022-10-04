@@ -128,11 +128,14 @@ impl Widget<Book> for BookWidget {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        _old_data: &Book,
+        old_data: &Book,
         data: &Book,
         env: &druid::Env,
     ) {
         self.inner.update(ctx, data, env);
+        if old_data != data {
+            ctx.request_paint();
+        }
     }
 
     fn layout(
