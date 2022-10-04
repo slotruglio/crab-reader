@@ -1,7 +1,8 @@
 use druid::{
-    piet::Brush,
+    piet::{Brush, CairoText, PietText},
     widget::{BackgroundBrush, Container, Flex, Label, LineBreaking, Painter},
-    BoxConstraints, Color, Cursor, Data, Event, Lens, RenderContext, Widget, WidgetExt, WidgetPod,
+    BoxConstraints, Color, Cursor, Data, Event, FontDescriptor, FontFamily, Lens, LifeCycle, Point,
+    RenderContext, TextLayout, Widget, WidgetExt, WidgetPod,
 };
 
 use crate::components::mainwindow::booklibrary::library::SELECTED_BOOK;
@@ -109,13 +110,6 @@ impl Widget<Book> for BookWidget {
         env: &druid::Env,
     ) {
         match event {
-            Event::MouseMove(_) => {
-                if ctx.is_hot() {
-                    ctx.set_cursor(&Cursor::OpenHand);
-                } else {
-                    ctx.set_cursor(&Cursor::Arrow);
-                }
-            }
             Event::MouseDown(e) => {
                 println!(
                     "User clicked on book with idx {} -- {}",
@@ -139,6 +133,12 @@ impl Widget<Book> for BookWidget {
         data: &Book,
         env: &druid::Env,
     ) {
+        match event {
+            LifeCycle::HotChanged(_) => {
+                ctx.request_paint();
+            }
+            _ => (),
+        }
         self.inner.lifecycle(ctx, event, data, env);
     }
 
@@ -187,5 +187,17 @@ impl Widget<Book> for BookWidget {
         };
 
         ctx.render_ctx.fill(rect, &bg_color);
+
+        let mut tl = TextLayout::new();
+        tl.set_text(data.title.clone());
+        tl.set_font(FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(18.0));
+        tl.set_text_color(text_color);
+        tl.set_wrap_width(ctx.size().width - 10.0);
+        tl.rebuild_if_needed(ctx.text(), env);
+
+        let x = ctx.size().width / 2.0 - tl.size().width / 2.0;
+        let y = (size / 2.0).to_vec2().to_point().y;
+        let point = Point::new(x, y);
+        tl.draw(ctx, point);
     }
 }
