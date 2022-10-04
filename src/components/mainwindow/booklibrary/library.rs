@@ -1,39 +1,127 @@
 use druid::im::Vector;
 use druid::widget::Flex;
-use druid::{Data, Lens, LensExt, WidgetExt};
+use druid::{Data, Env, Event, Lens, Widget, WidgetPod};
 
-use super::book::BookState;
+use super::book::Book;
 
-#[derive(Clone, PartialEq, Data, Lens)]
-pub struct BookLibraryState {
-    pub books: Vector<BookState>,
-    pub selected_book: Option<BookState>,
+#[derive(Clone, Data, Lens, PartialEq)]
+pub struct Library {
+    nbooks: u16,
+    selected: Option<u16>,
+    books: Vector<Book>,
 }
 
-impl BookLibraryState {
-    pub fn new() -> Self {
+impl Default for Library {
+    fn default() -> Self {
         Self {
+            nbooks: 0,
+            selected: None,
             books: Vector::new(),
-            selected_book: None,
         }
     }
+}
 
-    pub fn with_books(mut self, books: Vector<BookState>) -> Self {
-        self.books = books;
-        self
+impl Into<LibraryWidget> for Library {
+    fn into(self) -> LibraryWidget {
+        LibraryWidget {
+            inner: WidgetPod::new(Flex::row()),
+            state: self,
+        }
+    }
+}
+
+impl Library {
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    pub fn build(&self) -> Flex<BookLibraryState> {
-        let mut row = Flex::row();
-        for (idx, book) in self.books.iter().enumerate() {
-            row.add_flex_child(
-                book.clone()
-                    .build()
-                    .padding(5.0)
-                    .lens(BookLibraryState::books.index(idx)),
-                1.0,
-            );
+    pub fn add_book(&mut self, title: String, npages: u16) {
+        let book = Book::new().with_title(title).with_npages(npages);
+        self.books.push_front(book);
+        self.nbooks += 1;
+    }
+
+    pub fn remove_book(&mut self, idx: u16) {
+        let len = self.books.len();
+        let idx = idx as usize;
+
+        if len == 0 {
+            dbg!("Tried to remove books on an empty library!");
+            return;
         }
-        row
+
+        if idx >= len {
+            dbg!("Tried to remove a book that doesn't exist!");
+            return;
+        }
+
+        self.books.remove(idx);
+    }
+
+    pub fn set_selected(&mut self, idx: u16) {
+        let len = self.books.len();
+        let idx = idx as usize;
+
+        if len == 0 {
+            dbg!("Tried to select a book on an empty library!");
+            return;
+        }
+
+        if idx >= len {
+            dbg!("Tried to select a book that doesn't exist!");
+            return;
+        }
+
+        self.selected = Some(idx as u16);
+    }
+
+    pub fn unselect_current(&mut self) {
+        self.selected = None;
+    }
+}
+
+#[allow(dead_code)]
+struct LibraryWidget {
+    inner: WidgetPod<Library, Flex<Library>>,
+    state: Library,
+}
+
+impl Widget<Library> for LibraryWidget {
+    fn event(&mut self, ctx: &mut druid::EventCtx, event: &Event, data: &mut Library, env: &Env) {
+        self.inner.event(ctx, event, data, env);
+    }
+
+    fn lifecycle(
+        &mut self,
+        ctx: &mut druid::LifeCycleCtx,
+        event: &druid::LifeCycle,
+        data: &Library,
+        env: &Env,
+    ) {
+        self.inner.lifecycle(ctx, event, data, env);
+    }
+
+    fn update(
+        &mut self,
+        ctx: &mut druid::UpdateCtx,
+        _old_data: &Library,
+        data: &Library,
+        env: &Env,
+    ) {
+        self.inner.update(ctx, data, env);
+    }
+
+    fn layout(
+        &mut self,
+        ctx: &mut druid::LayoutCtx,
+        bc: &druid::BoxConstraints,
+        data: &Library,
+        env: &Env,
+    ) -> druid::Size {
+        self.inner.layout(ctx, bc, data, env)
+    }
+
+    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &Env) {
+        self.inner.paint(ctx, data, env);
     }
 }

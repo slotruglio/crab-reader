@@ -1,32 +1,19 @@
 mod components;
 
 use components::mainwindow::{
-    booklibrary::{book::BookState, library::BookLibraryState},
-    menu,
-    window::CrabReaderWindowState,
+    menu::make_menu,
+    window::{build_ui, CrabReaderWindowState},
 };
-use druid::{im::Vector, AppLauncher, PlatformError, WindowDesc};
+use druid::{AppLauncher, PlatformError, WindowDesc};
 
 fn main() -> Result<(), PlatformError> {
-    let books: Vector<BookState> = vec!["One Piece", "Naruto", "Bleach"]
-        .iter()
-        .map(|x| x.to_string())
-        .map(|x| BookState::new().with_title(x))
-        .collect();
+    let menu = make_menu();
 
-    let state = CrabReaderWindowState {
-        library_state: BookLibraryState::new().with_books(books),
-        username: "Cocco".into(),
-    };
-
-    let root = state.widget();
-    let menu = menu::make_menu();
-
-    let window = WindowDesc::new(|| root)
+    let window = WindowDesc::new(build_ui)
         .title("Crab Reader")
-        .menu(menu)
-        .window_size((1280., 720.));
+        .window_size((1280., 720.))
+        .menu(menu);
 
-    AppLauncher::with_window(window).launch(state)?;
+    AppLauncher::with_window(window).launch(CrabReaderWindowState::default())?;
     Ok(())
 }
