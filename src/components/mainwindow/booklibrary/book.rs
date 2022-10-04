@@ -1,6 +1,6 @@
 use druid::{
-    widget::{Flex, Label},
-    Color, Data, Lens, Widget, WidgetExt, WidgetPod,
+    widget::{Container, Flex, Label, LineBreaking},
+    BoxConstraints, Color, Data, Lens, Widget, WidgetExt, WidgetPod,
 };
 
 #[derive(Clone, PartialEq, Lens, Data)]
@@ -46,23 +46,18 @@ pub struct BookWidget {
 
 impl From<Book> for BookWidget {
     fn from(state: Book) -> Self {
-        let inner = Flex::row().with_flex_child(
-            Label::dynamic(|data: &Book, _env: &_| data.title.clone())
-                .center()
-                .border(Color::BLACK, 2.0)
-                .padding(20.0)
-                .background(Color::GREEN)
-                .rounded(5.0)
-                .padding(5.0)
-                .on_click(|_, data, _env| {
-                    dbg!("Clicked {}", data.title.clone());
-                }),
-            1.0,
-        );
-        Self {
-            inner: WidgetPod::new(inner),
-            state,
-        }
+        let label = Label::dynamic(|data: &Book, _env: &_| data.title.clone())
+            .with_text_color(Color::WHITE)
+            .with_text_size(18.0)
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .center()
+            .padding(5.0)
+            .background(Color::BLACK)
+            .rounded(5.0)
+            .padding(5.0);
+        let child = Flex::row().with_flex_child(label, 1.0);
+        let inner = WidgetPod::new(child);
+        Self { inner, state }
     }
 }
 
@@ -104,7 +99,11 @@ impl Widget<Book> for BookWidget {
         data: &Book,
         env: &druid::Env,
     ) -> druid::Size {
-        self.inner.layout(ctx, bc, data, env)
+        let size = bc.constrain((150.0, 250.0));
+        let bc = BoxConstraints::tight(size);
+        self.inner.layout(ctx, &bc, data, env);
+        dbg!(size);
+        size
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Book, env: &druid::Env) {

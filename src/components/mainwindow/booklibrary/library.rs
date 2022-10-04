@@ -26,16 +26,16 @@ impl Default for Library {
 impl From<Library> for LibraryWidget {
     fn from(val: Library) -> Self {
         let nbooks = val.nbooks as usize;
-        let mut row = Flex::column();
-        dbg!(val.books.len());
+        let mut row = Flex::row();
         for idx in 0..nbooks {
             let book = val.books.get(idx as usize);
             if let Some(book) = book {
                 let book = book.clone();
                 let widget = book.widget().lens(Library::books.index(idx));
-                row.add_flex_child(widget, 1.0);
+                row.add_child(widget);
             }
         }
+
         LibraryWidget {
             inner: WidgetPod::new(row),
             state: val,
