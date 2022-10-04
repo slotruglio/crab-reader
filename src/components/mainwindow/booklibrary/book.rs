@@ -103,7 +103,6 @@ impl Widget<Book> for BookWidget {
                 ctx.set_handled();
                 ctx.submit_notification(SELECTED_BOOK.with(self.state.idx));
                 ctx.request_update();
-                ctx.request_paint();
             }
             _ => (),
         }
