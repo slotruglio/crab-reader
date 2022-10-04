@@ -1,6 +1,7 @@
 use druid::{
-    widget::{Container, Flex, Label, LineBreaking},
-    BoxConstraints, Color, Cursor, Data, Event, Lens, Widget, WidgetExt, WidgetPod,
+    piet::Brush,
+    widget::{BackgroundBrush, Container, Flex, Label, LineBreaking, Painter},
+    BoxConstraints, Color, Cursor, Data, Event, Lens, RenderContext, Widget, WidgetExt, WidgetPod,
 };
 
 use crate::components::mainwindow::booklibrary::library::SELECTED_BOOK;
@@ -166,5 +167,25 @@ impl Widget<Book> for BookWidget {
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Book, env: &druid::Env) {
         self.inner.paint(ctx, data, env);
+        let size = ctx.size() - druid::Size::from((5.0, 5.0));
+        let rect = size.to_rect().to_rounded_rect(5.0);
+
+        let bg_color = if data.selected {
+            SELECTED_COVER_COLOR
+        } else if ctx.is_hot() {
+            HOVERED_COVER_COLOR
+        } else {
+            DEFAULT_COVER_COLOR
+        };
+
+        let text_color = if data.selected {
+            SELECTED_TEXT_COLOR
+        } else if ctx.is_hot() {
+            HOVERED_TEXT_COLOR
+        } else {
+            DEFAULT_TEXT_COLOR
+        };
+
+        ctx.render_ctx.fill(rect, &bg_color);
     }
 }
