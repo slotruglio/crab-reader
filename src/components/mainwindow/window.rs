@@ -5,13 +5,13 @@ use druid::{
     Color, Data, Lens, LocalizedString, UnitPoint, Widget, WidgetExt,
 };
 
-use super::booklibrary::library::Library;
+use super::booklibrary::library::{Library, LibraryWidget};
 
 #[derive(Clone, PartialEq, Lens, Data)]
 pub struct CrabReaderWindowState {
     username: Rc<String>,
     num_books: String,
-    library_state: Library,
+    pub library_state: Library,
 }
 
 fn header() -> impl Widget<CrabReaderWindowState> {
@@ -32,13 +32,16 @@ fn header() -> impl Widget<CrabReaderWindowState> {
         .padding(10.0)
 }
 
-fn book_carousel(_app_state: &CrabReaderWindowState) -> impl Widget<Library> {
+fn book_carousel(app_state: &CrabReaderWindowState) -> impl Widget<Library> {
+    let child: LibraryWidget = LibraryWidget::from(app_state.library_state.clone());
+    dbg!(app_state.library_state.nbooks);
     Flex::column()
-        .with_child(Label::new("Books"))
+        .with_child(child)
         .padding(10.0)
         .background(Color::GRAY)
         .rounded(7.5)
         .padding(10.0)
+        .expand()
 }
 
 fn book_info_carousel() -> impl Widget<CrabReaderWindowState> {
@@ -78,12 +81,12 @@ impl Default for CrabReaderWindowState {
 }
 
 impl CrabReaderWindowState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 }
 
-pub fn build_ui() -> impl Widget<CrabReaderWindowState> {
-    let app_state = CrabReaderWindowState::new();
-    Flex::<CrabReaderWindowState>::from(app_state)
+pub fn build_ui(state: &CrabReaderWindowState) -> impl Widget<CrabReaderWindowState> {
+    let state = state.clone();
+    Flex::<CrabReaderWindowState>::from(state)
 }

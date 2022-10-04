@@ -1,12 +1,14 @@
 use druid::im::Vector;
 use druid::widget::Flex;
-use druid::{Data, Env, Event, Lens, Widget, WidgetPod};
+use druid::WidgetExt;
+use druid::{Data, Env, Event, Lens, LensExt, Widget, WidgetPod};
 
 use super::book::Book;
 
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct Library {
-    nbooks: u16,
+    //todo: change this
+    pub nbooks: u16,
     selected: Option<u16>,
     books: Vector<Book>,
 }
@@ -21,11 +23,22 @@ impl Default for Library {
     }
 }
 
-impl Into<LibraryWidget> for Library {
-    fn into(self) -> LibraryWidget {
+impl From<Library> for LibraryWidget {
+    fn from(val: Library) -> Self {
+        let nbooks = val.nbooks as usize;
+        let mut row = Flex::column();
+        dbg!(val.books.len());
+        for idx in 0..nbooks {
+            let book = val.books.get(idx as usize);
+            if let Some(book) = book {
+                let book = book.clone();
+                let widget = book.widget().lens(Library::books.index(idx));
+                row.add_flex_child(widget, 1.0);
+            }
+        }
         LibraryWidget {
-            inner: WidgetPod::new(Flex::row()),
-            state: self,
+            inner: WidgetPod::new(row),
+            state: val,
         }
     }
 }
@@ -80,8 +93,8 @@ impl Library {
     }
 }
 
-#[allow(dead_code)]
-struct LibraryWidget {
+#[derive(Lens)]
+pub struct LibraryWidget {
     inner: WidgetPod<Library, Flex<Library>>,
     state: Library,
 }
