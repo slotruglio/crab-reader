@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use druid::{
-    widget::{Flex, Label, Scroll},
-    Color, Data, Lens, LocalizedString, UnitPoint, Widget, WidgetExt,
+    widget::{Flex, Label},
+    Color, Data, FontDescriptor, FontFamily, FontWeight, Lens, UnitPoint, Widget, WidgetExt,
 };
 
 use super::booklibrary::library::{Library, LibraryWidget};
@@ -15,12 +15,20 @@ pub struct CrabReaderWindowState {
 }
 
 fn header() -> impl Widget<CrabReaderWindowState> {
-    let left_string = LocalizedString::new("Hello").with_placeholder("Bentornato, Matteo.");
-    let right_string =
-        LocalizedString::new("Library").with_placeholder("Hai 420 libri disponibili");
+    let left_label = Label::dynamic(|data: &CrabReaderWindowState, _env: &_| {
+        format!("Bentornato, {}.", data.username)
+    })
+    .with_text_color(Color::WHITE)
+    .align_horizontal(UnitPoint::LEFT)
+    .padding(5.0);
 
-    let left_label = Label::new(left_string).align_horizontal(UnitPoint::LEFT);
-    let right_label = Label::new(right_string).align_horizontal(UnitPoint::RIGHT);
+    let right_label = Label::dynamic(|data: &CrabReaderWindowState, _env: &_| {
+        let nbooks = data.library_state.nbooks;
+        format!("Hai {} libri disponibili.", nbooks)
+    })
+    .with_text_color(Color::WHITE)
+    .align_horizontal(UnitPoint::RIGHT)
+    .padding(5.0);
 
     Flex::row()
         .with_flex_child(left_label, 1.0)
@@ -33,33 +41,27 @@ fn header() -> impl Widget<CrabReaderWindowState> {
 }
 
 fn book_carousel(app_state: &CrabReaderWindowState) -> impl Widget<Library> {
-    let child = LibraryWidget::from(app_state.library_state.clone())
-        .align_vertical(UnitPoint::TOP)
-        .align_horizontal(UnitPoint::LEFT)
-        .background(Color::GRAY)
-        .rounded(7.5)
-        .padding(10.0)
-        .expand();
-
-    // let root = Flex::column()
-    // .with_flex_child(child, 1.0)
-    // .background(Color::GRAY)
-    // .rounded(7.5)
-    // .padding(10.0);
-
-    child
+    LibraryWidget::from(app_state.library_state.clone())
 }
 
 fn book_info_carousel() -> impl Widget<CrabReaderWindowState> {
     //todo: change this
     Flex::column()
-        .with_child(Label::new("Book Title"))
+        .with_child(
+            Label::dynamic(|data: &Library, _env: &_| data.selected_book_title())
+                .with_font(
+                    FontDescriptor::new(FontFamily::SERIF).with_weight(FontWeight::SEMI_BOLD),
+                )
+                .with_text_size(24.0)
+                .lens(CrabReaderWindowState::library_state),
+        )
         .with_flex_child(Label::new("Other Info"), 1.0)
         .padding(5.0)
         .background(Color::GRAY)
         .rounded(7.5)
         .padding(10.0)
 }
+
 impl From<CrabReaderWindowState> for Flex<CrabReaderWindowState> {
     fn from(state: CrabReaderWindowState) -> Self {
         Flex::column().with_child(header()).with_flex_child(
@@ -79,7 +81,7 @@ impl From<CrabReaderWindowState> for Flex<CrabReaderWindowState> {
 impl Default for CrabReaderWindowState {
     fn default() -> Self {
         Self {
-            username: Rc::new("".into()),
+            username: Rc::new("Cocco".into()),
             library_state: Library::new(),
             num_books: "".into(),
         }

@@ -1,6 +1,6 @@
 use druid::im::Vector;
 use druid::widget::Flex;
-use druid::{Data, Env, Event, Lens, LensExt, UnitPoint, Widget, WidgetPod};
+use druid::{Color, Data, Env, Event, Lens, LensExt, UnitPoint, Widget, WidgetPod};
 use druid::{Selector, WidgetExt};
 
 use super::book::Book;
@@ -41,6 +41,10 @@ impl From<Library> for LibraryWidget {
         let x = row
             .align_horizontal(UnitPoint::LEFT)
             .align_vertical(UnitPoint::TOP)
+            .padding(7.5)
+            .background(Color::GRAY)
+            .rounded(7.5)
+            .padding(7.5)
             .expand();
 
         LibraryWidget {
@@ -111,6 +115,17 @@ impl Library {
         }
         self.selected = None;
     }
+
+    pub fn selected_book_title(&self) -> String {
+        if self.selected.is_none() {
+            String::from("No Book Selected")
+        } else {
+            match self.books.get(self.selected.unwrap() as usize) {
+                Some(book) => book.get_title(),
+                None => "No Book Selected".to_string(),
+            }
+        }
+    }
 }
 
 #[derive(Lens)]
@@ -167,7 +182,9 @@ impl Widget<Library> for LibraryWidget {
         data: &Library,
         env: &Env,
     ) -> druid::Size {
-        self.inner.layout(ctx, bc, data, env)
+        let size = self.inner.layout(ctx, bc, data, env);
+        dbg!(size);
+        size
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &Env) {

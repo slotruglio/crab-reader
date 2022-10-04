@@ -1,21 +1,24 @@
 use druid::{
-    piet::{Brush, CairoText, PietText},
-    widget::{BackgroundBrush, Container, Flex, Label, LineBreaking, Painter},
-    BoxConstraints, Color, Cursor, Data, Event, FontDescriptor, FontFamily, Lens, LifeCycle, Point,
-    RenderContext, TextLayout, Widget, WidgetExt, WidgetPod,
+    widget::{Flex, Label},
+    BoxConstraints, Color, Data, Event, FontDescriptor, FontFamily, Lens, LifeCycle, Point,
+    RenderContext, TextLayout, Widget, WidgetPod,
 };
 
 use crate::components::mainwindow::booklibrary::library::SELECTED_BOOK;
 
 // Book Colors
 
-const DEFAULT_COVER_COLOR: Color = Color::rgb8(30, 30, 30);
-const HOVERED_COVER_COLOR: Color = Color::rgb8(60, 60, 60);
-const SELECTED_COVER_COLOR: Color = Color::rgb8(90, 90, 90);
+const DEFAULT_COVER_COLOR: Color = Color::rgb8(50, 50, 50);
+const HOVERED_COVER_COLOR: Color = Color::rgb8(70, 70, 70);
+const SELECTED_COVER_COLOR: Color = Color::rgb8(25, 25, 25);
 
-const DEFAULT_TEXT_COLOR: Color = Color::rgb8(220, 220, 220);
-const HOVERED_TEXT_COLOR: Color = Color::rgb8(190, 190, 190);
-const SELECTED_TEXT_COLOR: Color = Color::rgb8(160, 160, 160);
+const DEFAULT_TEXT_COLOR: Color = Color::rgb8(230, 230, 230);
+const HOVERED_TEXT_COLOR: Color = Color::rgb8(230, 230, 230);
+const SELECTED_TEXT_COLOR: Color = Color::rgb8(230, 230, 230);
+
+pub const BOOK_WIDGET_WIDTH: f64 = 150.0;
+const BOOK_WIDGET_HEIGHT: f64 = 250.0;
+const BOOK_WIDGET_SIZE: (f64, f64) = (BOOK_WIDGET_WIDTH, BOOK_WIDGET_HEIGHT);
 
 #[derive(Clone, PartialEq, Lens, Data)]
 pub struct Book {
@@ -67,6 +70,10 @@ impl Book {
     pub fn widget(self) -> impl Widget<Book> {
         BookWidget::from(self)
     }
+
+    pub fn get_title(&self) -> String {
+        String::from(&self.title)
+    }
 }
 
 #[derive(Lens)]
@@ -93,12 +100,7 @@ impl Widget<Book> for BookWidget {
         env: &druid::Env,
     ) {
         match event {
-            Event::MouseDown(e) => {
-                println!(
-                    "User clicked on book with idx {} -- {}",
-                    data.idx,
-                    data.title.clone()
-                );
+            Event::MouseDown(_) => {
                 data.select();
                 ctx.set_handled();
                 ctx.submit_notification(SELECTED_BOOK.with(self.state.idx));
@@ -145,7 +147,7 @@ impl Widget<Book> for BookWidget {
         data: &Book,
         env: &druid::Env,
     ) -> druid::Size {
-        let size = bc.constrain((150.0, 250.0));
+        let size = bc.constrain(druid::Size::from(BOOK_WIDGET_SIZE));
         let bc = BoxConstraints::tight(size);
         self.inner.layout(ctx, &bc, data, env);
         size
