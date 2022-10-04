@@ -33,15 +33,15 @@ fn header() -> impl Widget<CrabReaderWindowState> {
 }
 
 fn book_carousel(app_state: &CrabReaderWindowState) -> impl Widget<Library> {
-    let child: LibraryWidget = LibraryWidget::from(app_state.library_state.clone());
-    dbg!(app_state.library_state.nbooks);
+    let child = LibraryWidget::from(app_state.library_state.clone())
+        .align_vertical(UnitPoint::TOP)
+        .align_horizontal(UnitPoint::LEFT)
+        .expand();
     Flex::column()
         .with_flex_child(child, 1.0)
-        .padding(10.0)
         .background(Color::GRAY)
         .rounded(7.5)
         .padding(10.0)
-        .expand()
 }
 
 fn book_info_carousel() -> impl Widget<CrabReaderWindowState> {

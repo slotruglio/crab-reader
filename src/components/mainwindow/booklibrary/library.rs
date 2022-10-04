@@ -102,6 +102,14 @@ pub struct LibraryWidget {
 impl Widget<Library> for LibraryWidget {
     fn event(&mut self, ctx: &mut druid::EventCtx, event: &Event, data: &mut Library, env: &Env) {
         self.inner.event(ctx, event, data, env);
+        match event {
+            Event::MouseDown(_) => {
+                if !ctx.is_handled() {
+                    dbg!("Clicked on an empty spot of the library");
+                }
+            }
+            _ => (),
+        }
     }
 
     fn lifecycle(

@@ -1,6 +1,6 @@
 use druid::{
     widget::{Container, Flex, Label, LineBreaking},
-    BoxConstraints, Color, Data, Lens, Widget, WidgetExt, WidgetPod,
+    BoxConstraints, Color, Cursor, Data, Event, Lens, Widget, WidgetExt, WidgetPod,
 };
 
 #[derive(Clone, PartialEq, Lens, Data)]
@@ -51,10 +51,10 @@ impl From<Book> for BookWidget {
             .with_text_size(18.0)
             .with_line_break_mode(LineBreaking::WordWrap)
             .center()
-            .padding(5.0)
             .background(Color::BLACK)
-            .rounded(5.0)
-            .padding(5.0);
+            .rounded(7.5)
+            .padding(5.0)
+            .expand();
         let child = Flex::row().with_flex_child(label, 1.0);
         let inner = WidgetPod::new(child);
         Self { inner, state }
@@ -69,6 +69,20 @@ impl Widget<Book> for BookWidget {
         data: &mut Book,
         env: &druid::Env,
     ) {
+        match event {
+            Event::MouseMove(_) => {
+                if ctx.is_hot() {
+                    ctx.set_cursor(&Cursor::OpenHand);
+                } else {
+                    ctx.set_cursor(&Cursor::Arrow);
+                }
+            }
+            Event::MouseDown(e) => {
+                dbg!("Clicked on a book!");
+                ctx.set_handled();
+            }
+            _ => (),
+        }
         self.inner.event(ctx, event, data, env);
     }
 
