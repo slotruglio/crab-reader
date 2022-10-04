@@ -78,23 +78,7 @@ pub struct BookWidget {
 impl From<Book> for BookWidget {
     fn from(state: Book) -> Self {
         let selected = state.selected;
-        let label = Label::dynamic(|data: &Book, _env: &_| data.title.clone())
-            .with_text_color(if selected {
-                SELECTED_TEXT_COLOR
-            } else {
-                DEFAULT_TEXT_COLOR
-            })
-            .with_text_size(18.0)
-            .with_line_break_mode(LineBreaking::WordWrap)
-            .center()
-            .background(if selected {
-                SELECTED_COVER_COLOR
-            } else {
-                DEFAULT_COVER_COLOR
-            })
-            .rounded(7.5)
-            .padding(5.0)
-            .expand();
+        let label = Label::dynamic(|data: &Book, _env: &_| data.title.clone()).expand();
         let child = Flex::row().with_flex_child(label, 1.0);
         let inner = WidgetPod::new(child);
         Self { inner, state }
