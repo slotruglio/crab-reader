@@ -3,10 +3,24 @@ use druid::{
     BoxConstraints, Color, Cursor, Data, Event, Lens, Widget, WidgetExt, WidgetPod,
 };
 
+use crate::components::mainwindow::booklibrary::library::SELECTED_BOOK;
+
+// Book Colors
+
+const DEFAULT_COVER_COLOR: Color = Color::rgb8(30, 30, 30);
+const HOVERED_COVER_COLOR: Color = Color::rgb8(60, 60, 60);
+const SELECTED_COVER_COLOR: Color = Color::rgb8(90, 90, 90);
+
+const DEFAULT_TEXT_COLOR: Color = Color::rgb8(220, 220, 220);
+const HOVERED_TEXT_COLOR: Color = Color::rgb8(190, 190, 190);
+const SELECTED_TEXT_COLOR: Color = Color::rgb8(160, 160, 160);
+
 #[derive(Clone, PartialEq, Lens, Data)]
 pub struct Book {
     title: String,
     npages: u16,
+    idx: u16,
+    selected: bool,
 }
 
 impl Default for Book {
@@ -14,6 +28,8 @@ impl Default for Book {
         Self {
             title: "Book Title".into(),
             npages: 0,
+            idx: 0,
+            selected: false,
         }
     }
 }
@@ -33,6 +49,19 @@ impl Book {
         self
     }
 
+    pub fn with_idx(mut self, idx: u16) -> Self {
+        self.idx = idx;
+        self
+    }
+
+    pub fn select(&mut self) {
+        self.selected = true;
+    }
+
+    pub fn unselect(&mut self) {
+        self.selected = false;
+    }
+
     pub fn widget(self) -> impl Widget<Book> {
         BookWidget::from(self)
     }
@@ -46,12 +75,21 @@ pub struct BookWidget {
 
 impl From<Book> for BookWidget {
     fn from(state: Book) -> Self {
+        let selected = state.selected;
         let label = Label::dynamic(|data: &Book, _env: &_| data.title.clone())
-            .with_text_color(Color::WHITE)
+            .with_text_color(if selected {
+                SELECTED_TEXT_COLOR
+            } else {
+                DEFAULT_TEXT_COLOR
+            })
             .with_text_size(18.0)
             .with_line_break_mode(LineBreaking::WordWrap)
             .center()
-            .background(Color::BLACK)
+            .background(if selected {
+                SELECTED_COVER_COLOR
+            } else {
+                DEFAULT_COVER_COLOR
+            })
             .rounded(7.5)
             .padding(5.0)
             .expand();
@@ -78,8 +116,15 @@ impl Widget<Book> for BookWidget {
                 }
             }
             Event::MouseDown(e) => {
-                dbg!("Clicked on a book!");
-                ctx.set_handled();
+                println!(
+                    "User clicked on book with idx {} -- {}",
+                    data.idx,
+                    data.title.clone()
+                );
+                data.select();
+                ctx.submit_notification(SELECTED_BOOK.with(self.state.idx));
+                ctx.request_update();
+                ctx.request_paint();
             }
             _ => (),
         }
@@ -116,7 +161,6 @@ impl Widget<Book> for BookWidget {
         let size = bc.constrain((150.0, 250.0));
         let bc = BoxConstraints::tight(size);
         self.inner.layout(ctx, &bc, data, env);
-        dbg!(size);
         size
     }
 

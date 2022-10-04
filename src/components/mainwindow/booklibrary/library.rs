@@ -1,9 +1,11 @@
 use druid::im::Vector;
 use druid::widget::Flex;
-use druid::WidgetExt;
 use druid::{Data, Env, Event, Lens, LensExt, Widget, WidgetPod};
+use druid::{Selector, WidgetExt};
 
 use super::book::Book;
+
+pub const SELECTED_BOOK: Selector<u16> = Selector::<u16>::new("library.selectedbook.idx");
 
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct Library {
@@ -49,8 +51,11 @@ impl Library {
     }
 
     pub fn add_book(&mut self, title: String, npages: u16) {
-        let book = Book::new().with_title(title).with_npages(npages);
-        self.books.push_front(book);
+        let book = Book::new()
+            .with_title(title)
+            .with_npages(npages)
+            .with_idx(self.nbooks);
+        self.books.push_back(book);
         self.nbooks += 1;
     }
 
@@ -85,6 +90,11 @@ impl Library {
             return;
         }
 
+        if let Some(old_selected) = self.selected {
+            if let Some(old_selected_book) = self.books.get_mut(old_selected as usize) {
+                old_selected_book.unselect();
+            }
+        }
         self.selected = Some(idx as u16);
     }
 
@@ -106,6 +116,18 @@ impl Widget<Library> for LibraryWidget {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     dbg!("Clicked on an empty spot of the library");
+                }
+            }
+            Event::Notification(cmd) => {
+                if cmd.is(SELECTED_BOOK) {
+                    if let Some(idx) = cmd.get(SELECTED_BOOK) {
+                        println!(
+                            "Received notification of clicking on book with idx {}",
+                            cmd.get(SELECTED_BOOK).unwrap()
+                        );
+                        let idx = *idx;
+                        data.set_selected(idx);
+                    }
                 }
             }
             _ => (),
