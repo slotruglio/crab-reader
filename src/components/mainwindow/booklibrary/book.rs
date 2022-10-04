@@ -77,9 +77,8 @@ pub struct BookWidget {
 
 impl From<Book> for BookWidget {
     fn from(state: Book) -> Self {
-        let selected = state.selected;
-        let label = Label::dynamic(|data: &Book, _env: &_| data.title.clone()).expand();
-        let child = Flex::row().with_flex_child(label, 1.0);
+        let label = Label::new("");
+        let child = Flex::row().with_child(label);
         let inner = WidgetPod::new(child);
         Self { inner, state }
     }
@@ -151,7 +150,7 @@ impl Widget<Book> for BookWidget {
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Book, env: &druid::Env) {
         self.inner.paint(ctx, data, env);
-        let size = ctx.size() - druid::Size::from((5.0, 5.0));
+        let size = ctx.size();
         let rect = size.to_rect().to_rounded_rect(5.0);
 
         let bg_color = if data.selected {

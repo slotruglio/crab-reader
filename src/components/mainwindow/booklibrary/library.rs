@@ -33,7 +33,7 @@ impl From<Library> for LibraryWidget {
             let book = val.books.get(idx as usize);
             if let Some(book) = book {
                 let book = book.clone();
-                let widget = book.widget().lens(Library::books.index(idx));
+                let widget = book.widget().padding(5.0).lens(Library::books.index(idx));
                 row.add_child(widget);
             }
         }

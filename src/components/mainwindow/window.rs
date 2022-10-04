@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use druid::{
-    widget::{Flex, Label},
+    widget::{Flex, Label, Scroll},
     Color, Data, Lens, LocalizedString, UnitPoint, Widget, WidgetExt,
 };
 
@@ -37,11 +37,14 @@ fn book_carousel(app_state: &CrabReaderWindowState) -> impl Widget<Library> {
         .align_vertical(UnitPoint::TOP)
         .align_horizontal(UnitPoint::LEFT)
         .expand();
-    Flex::column()
+
+    let root = Flex::column()
         .with_flex_child(child, 1.0)
         .background(Color::GRAY)
         .rounded(7.5)
-        .padding(10.0)
+        .padding(10.0);
+
+    root
 }
 
 fn book_info_carousel() -> impl Widget<CrabReaderWindowState> {
