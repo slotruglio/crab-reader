@@ -100,6 +100,7 @@ impl Widget<Book> for BookWidget {
                     data.title.clone()
                 );
                 data.select();
+                ctx.set_handled();
                 ctx.submit_notification(SELECTED_BOOK.with(self.state.idx));
                 ctx.request_update();
                 ctx.request_paint();

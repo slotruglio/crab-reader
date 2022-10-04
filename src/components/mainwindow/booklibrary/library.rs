@@ -1,11 +1,12 @@
 use druid::im::Vector;
 use druid::widget::Flex;
-use druid::{Data, Env, Event, Lens, LensExt, Widget, WidgetPod};
+use druid::{Data, Env, Event, Lens, LensExt, UnitPoint, Widget, WidgetPod};
 use druid::{Selector, WidgetExt};
 
 use super::book::Book;
 
 pub const SELECTED_BOOK: Selector<u16> = Selector::<u16>::new("library.selectedbook.idx");
+// pub const UNSELECT_BOOK: Selector<()> = Selector::<u16>::new("library.unselectbook");
 
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct Library {
@@ -34,12 +35,16 @@ impl From<Library> for LibraryWidget {
             if let Some(book) = book {
                 let book = book.clone();
                 let widget = book.widget().padding(5.0).lens(Library::books.index(idx));
-                row.add_child(widget);
+                row.add_flex_child(widget, 1.0);
             }
         }
+        let x = row
+            .align_horizontal(UnitPoint::LEFT)
+            .align_vertical(UnitPoint::TOP)
+            .expand();
 
         LibraryWidget {
-            inner: WidgetPod::new(row),
+            inner: WidgetPod::new(Flex::column().with_flex_child(x, 1.0)),
             state: val,
         }
     }
