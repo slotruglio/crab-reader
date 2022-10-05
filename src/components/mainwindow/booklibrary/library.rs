@@ -32,8 +32,8 @@ impl Default for Library {
     }
 }
 
-impl From<Library> for WidgetPod<Library, Flex<Library>> {
-    fn from(lib: Library) -> Self {
+impl From<&Library> for WidgetPod<Library, Flex<Library>> {
+    fn from(lib: &Library) -> Self {
         let mut flex = Flex::column();
         let children_per_row = lib.children_per_row;
         let nrows = lib.nbooks as usize / children_per_row + 1;
@@ -73,7 +73,7 @@ impl From<Library> for WidgetPod<Library, Flex<Library>> {
 impl From<Library> for LibraryWidget {
     fn from(val: Library) -> Self {
         LibraryWidget {
-            inner: val.clone().into(),
+            inner: (&val).into(),
             state: val,
             children_per_row: 0,
         }

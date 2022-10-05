@@ -62,8 +62,8 @@ fn book_info_carousel() -> impl Widget<CrabReaderWindowState> {
         .padding(10.0)
 }
 
-impl From<CrabReaderWindowState> for Flex<CrabReaderWindowState> {
-    fn from(state: CrabReaderWindowState) -> Self {
+impl From<&CrabReaderWindowState> for Flex<CrabReaderWindowState> {
+    fn from(state: &CrabReaderWindowState) -> Self {
         Flex::column().with_child(header()).with_flex_child(
             Flex::row()
                 .with_flex_child(
@@ -95,6 +95,5 @@ impl CrabReaderWindowState {
 }
 
 pub fn build_ui(state: &CrabReaderWindowState) -> impl Widget<CrabReaderWindowState> {
-    let state = state.clone();
     Flex::<CrabReaderWindowState>::from(state)
 }
