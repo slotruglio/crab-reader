@@ -1,7 +1,8 @@
 use druid::{
     widget::{Flex, Label},
-    BoxConstraints, Color, Data, Event, FontDescriptor, FontFamily, Lens, LifeCycle, Point,
-    RenderContext, TextLayout, Widget, WidgetPod,
+    BoxConstraints, Color, Cursor, Data, Env, Event, EventCtx, FontDescriptor, FontFamily,
+    LayoutCtx, Lens, LifeCycle, LifeCycleCtx, PaintCtx, Point, RenderContext, Size, TextLayout,
+    UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::components::mainwindow::booklibrary::library::SELECTED_BOOK;
@@ -92,13 +93,7 @@ impl From<Book> for BookWidget {
 }
 
 impl Widget<Book> for BookWidget {
-    fn event(
-        &mut self,
-        ctx: &mut druid::EventCtx,
-        event: &druid::Event,
-        data: &mut Book,
-        env: &druid::Env,
-    ) {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Book, env: &Env) {
         match event {
             Event::MouseDown(_) => {
                 data.select();
@@ -108,16 +103,17 @@ impl Widget<Book> for BookWidget {
             }
             _ => (),
         }
+
+        if ctx.is_hot() {
+            ctx.set_cursor(&Cursor::OpenHand);
+        } else {
+            ctx.clear_cursor();
+        }
+
         self.inner.event(ctx, event, data, env);
     }
 
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &Book,
-        env: &druid::Env,
-    ) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Book, env: &Env) {
         match event {
             LifeCycle::HotChanged(_) => {
                 ctx.request_paint();
@@ -127,33 +123,21 @@ impl Widget<Book> for BookWidget {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        old_data: &Book,
-        data: &Book,
-        env: &druid::Env,
-    ) {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Book, data: &Book, env: &Env) {
         self.inner.update(ctx, data, env);
         if old_data != data {
             ctx.request_paint();
         }
     }
 
-    fn layout(
-        &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
-        data: &Book,
-        env: &druid::Env,
-    ) -> druid::Size {
-        let size = bc.constrain(druid::Size::from(BOOK_WIDGET_SIZE));
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &Book, env: &Env) -> Size {
+        let size = bc.constrain(Size::from(BOOK_WIDGET_SIZE));
         let bc = BoxConstraints::tight(size);
         self.inner.layout(ctx, &bc, data, env);
         size
     }
 
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Book, env: &druid::Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &Book, env: &Env) {
         self.inner.paint(ctx, data, env);
         let size = ctx.size();
         let rect = size.to_rect().to_rounded_rect(5.0);
