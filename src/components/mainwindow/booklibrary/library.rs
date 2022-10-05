@@ -35,7 +35,7 @@ impl From<Library> for LibraryWidget {
             if let Some(book) = book {
                 let book = book.clone();
                 let widget = book.widget().padding(5.0).lens(Library::books.index(idx));
-                row.add_flex_child(widget, 1.0);
+                row.add_child(widget);
             }
         }
         let x = row
@@ -183,7 +183,6 @@ impl Widget<Library> for LibraryWidget {
         env: &Env,
     ) -> druid::Size {
         let size = self.inner.layout(ctx, bc, data, env);
-        dbg!(size);
         size
     }
 
