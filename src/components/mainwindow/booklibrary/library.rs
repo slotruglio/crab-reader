@@ -72,13 +72,8 @@ impl Library {
         let len = self.books.len();
         let idx = idx as usize;
 
-        if len == 0 {
+        if len == 0 || idx >= len {
             dbg!("Tried to remove books on an empty library!");
-            return;
-        }
-
-        if idx >= len {
-            dbg!("Tried to remove a book that doesn't exist!");
             return;
         }
 
@@ -89,13 +84,7 @@ impl Library {
         let len = self.books.len();
         let idx = idx as usize;
 
-        if len == 0 {
-            dbg!("Tried to select a book on an empty library!");
-            return;
-        }
-
-        if idx >= len {
-            dbg!("Tried to select a book that doesn't exist!");
+        if len == 0 || idx >= len {
             return;
         }
 
@@ -104,6 +93,7 @@ impl Library {
                 old_selected_book.unselect();
             }
         }
+
         self.selected = Some(idx as u16);
     }
 
