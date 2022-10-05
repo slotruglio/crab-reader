@@ -117,14 +117,12 @@ impl Library {
     }
 
     pub fn selected_book_title(&self) -> String {
-        if self.selected.is_none() {
-            String::from("No Book Selected")
-        } else {
-            match self.books.get(self.selected.unwrap() as usize) {
-                Some(book) => book.get_title(),
-                None => "No Book Selected".to_string(),
+        if let Some(selected_idx) = self.selected {
+            if let Some(selected_book) = self.books.get(selected_idx as usize) {
+                return selected_book.get_title();
             }
         }
+        "No Book Selected".into()
     }
 }
 
