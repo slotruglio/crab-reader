@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Write;
 use std::fs::File;
 use epub::doc::EpubDoc;
+use crate::utils::saveload;
 
 /// Struct that models EPUB file
 /// Metadata are attributes
@@ -30,9 +31,6 @@ impl Book {
         let lang = book.mdata("language").unwrap_or("No lang".to_string());
         let cover_data = book.get_cover().unwrap_or(vec![0]);
 
-        let book = EpubDoc::new(path).unwrap();
-        let chapter_number = book.get_current_page()+1;
-
         let mut title_to_save = "/Users/slotruglio/pds/crab-reader/src/assets/covers/".to_string();
         title_to_save.push_str(title.as_str());
         title_to_save.push_str(".png");
@@ -45,7 +43,8 @@ impl Book {
         let mut f = f.unwrap();
         let resp = f.write_all(&cover_data);
 
-        Book{title, author, lang, cover: title_to_save, path: String::from(path), chapter_number: chapter_number, current_page: 0}
+        let (chapter_number, current_page) = saveload::get_page_of_chapter(String::from(path)).unwrap();
+        Book{title, author, lang, cover: title_to_save, path: String::from(path), chapter_number: chapter_number, current_page: current_page}
     }
     
     /// Method that returns the current chapter number
@@ -108,6 +107,10 @@ impl Book {
     pub fn get_page_of_chapter(&self) -> String {
         let page = self.split_chapter_in_pages();
         page[self.current_page].clone()
+    }
+
+    pub fn get_path(&self) -> String {
+        self.path.clone()
     }
     /*
     fn get_widget_chapter(&self) -> impl Widget<Book> {

@@ -283,6 +283,7 @@ dependencies = [
  "druid",
  "epub",
  "html2text",
+ "serde_json",
 ]
 
 [[package]]
