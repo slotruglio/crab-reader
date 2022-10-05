@@ -1,8 +1,9 @@
 use druid::im::Vector;
 use druid::widget::Flex;
+use druid::widget::MainAxisAlignment::SpaceEvenly;
 use druid::{
     BoxConstraints, Color, Command, Data, Env, Event, EventCtx, LayoutCtx, Lens, LensExt,
-    LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UnitPoint, UpdateCtx, Widget, WidgetPod,
+    LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetPod,
 };
 use druid::{Selector, WidgetExt};
 
@@ -10,8 +11,6 @@ use super::book::{self, Book};
 
 pub const SELECTED_BOOK: Selector<u16> = Selector::<u16>::new("library.selectedbook.idx");
 pub const UPDATE_NCHILDREN: Selector<()> = Selector::<()>::new("library.update.nchildren");
-// Might need this one later
-// pub const BOOK_WIDGET_SIZE: Selector<Size> = Selector::new("library.bookwidget.size");
 
 #[derive(Clone, Data, Lens, PartialEq)]
 pub struct Library {
@@ -28,27 +27,40 @@ impl Default for Library {
             nbooks: 0,
             selected: None,
             books: Vector::new(),
-            children_per_row: 0,
+            children_per_row: 5, // todo: placeholder value
         }
     }
 }
 
 impl From<Library> for WidgetPod<Library, Flex<Library>> {
     fn from(lib: Library) -> Self {
-        let mut flex = Flex::row();
+        let mut flex = Flex::column();
+        let children_per_row = lib.children_per_row;
+        let nrows = lib.nbooks as usize / children_per_row + 1;
 
-        for (idx, book) in lib.books.iter().enumerate() {
-            let widget = book
-                .clone()
-                .widget()
-                .lens(Library::books.index(idx))
-                .padding(7.5);
-            flex.add_child(widget);
+        for row_idx in 0..nrows {
+            let mut row = Flex::row();
+            for col_idx in 0..children_per_row {
+                let book_idx = row_idx * children_per_row + col_idx;
+                if book_idx >= lib.nbooks as usize {
+                    break;
+                }
+
+                if let Some(book) = lib.books.get(book_idx) {
+                    row.add_child(
+                        book.clone()
+                            .widget()
+                            .lens(Library::books.index(book_idx))
+                            .padding(7.5),
+                    );
+                }
+            }
+            row.set_main_axis_alignment(SpaceEvenly);
+            row.set_must_fill_main_axis(true);
+            flex.add_child(row);
         }
 
         let child = flex
-            .align_horizontal(UnitPoint::LEFT)
-            .align_vertical(UnitPoint::TOP)
             .background(Color::GRAY)
             .rounded(7.5)
             .padding(10.0)
@@ -149,7 +161,10 @@ impl LibraryWidget {
     }
 
     //todo: make this a method of `Library`
-    pub fn rebuild_inner(&mut self) {}
+    pub fn rebuild_inner(&mut self) {
+        // This panics...
+        // self.inner = self.state.clone().into();
+    }
 }
 
 impl Widget<Library> for LibraryWidget {
