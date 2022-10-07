@@ -7,6 +7,8 @@ use std::fs::File;
 use epub::doc::EpubDoc;
 use crate::utils::saveload;
 
+const NUMBER_OF_LINES: usize = 8;
+
 /// Struct that models EPUB file
 /// Metadata are attributes
 #[derive(Clone, Data, Lens)]
@@ -83,14 +85,14 @@ impl Book {
     /// and returns a vector of strings. Each string is a page of the chapter
     pub fn split_chapter_in_pages(&self) -> Vec<String> {
         // TODO() number_of_lines as parameter
-        let number_of_lines = 4;
+        
         let text = self.get_chapter_text();
         let lines = text.split("\n\n").collect::<Vec<&str>>();
         let mut pages = Vec::new();
 
         let mut counter_pages = 0;
         for (i, line) in lines.iter().enumerate() {
-            if i % number_of_lines == 0 {
+            if i % NUMBER_OF_LINES == 0 {
                 if i != 0 {
                     counter_pages += 1;
                 }
