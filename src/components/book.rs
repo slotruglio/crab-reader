@@ -83,9 +83,9 @@ impl Book {
     /// and returns a vector of strings. Each string is a page of the chapter
     pub fn split_chapter_in_pages(&self) -> Vec<String> {
         // TODO() number_of_lines as parameter
-        let number_of_lines = 12;
+        let number_of_lines = 4;
         let text = self.get_chapter_text();
-        let lines = text.split("\n").collect::<Vec<&str>>();
+        let lines = text.split("\n\n").collect::<Vec<&str>>();
         let mut pages = Vec::new();
 
         let mut counter_pages = 0;
@@ -96,7 +96,7 @@ impl Book {
                 }
                 pages.push(line.to_string());
             }else{
-                pages[counter_pages].push_str("\n");
+                pages[counter_pages].push_str("\n\n");
                 pages[counter_pages].push_str(line);
             }
         }

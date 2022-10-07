@@ -4,13 +4,13 @@ mod utils;
 use utils::{epub, saveload};
 use components::book::Book;
 use druid::{AppLauncher, WindowDesc, Widget, PlatformError};
-use druid::widget::{Flex, Label, Scroll, Button};
+use druid::widget::{Flex, Label, Scroll, Button, LineBreaking};
 
 
 fn build_ui() -> impl Widget<Book> {
     let dynamic_chapter = Label::dynamic(|data: &Book, _env: &_| data.get_chapter_number().clone().to_string());
     let dynamic_page_number = Label::dynamic(|data: &Book, _env: &_| data.get_current_page().clone().to_string());
-    let dynamic_text = Scroll::new(Label::dynamic(|data: &Book, _env: &_| data.get_page_of_chapter().clone()));
+    let dynamic_text = Scroll::new(Label::dynamic(|data: &Book, _env: &_| data.get_page_of_chapter().clone()).with_line_break_mode(LineBreaking::WordWrap)).vertical();
 
     let button = Button::from_label(dynamic_chapter).on_click(|ctx, data: &mut Book, _env| {
         let current_page = data.get_current_page();
