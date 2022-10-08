@@ -1,6 +1,9 @@
+use image::io::Reader as ImageReader;
+
 use druid::{
+    piet::{ImageFormat, InterpolationMode},
     BoxConstraints, Color, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Point, RenderContext, Size, TextLayout, UpdateCtx, Widget,
+    PaintCtx, RenderContext, Size, UpdateCtx, Widget,
 };
 use std::rc::Rc;
 
@@ -11,6 +14,8 @@ pub struct Book {
     title: Rc<String>,
     npages: u16,
     cover_path: Rc<String>,
+    #[data(ignore)]
+    cover_rbga8: Rc<Vec<u8>>, // No way to use `Vector`? Should use Rc? Edit: used Rc, maybe slightly faster
     selected: bool,
 }
 
@@ -20,6 +25,7 @@ impl Book {
             title: Rc::new("".to_string()),
             npages: 0,
             cover_path: Rc::new("".to_string()),
+            cover_rbga8: Rc::from(Vec::new()),
             selected: false,
         }
     }
@@ -49,6 +55,34 @@ impl Book {
     pub fn is_selected(&self) -> bool {
         self.selected
     }
+
+    pub fn with_cover_path(mut self, path: impl Into<String>) -> Self {
+        self.cover_path = Rc::from(path.into());
+        // Move this elesewhere later
+        // ... and write better
+        let image_reader = ImageReader::open(format!("./covers/{}", self.cover_path));
+        match image_reader {
+            Ok(reader) => match reader.decode() {
+                Ok(image) => {
+                    let h = 250u32;
+                    let w = 150u32;
+                    let resized = image.thumbnail_exact(w, h);
+
+                    // IMPORTANT TO DO
+                    // ADD OPTION INSTEAD
+                    // OTHERWISE IT PANICS IF NOT FOUND
+                    self.cover_rbga8 = Rc::from(resized.to_rgb8().to_vec());
+                }
+                Err(e) => {
+                    println!("Error decoding: {}", e);
+                }
+            },
+            Err(err) => {
+                println!("Error image {}: {}", err, self.cover_path);
+            }
+        }
+        self
+    }
 }
 
 // ???
@@ -76,25 +110,35 @@ impl Widget<Book> for Book {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, _data: &Book, _env: &Env) {
+        // Keep this for errors/epubs without covers?
         let rect = ctx.size().to_rounded_rect(7.5);
         let brush_color = Color::BLACK;
         ctx.render_ctx.fill(rect, &brush_color);
 
-        // Text -- Book Title
-        let mut tl: TextLayout<String> = TextLayout::new();
-        tl.set_text((*self.title).clone());
-        tl.set_text_color(Color::WHITE);
-        tl.set_text_alignment(druid::piet::TextAlignment::Justified);
-        tl.set_text_size(24.0);
-        tl.set_wrap_width(ctx.size().width - 10.0);
-        tl.rebuild_if_needed(ctx.text(), _env);
-
-        let x = 10.0;
-        let y = (ctx.size().height / 2.0) - (tl.size().height / 2.0);
-        let pos = Point::new(x, y);
-
-        if let Some(layout) = tl.layout() {
-            ctx.render_ctx.draw_text(layout, pos);
+        // Cover image
+        let image = ctx.make_image(150, 250, &self.cover_rbga8, ImageFormat::Rgb);
+        if let Ok(image) = image {
+            ctx.draw_image(&image, rect.rect(), InterpolationMode::Bilinear);
+        } else {
+            println!("Error creating image.");
         }
+
+        // Text -- Book Title
+        // Disable for now, maybe for ever
+        // let mut tl: TextLayout<String> = TextLayout::new();
+        // tl.set_text((*self.title).clone());
+        // tl.set_text_color(Color::WHITE);
+        // tl.set_text_alignment(druid::piet::TextAlignment::Justified);
+        // tl.set_text_size(24.0);
+        // tl.set_wrap_width(ctx.size().width - 10.0);
+        // tl.rebuild_if_needed(ctx.text(), _env);
+
+        // let x = 10.0;
+        // let y = (ctx.size().height / 2.0) - (tl.size().height / 2.0);
+        // let pos = Point::new(x, y);
+
+        // if let Some(layout) = tl.layout() {
+        // ctx.render_ctx.draw_text(layout, pos);
+        // }
     }
 }
