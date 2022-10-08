@@ -1,6 +1,6 @@
 use druid::{
     BoxConstraints, Color, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, RenderContext, Size, UpdateCtx, Widget,
+    PaintCtx, Point, RenderContext, Size, TextLayout, UpdateCtx, Widget,
 };
 use std::rc::Rc;
 
@@ -79,5 +79,22 @@ impl Widget<Book> for Book {
         let rect = ctx.size().to_rounded_rect(7.5);
         let brush_color = Color::BLACK;
         ctx.render_ctx.fill(rect, &brush_color);
+
+        // Text -- Book Title
+        let mut tl: TextLayout<String> = TextLayout::new();
+        tl.set_text((*self.title).clone());
+        tl.set_text_color(Color::WHITE);
+        tl.set_text_alignment(druid::piet::TextAlignment::Justified);
+        tl.set_text_size(24.0);
+        tl.set_wrap_width(ctx.size().width - 10.0);
+        tl.rebuild_if_needed(ctx.text(), _env);
+
+        let x = 10.0;
+        let y = (ctx.size().height / 2.0) - (tl.size().height / 2.0);
+        let pos = Point::new(x, y);
+
+        if let Some(layout) = tl.layout() {
+            ctx.render_ctx.draw_text(layout, pos);
+        }
     }
 }
