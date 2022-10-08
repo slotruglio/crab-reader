@@ -2,8 +2,10 @@ use image::io::Reader as ImageReader;
 
 use druid::{
     piet::{ImageFormat, InterpolationMode},
-    BoxConstraints, Color, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, RenderContext, Size, UpdateCtx, Widget,
+    BoxConstraints, Color,
+    Cursor::{self, OpenHand},
+    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, Size,
+    UpdateCtx, Widget,
 };
 use std::rc::Rc;
 
@@ -87,8 +89,12 @@ impl Book {
 
 // ???
 impl Widget<Book> for Book {
-    fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut Book, _env: &Env) {
-        ()
+    fn event(&mut self, ctx: &mut EventCtx, _event: &Event, _data: &mut Book, _env: &Env) {
+        if ctx.is_hot() {
+            ctx.set_cursor(&OpenHand);
+        } else {
+            ctx.set_cursor(&Cursor::Arrow);
+        }
     }
 
     fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle, _data: &Book, _env: &Env) {
