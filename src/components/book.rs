@@ -4,8 +4,8 @@ use druid::{
     piet::{ImageFormat, InterpolationMode},
     BoxConstraints, Color,
     Cursor::{self, OpenHand},
-    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, Size,
-    UpdateCtx, Widget,
+    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, Rect,
+    RenderContext, Size, UpdateCtx, Widget,
 };
 use std::rc::Rc;
 
@@ -117,14 +117,17 @@ impl Widget<Book> for Book {
 
     fn paint(&mut self, ctx: &mut PaintCtx, _data: &Book, _env: &Env) {
         // Keep this for errors/epubs without covers?
-        let rect = ctx.size().to_rounded_rect(7.5);
-        let brush_color = Color::BLACK;
-        ctx.render_ctx.fill(rect, &brush_color);
+        let size = ctx.size();
+        let offset = 10.0;
+        let shadow = Rect::new(offset, offset, size.width + offset, size.height + offset);
+        let shadow_color = &Color::rgb8(50, 50, 50);
+        let rect = ctx.size().to_rect();
+        ctx.render_ctx.blurred_rect(shadow, 6.0, shadow_color);
 
         // Cover image
         let image = ctx.make_image(150, 250, &self.cover_rbga8, ImageFormat::Rgb);
         if let Ok(image) = image {
-            ctx.draw_image(&image, rect.rect(), InterpolationMode::Bilinear);
+            ctx.draw_image(&image, rect, InterpolationMode::Bilinear);
         } else {
             println!("Error creating image.");
         }
