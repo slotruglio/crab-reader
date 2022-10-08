@@ -1,7 +1,9 @@
 use druid::{
     im::Vector, BoxConstraints, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Size, UpdateCtx, Widget, WidgetPod,
+    Point, Size, UpdateCtx, Widget, WidgetPod,
 };
+
+use crate::components::book::BOOK_WIDGET_SIZE;
 
 use super::book::Book;
 
@@ -83,16 +85,41 @@ impl Widget<Vector<Book>> for Library {
         data: &Vector<Book>,
         env: &Env,
     ) -> Size {
-        dbg!(bc);
-        for (idx, inner) in self.books.iter_mut().enumerate() {
-            inner.layout(ctx, bc, &data[idx], env);
+        let book_w = BOOK_WIDGET_SIZE.width;
+        let book_h = BOOK_WIDGET_SIZE.height;
+        let width = bc.max().width;
+        let min_spacing = 20.0;
+
+        let mut books_per_row = ((width / book_w).floor() as u16).min(data.len() as u16);
+        let mut leftover_space = width - (books_per_row as f64 * book_w);
+        let mut spacing = leftover_space / (books_per_row as f64 + 1.0);
+
+        if spacing <= min_spacing {
+            books_per_row -= 1;
+            leftover_space = bc.max().width - (books_per_row as f64 * book_w);
+            spacing = leftover_space / (books_per_row as f64 + 1.0);
         }
 
-        if bc.is_height_bounded() && bc.is_width_bounded() {
-            bc.max()
-        } else {
-            Size::new(400.0, 400.0) // Placeholder
+        let rows = (data.len() as f64 / books_per_row as f64).ceil();
+
+        for (idx, inner) in self.books.iter_mut().enumerate() {
+            let data = &data[idx];
+            let row = (idx as f64 / books_per_row as f64).floor() as u16;
+            let col = (idx as f64 % books_per_row as f64).floor() as u16;
+
+            let x = spacing + (col as f64 * (book_w + spacing));
+            let y = spacing + (row as f64 * (book_h + spacing));
+
+            let size = Size::new(book_w, book_h);
+            let origin = Point::new(x, y);
+            let bc = BoxConstraints::tight(size);
+            inner.layout(ctx, &bc, data, env);
+            inner.set_origin(ctx, data, env, origin);
         }
+
+        let w = books_per_row as f64 * book_w + (books_per_row as f64 + 1.0) * spacing;
+        let h = rows * book_h + (rows + 1.0) * spacing;
+        (w, h).into()
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Vector<Book>, env: &Env) {

@@ -1,6 +1,6 @@
 use druid::{
     BoxConstraints, Color, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Rect, RenderContext, Size, UpdateCtx, Widget,
+    PaintCtx, RenderContext, Size, UpdateCtx, Widget,
 };
 use std::rc::Rc;
 
@@ -12,7 +12,6 @@ pub struct Book {
     npages: u16,
     cover_path: Rc<String>,
     selected: bool,
-    idx: u16,
 }
 
 impl Book {
@@ -22,7 +21,6 @@ impl Book {
             npages: 0,
             cover_path: Rc::new("".to_string()),
             selected: false,
-            idx: 0,
         }
     }
 
@@ -42,15 +40,6 @@ impl Book {
 
     pub fn get_npages(&self) -> u16 {
         self.npages
-    }
-
-    pub fn with_idx(mut self, idx: u16) -> Self {
-        self.idx = idx;
-        self
-    }
-
-    pub fn get_idx(&self) -> u16 {
-        self.idx
     }
 
     pub fn select(&mut self) {
@@ -87,7 +76,7 @@ impl Widget<Book> for Book {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, _data: &Book, _env: &Env) {
-        let rect = Rect::from_origin_size((200.0, 200.0), ctx.size()).to_rounded_rect(7.5);
+        let rect = ctx.size().to_rounded_rect(7.5);
         let brush_color = Color::BLACK;
         ctx.render_ctx.fill(rect, &brush_color);
     }

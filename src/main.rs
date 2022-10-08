@@ -1,6 +1,6 @@
 use components::library::Library;
 use druid::im::Vector;
-use druid::widget::Flex;
+use druid::widget::{Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 
 mod components;
@@ -36,19 +36,28 @@ impl UserState {
 
 fn build_ui() -> impl Widget<CrabReaderState> {
     let library = Library::new();
-    Flex::row()
+    let inner = Flex::column()
         .with_child(library.lens(CrabReaderState::books))
         .background(Color::GRAY)
         .rounded(5.0)
-        .padding(10.0)
+        .padding(10.0);
+
+    Scroll::new(inner).vertical()
 }
 
 fn main() -> Result<(), PlatformError> {
     let mut crab_state = CrabReaderState::default();
-    ["The Lord of the Rings", "The Hobbit", "The Silmarillion"]
-        .into_iter()
-        .map(|title| Book::new().with_title(title))
-        .for_each(|book| crab_state.books.push_back(book));
+    [
+        "The Lord of the Rings",
+        "The Hobbit",
+        "The Silmarillion",
+        "The Children of Hurin",
+        "The Fall of Gondolin",
+        "The Rings of Power",
+    ]
+    .into_iter()
+    .map(|title| Book::new().with_title(title))
+    .for_each(|book| crab_state.books.push_back(book));
     AppLauncher::with_window(WindowDesc::new(build_ui)).launch(crab_state)?;
     Ok(())
 }
