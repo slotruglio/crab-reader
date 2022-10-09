@@ -76,13 +76,15 @@ impl Book {
     }
     /// Method that returns the text of the current chapter
     pub fn get_chapter_text(&self) -> String {
-        let mut book = EpubDoc::new(self.path.as_str()).unwrap();
-        book.set_current_page(self.chapter_number).unwrap();
-        let content = book.get_current_str().unwrap();
-        let text = html2text::from_read(content.as_bytes(), 100);
-        text
+        if let Ok(mut book) = EpubDoc::new(self.path.as_str()){
+            book.set_current_page(self.chapter_number).unwrap();
+            let content = book.get_current_str().unwrap();
+            let text = html2text::from_read(content.as_bytes(), 100);
+            text
+        } else { String::from("No text") }
     }
-
+    /// Method that returns rich text of the current chapter
+    /// ERROR MANAGEMENT: NOT DONE
     pub fn get_chapter_rich_text(&self) -> RichText {
         let mut book = EpubDoc::new(self.path.as_str()).unwrap();
         book.set_current_page(self.chapter_number).unwrap();
@@ -128,7 +130,7 @@ impl Book {
         text_descriptor::get_rich_text(text, tags)
 
     }
-    /// Method that splits the chapter in blocks of 12 lines ATM
+    /// Method that splits the chapter in blocks of 8 lines ATM
     /// and returns a vector of strings. Each string is a page of the chapter
     pub fn split_chapter_in_pages(&self) -> Vec<String> {
         // TODO() number_of_lines as parameter
