@@ -25,8 +25,8 @@ const ITALIC: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
     .with_weight(FontWeight::NORMAL)
     .with_style(FontStyle::Italic);
 
-pub fn get_rich_text(text: String, tags: Vec<(usize, usize, String)>) -> RichText {
-    let buffer = ArcStr::from(text);
+pub fn get_rich_text(text: impl Into<String>, tags: Vec<(usize, usize, String)>) -> RichText {
+    let buffer = ArcStr::from(text.into());
     let mut rich_text = RichText::new(buffer);
     for tag in tags {
         let start = tag.0;
