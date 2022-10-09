@@ -9,20 +9,11 @@ use super::book::Book;
 
 pub struct Library {
     books: Vec<WidgetPod<Book, Box<dyn Widget<Book>>>>,
-    #[allow(dead_code)]
-    book_per_row: u16,
-    #[allow(dead_code)]
-    rows: u16,
 }
 
 impl Library {
     pub fn new() -> Self {
-        Self {
-            books: Vec::new(),
-            // Avoid divison by 0 errors
-            book_per_row: 1,
-            rows: 1,
-        }
+        Self { books: Vec::new() }
     }
 
     pub fn add_book(&mut self, book: &Book) {
