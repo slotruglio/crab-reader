@@ -6,7 +6,7 @@ use std::io::Read;
 use std::io::Write;
 use std::fs::File;
 use epub::doc::EpubDoc;
-use crate::utils::saveload;
+use crate::utils::{saveload, text_descriptor};
 
 const NUMBER_OF_LINES: usize = 8;
 
@@ -79,12 +79,11 @@ impl Book {
         let mut book = EpubDoc::new(self.path.as_str()).unwrap();
         book.set_current_page(self.chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
-        let text = html2text::from_read(content.as_bytes(), 50);
-        self.get_chapter_rich_text();
+        let text = html2text::from_read(content.as_bytes(), 100);
         text
     }
 
-    pub fn get_chapter_rich_text(&self) -> (String, Vec<(usize, usize, String)>) {
+    pub fn get_chapter_rich_text(&self) -> RichText {
         let mut book = EpubDoc::new(self.path.as_str()).unwrap();
         book.set_current_page(self.chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
@@ -126,7 +125,7 @@ impl Book {
             }
             text.push_str("\n");
         }
-        (text, tags)
+        text_descriptor::get_rich_text(text, tags)
 
     }
     /// Method that splits the chapter in blocks of 12 lines ATM
