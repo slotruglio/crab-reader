@@ -1,4 +1,7 @@
 mod components;
+mod utils;
+
+use utils::envmanager;
 
 use components::mainwindow::{
     menu::make_menu,

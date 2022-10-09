@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 druid = { version = "0.7.0", features = ["im"] }
+serde_json = "1.0.85"
