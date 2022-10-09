@@ -158,6 +158,24 @@ impl Book {
         page[self.current_page].clone()
     }
 
+    pub fn get_dual_pages(&self) -> (String, String) {
+        let page = self.split_chapter_in_pages();
+        let mut left_page = String::new();
+        let mut right_page = String::new();
+        if self.current_page % 2 == 0 {
+            left_page = page[self.current_page].clone();
+            if self.current_page+1 < page.len() {
+                right_page = page[self.current_page+1].clone();
+            }
+        }else{
+            right_page = page[self.current_page].clone();
+            if self.current_page-1 < page.len() {
+                left_page = page[self.current_page-1].clone();
+            }
+        }
+        (left_page, right_page)
+    }
+
     pub fn get_path(&self) -> String {
         self.path.clone()
     }
