@@ -6,6 +6,8 @@ use components::book::Book;
 use druid::{AppLauncher, WindowDesc, Widget, PlatformError, WidgetExt, Data, Lens, LensExt};
 use druid::widget::{Flex, Label, Scroll, Button, LineBreaking, Switch, Either};
 
+use crate::components::book::book_derived_lenses::current_page;
+
 #[derive(Clone, Data, Lens)]
 struct AppState {
     single_view: bool,
@@ -40,12 +42,13 @@ fn build_ui() -> impl Widget<AppState> {
             false => 2
         };
         
-        let current_page = data.book.get_current_page();
-        if current_page == data.book.get_last_page() {
+        let new_page = data.book.get_current_page() + increaser;
+
+        if new_page > data.book.get_last_page() {
             data.book.set_chapter_number(data.book.get_chapter_number()+1);
             println!("Last page of chapter, changing chapter");
         }else{
-            data.book.set_chapter_current_page(current_page+increaser);
+            data.book.set_chapter_current_page(new_page);
             println!("Changing page of chapter");
         }
         // function to save the page that the user is reading
@@ -74,7 +77,7 @@ fn main() -> Result<(), PlatformError> {
 
     let app_state = AppState {
         single_view: true,
-        book: Book::new("/Users/slotruglio/pds/crab-reader/src/assets/books/pg69058-images.epub")
+        book: Book::new("/Users/slotruglio/pds/crab-reader/src/assets/books/collodi_pinocchio.epub")
     };
 
     let book = Book::new("/Users/slotruglio/pds/crab-reader/src/assets/books/pg69058-images.epub");
