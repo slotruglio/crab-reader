@@ -18,7 +18,7 @@ pub struct Book {
     npages: u16,
     cover_path: Rc<String>,
     #[data(ignore)]
-    cover_rbga8: Rc<Vec<u8>>, // No way to use `Vector`? Should use Rc? Edit: used Rc, maybe slightly faster
+    cover_rgb8: Rc<Vec<u8>>, // No way to use `Vector`? Should use Rc? Edit: used Rc, maybe slightly faster
     selected: bool,
 }
 
@@ -28,7 +28,7 @@ impl Book {
             title: Rc::new("".to_string()),
             npages: 0,
             cover_path: Rc::new("".to_string()),
-            cover_rbga8: Rc::from(Vec::new()),
+            cover_rgb8: Rc::from(Vec::new()),
             selected: false,
         }
     }
@@ -80,7 +80,7 @@ impl Book {
                     // IMPORTANT TO DO
                     // ADD OPTION INSTEAD
                     // OTHERWISE IT PANICS IF NOT FOUND
-                    self.cover_rbga8 = Rc::from(resized.to_rgb8().to_vec());
+                    self.cover_rgb8 = Rc::from(resized.to_rgb8().to_vec());
                 }
                 Err(e) => {
                     println!("Error decoding: {}", e);
@@ -136,7 +136,7 @@ impl Widget<Book> for Book {
         });
 
         // Paint cover image
-        let buf = self.cover_rbga8.clone();
+        let buf = self.cover_rgb8.clone();
         let size = ctx.size();
         ctx.paint_with_z_index(2, move |ctx| {
             let rect = size.to_rect();
