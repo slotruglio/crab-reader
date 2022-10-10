@@ -88,7 +88,7 @@ impl Book {
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
         let blur_radius = 20.0;
         let size = ctx.size();
-        let shadow_offset = 20.0; // How much the shadow is offset from the book
+        let shadow_offset = 15.0; // How much the shadow is offset from the book
 
         // v Can be optimized? Does it matter? v
         let shadow_rect = Rect::new(
