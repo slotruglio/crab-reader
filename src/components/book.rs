@@ -174,8 +174,8 @@ impl Widget<Book> for Book {
         ctx.request_paint();
     }
 
-    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle, _data: &Book, _env: &Env) {
-        _ctx.request_paint();
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, _event: &LifeCycle, _data: &Book, _env: &Env) {
+        ctx.request_layout();
     }
 
     fn update(&mut self, _ctx: &mut UpdateCtx, _old_data: &Book, _data: &Book, _env: &Env) {
