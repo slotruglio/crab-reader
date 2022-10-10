@@ -1,4 +1,6 @@
 use druid::image::io::Reader as ImageReader;
+use druid::piet::{CairoText, Text};
+use druid::{FontDescriptor, FontFamily, FontWeight, TextLayout};
 
 use druid::{
     piet::{ImageFormat, InterpolationMode},
@@ -18,7 +20,7 @@ pub struct Book {
     npages: u16,
     cover_path: Rc<String>,
     #[data(ignore)]
-    cover_rgb8: Rc<Vec<u8>>, // No way to use `Vector`? Should use Rc? Edit: used Rc, maybe slightly faster
+    cover_rgb8: Box<[u8]>,
     selected: bool,
 }
 
@@ -28,7 +30,7 @@ impl Book {
             title: Rc::new("".to_string()),
             npages: 0,
             cover_path: Rc::new("".to_string()),
-            cover_rgb8: Rc::from(Vec::new()),
+            cover_rgb8: Box::from([]),
             selected: false,
         }
     }
@@ -70,28 +72,94 @@ impl Book {
             .join(self.cover_path.deref());
 
         let image_reader = ImageReader::open(&path);
-        match image_reader {
-            Ok(reader) => match reader.decode() {
-                Ok(image) => {
-                    let h = 250u32;
-                    let w = 150u32;
-                    let resized = image.thumbnail_exact(w, h);
-
-                    // IMPORTANT TO DO
-                    // ADD OPTION INSTEAD
-                    // OTHERWISE IT PANICS IF NOT FOUND
-                    self.cover_rgb8 = Rc::from(resized.to_rgb8().to_vec());
-                }
-                Err(e) => {
-                    println!("Error decoding: {}", e);
-                }
-            },
-            Err(err) => {
-                println!("path: {:?}", path);
-                println!("Error image {}: {}", err, self.cover_path);
+        if let Ok(image_reader) = image_reader {
+            if let Ok(image) = image_reader.decode() {
+                let h = BOOK_WIDGET_SIZE.height as u32;
+                let w = BOOK_WIDGET_SIZE.width as u32;
+                let resized = image.thumbnail_exact(w, h).to_rgb8().into_raw();
+                self.cover_rgb8 = Box::from(resized.clone());
             }
         }
         self
+    }
+
+    // Widget utilities
+
+    fn paint_shadow(&self, ctx: &mut PaintCtx) {
+        let blur_radius = 20.0;
+        let size = ctx.size();
+        let shadow_offset = 20.0; // How much the shadow is offset from the book
+
+        // v Can be optimized? Does it matter? v
+        let shadow_rect = Rect::new(
+            shadow_offset,
+            shadow_offset,
+            size.width + shadow_offset,
+            size.height + shadow_offset,
+        );
+        let shadow_color = Color::rgba(0., 0., 0., 0.7); // Black shadow, last value is opacity
+        ctx.paint_with_z_index(1, move |ctx| {
+            ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
+        });
+    }
+
+    fn paint_book_title(&self, ctx: &mut PaintCtx, env: &Env) {
+        let font_family = CairoText::new()
+            .font_family("URW Bookman")
+            .unwrap_or(FontFamily::SYSTEM_UI);
+
+        let font = FontDescriptor::new(font_family)
+            .with_size(18.0)
+            .with_weight(FontWeight::NORMAL);
+
+        let mut layout = TextLayout::new();
+        layout.set_text(self.title.deref().clone());
+        layout.set_text_color(Color::WHITE);
+        layout.set_font(font);
+        layout.set_wrap_width(ctx.size().width - 2.5);
+        layout.rebuild_if_needed(ctx.text(), env);
+
+        let pos = ctx.size().to_rect().center() - layout.size().to_vec2() / 2.0;
+
+        ctx.paint_with_z_index(3, move |ctx| {
+            if let Some(layout) = layout.layout() {
+                ctx.draw_text(layout, pos);
+            }
+        });
+    }
+
+    fn paint_default_cover(&self, ctx: &mut PaintCtx) {
+        let round_factr = 20.0;
+        let color = Color::rgb8(50, 50, 50);
+        let rect = ctx.size().to_rounded_rect(round_factr);
+
+        ctx.paint_with_z_index(2, move |ctx| {
+            ctx.fill(rect, &color);
+        });
+    }
+
+    fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env) {
+        if self.cover_rgb8.len() == 0 {
+            self.paint_default_cover(ctx);
+            self.paint_book_title(ctx, env);
+            return;
+        }
+
+        let round_factr = 20.0;
+        let image_buffer = self.cover_rgb8.clone();
+        let paint_rect = ctx.size().to_rect();
+        let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
+        let w = BOOK_WIDGET_SIZE.width as usize;
+        let h = BOOK_WIDGET_SIZE.height as usize;
+        let image = ctx.make_image(w, h, &image_buffer, ImageFormat::Rgb);
+        if let Ok(image) = image {
+            ctx.paint_with_z_index(2, move |ctx| {
+                ctx.with_save(|ctx| {
+                    ctx.clip(paint_rounded);
+                    ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+                });
+            });
+        }
     }
 }
 
@@ -124,49 +192,8 @@ impl Widget<Book> for Book {
         BOOK_WIDGET_SIZE
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, _data: &Book, _env: &Env) {
-        // Rewrite this ugly ass function
-        // Paint shadow
-        let size = ctx.size();
-        ctx.paint_with_z_index(1, move |ctx| {
-            let offset = 20.0;
-            let shadow = Rect::new(offset, offset, size.width + offset, size.height + offset);
-            let shadow_color = &Color::rgba8(20, 20, 20, 160);
-            ctx.render_ctx.blurred_rect(shadow, 10.0, shadow_color);
-        });
-
-        // Paint cover image
-        let buf = self.cover_rgb8.clone();
-        let size = ctx.size();
-        ctx.paint_with_z_index(2, move |ctx| {
-            let rect = size.to_rect();
-            let rrect = size.to_rounded_rect(20.0);
-            ctx.clip(rrect);
-            let image = ctx.make_image(150, 250, &buf, ImageFormat::Rgb);
-            if let Ok(image) = image {
-                ctx.draw_image(&image, rect, InterpolationMode::Bilinear);
-            } else {
-                println!("Error creating image.");
-            }
-            let _ = ctx.restore();
-        });
-
-        // Text -- Book Title
-        // Disable for now, maybe for ever
-        // let mut tl: TextLayout<String> = TextLayout::new();
-        // tl.set_text((*self.title).clone());
-        // tl.set_text_color(Color::WHITE);
-        // tl.set_text_alignment(druid::piet::TextAlignment::Justified);
-        // tl.set_text_size(24.0);
-        // tl.set_wrap_width(ctx.size().width - 10.0);
-        // tl.rebuild_if_needed(ctx.text(), _env);
-
-        // let x = 10.0;
-        // let y = (ctx.size().height / 2.0) - (tl.size().height / 2.0);
-        // let pos = Point::new(x, y);
-
-        // if let Some(layout) = tl.layout() {
-        // ctx.render_ctx.draw_text(layout, pos);
-        // }
+    fn paint(&mut self, ctx: &mut PaintCtx, _data: &Book, env: &Env) {
+        self.paint_shadow(ctx);
+        self.paint_cover(ctx, env);
     }
 }

@@ -54,6 +54,7 @@ fn main() -> Result<(), PlatformError> {
         "1984.jpg",
         "451.jpg",
         "saggio-erotico-sulla-fine-del-mondo.jpg",
+        "sugma.jpg",
     ]
     .into_iter()
     .map(|x| x.to_string());
@@ -64,6 +65,7 @@ fn main() -> Result<(), PlatformError> {
         "1984",
         "Farenheit 451",
         "Saggio erotico sulla fine del mondo",
+        "Libro senza cover :)",
     ]
     .into_iter()
     .zip(covers_path_names)
