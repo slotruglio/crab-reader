@@ -1,4 +1,4 @@
-use image::io::Reader as ImageReader;
+use druid::image::io::Reader as ImageReader;
 
 use druid::{
     piet::{ImageFormat, InterpolationMode},
@@ -7,6 +7,7 @@ use druid::{
     Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
     Size, UpdateCtx, Widget,
 };
+use std::ops::Deref;
 use std::rc::Rc;
 
 pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
@@ -62,7 +63,13 @@ impl Book {
         self.cover_path = Rc::from(path.into());
         // Move this elesewhere later
         // ... and write better
-        let image_reader = ImageReader::open(format!("./covers/{}", self.cover_path));
+        let path = std::env::current_dir()
+            .unwrap()
+            .join("src")
+            .join("covers")
+            .join(self.cover_path.deref());
+
+        let image_reader = ImageReader::open(&path);
         match image_reader {
             Ok(reader) => match reader.decode() {
                 Ok(image) => {
@@ -80,6 +87,7 @@ impl Book {
                 }
             },
             Err(err) => {
+                println!("path: {:?}", path);
                 println!("Error image {}: {}", err, self.cover_path);
             }
         }
@@ -121,10 +129,10 @@ impl Widget<Book> for Book {
         // Paint shadow
         let size = ctx.size();
         ctx.paint_with_z_index(1, move |ctx| {
-            let offset = 30.0;
+            let offset = 20.0;
             let shadow = Rect::new(offset, offset, size.width + offset, size.height + offset);
-            let shadow_color = &Color::rgb8(50, 50, 50);
-            ctx.render_ctx.blurred_rect(shadow, 6.0, shadow_color);
+            let shadow_color = &Color::rgba8(20, 20, 20, 160);
+            ctx.render_ctx.blurred_rect(shadow, 10.0, shadow_color);
         });
 
         // Paint cover image
@@ -132,7 +140,7 @@ impl Widget<Book> for Book {
         let size = ctx.size();
         ctx.paint_with_z_index(2, move |ctx| {
             let rect = size.to_rect();
-            let rrect = size.to_rounded_rect(10.0);
+            let rrect = size.to_rounded_rect(20.0);
             ctx.clip(rrect);
             let image = ctx.make_image(150, 250, &buf, ImageFormat::Rgb);
             if let Ok(image) = image {
