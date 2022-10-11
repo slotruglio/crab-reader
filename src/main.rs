@@ -34,6 +34,8 @@ fn main() -> Result<(), PlatformError> {
         .window_size((1280., 720.))
         .menu(menu);
 
-    AppLauncher::with_window(window).launch(app_state)?;
+    AppLauncher::with_window(window).configure_env(|env, _| {
+		envmanager::read_env_from_json(env);
+	}).launch(app_state)?;
     Ok(())
 }
