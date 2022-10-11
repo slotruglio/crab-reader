@@ -81,35 +81,38 @@ impl Widget<Vector<Book>> for Library {
         let width = bc.max().width;
         let min_spacing = 20.0;
 
-        let mut books_per_row = ((width / book_w).floor() as u16).min(data.len() as u16);
-        let mut leftover_space = width - (books_per_row as f64 * book_w);
-        let mut spacing = leftover_space / (books_per_row as f64 + 1.0);
+        // To avoid many casts, one is used for floating point ops and the othe for usize ops
+        let mut fbooks_per_row = (width / book_w).min(data.len() as f64).max(1.0).floor();
+        let mut ubooks_per_row = fbooks_per_row as usize;
+
+        let mut leftover_space = width - (fbooks_per_row * book_w);
+        let mut spacing = leftover_space / (fbooks_per_row + 1.0);
 
         if spacing <= min_spacing {
-            books_per_row -= 1;
-            leftover_space = bc.max().width - (books_per_row as f64 * book_w);
-            spacing = leftover_space / (books_per_row as f64 + 1.0);
+            fbooks_per_row -= 1.0;
+            ubooks_per_row -= 1;
+            leftover_space = bc.max().width - (fbooks_per_row * book_w);
+            spacing = leftover_space / (fbooks_per_row + 1.0);
         }
-
-        let rows = (data.len() as f64 / books_per_row as f64).ceil();
 
         for (idx, inner) in self.books.iter_mut().enumerate() {
             let data = &data[idx];
-            let row = (idx as f64 / books_per_row as f64).floor() as u16;
-            let col = (idx as f64 % books_per_row as f64).floor() as u16;
+            let row = (idx / ubooks_per_row) as f64;
+            let col = (idx % ubooks_per_row) as f64;
 
-            let x = spacing + (col as f64 * (book_w + spacing));
-            let y = spacing + (row as f64 * (book_h + spacing));
+            let x = spacing + (col * (book_w + spacing));
+            let y = spacing + (row * (book_h + spacing));
 
-            let size = Size::new(book_w, book_h);
+            let size = (book_w, book_h).into();
             let origin = Point::new(x, y);
             let bc = BoxConstraints::tight(size);
             inner.layout(ctx, &bc, data, env);
             inner.set_origin(ctx, data, env, origin);
         }
 
-        let w = books_per_row as f64 * book_w + (books_per_row as f64 + 1.0) * spacing;
-        let h = rows * book_h + (rows + 1.0) * spacing;
+        let nrows = (data.len() / ubooks_per_row + 1) as f64;
+        let w = fbooks_per_row * book_w + (fbooks_per_row + 1.0) * spacing;
+        let h = nrows * (book_h + spacing) + spacing;
         (w, h).into()
     }
 
