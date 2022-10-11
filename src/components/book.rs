@@ -1,6 +1,6 @@
 use druid::image::io::Reader as ImageReader;
 use druid::piet::{CairoText, Text};
-use druid::{FontDescriptor, FontFamily, FontWeight, TextLayout};
+use druid::{FontDescriptor, FontFamily, FontWeight, Point, TextLayout};
 
 use druid::{
     piet::{ImageFormat, InterpolationMode},
@@ -22,6 +22,7 @@ pub struct Book {
     #[data(ignore)]
     cover_rgb8: Box<[u8]>,
     selected: bool,
+    bg_color: Color,
 }
 
 impl Book {
@@ -32,6 +33,7 @@ impl Book {
             cover_path: Rc::new("".to_string()),
             cover_rgb8: Box::from([]),
             selected: false,
+            bg_color: Color::rgb8(50, 50, 50),
         }
     }
 
@@ -130,7 +132,7 @@ impl Book {
 
     fn paint_default_cover(&self, ctx: &mut PaintCtx) {
         let round_factr = 20.0;
-        let color = Color::rgb8(50, 50, 50);
+        let color = self.bg_color.clone();
         let rect = ctx.size().to_rounded_rect(round_factr);
 
         ctx.paint_with_z_index(2, move |ctx| {
@@ -163,8 +165,15 @@ impl Book {
     }
 }
 
-// ???
-impl Widget<Book> for Book {
+pub struct BookCoverItem(Book);
+
+impl From<Book> for BookCoverItem {
+    fn from(book: Book) -> Self {
+        Self(book)
+    }
+}
+
+impl Widget<Book> for BookCoverItem {
     fn event(&mut self, ctx: &mut EventCtx, _event: &Event, _data: &mut Book, _env: &Env) {
         if ctx.is_hot() {
             ctx.set_cursor(&OpenHand);
@@ -193,7 +202,107 @@ impl Widget<Book> for Book {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, _data: &Book, env: &Env) {
-        self.paint_shadow(ctx);
-        self.paint_cover(ctx, env);
+        self.0.paint_shadow(ctx);
+        self.0.paint_cover(ctx, env);
+    }
+}
+
+pub struct ListBookItem(Book);
+
+impl From<Book> for ListBookItem {
+    fn from(book: Book) -> Self {
+        ListBookItem(book)
+    }
+}
+
+impl ListBookItem {
+    fn get_bg_color(&self) -> Color {
+        self.0.bg_color.clone()
+    }
+
+    fn paint_bg_rect(&self, ctx: &mut PaintCtx, _: &Env) {
+        let color = self.get_bg_color();
+        let rect = ctx.size().to_rect().to_rounded_rect(10.0);
+        ctx.paint_with_z_index(0, move |ctx| {
+            ctx.fill(rect, &color);
+        });
+    }
+
+    fn paint_title(&self, ctx: &mut PaintCtx, env: &Env) {
+        let font_family = CairoText::new()
+            .font_family("URW Bookman")
+            .unwrap_or(FontFamily::SYSTEM_UI);
+
+        let font = FontDescriptor::new(font_family)
+            .with_size(18.0)
+            .with_weight(FontWeight::NORMAL);
+
+        let mut layout = TextLayout::new();
+        layout.set_text(self.0.title.deref().clone());
+        layout.set_text_color(Color::WHITE);
+        layout.set_font(font.clone());
+        layout.set_wrap_width(ctx.size().width / 4.0);
+        layout.rebuild_if_needed(ctx.text(), env);
+
+        let pos: Point = (10.0, ctx.size().height / 2.0 - layout.size().height / 2.0).into();
+
+        let mut npages_layout = TextLayout::new();
+        npages_layout.set_text(format!("0/{} pagine lette", self.0.npages));
+        npages_layout.set_text_color(Color::WHITE);
+        npages_layout.set_font(font);
+        npages_layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
+        npages_layout.rebuild_if_needed(ctx.text(), env);
+
+        let npages_pos = (
+            ctx.size().to_rect().width() - npages_layout.size().width - 10.0,
+            ctx.size().height / 2.0 - npages_layout.size().height / 2.0,
+        );
+
+        ctx.paint_with_z_index(3, move |ctx| {
+            if let Some(layout) = layout.layout() {
+                ctx.draw_text(layout, pos);
+            }
+
+            if let Some(npages_layout) = npages_layout.layout() {
+                ctx.draw_text(npages_layout, npages_pos);
+            }
+        });
+    }
+
+    fn set_hovered_bg_color(&mut self, is_hovered: bool) {
+        match is_hovered {
+            true => self.0.bg_color = Color::rgb8(100, 100, 100),
+            false => self.0.bg_color = Color::rgb8(50, 50, 50),
+        }
+    }
+}
+
+impl Widget<Book> for ListBookItem {
+    fn event(&mut self, _: &mut EventCtx, _: &Event, _: &mut Book, _: &Env) {
+        ()
+    }
+
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, _: &Book, _: &Env) {
+        match event {
+            LifeCycle::HotChanged(hot) => {
+                self.set_hovered_bg_color(*hot);
+                ctx.request_paint();
+            }
+            _ => {}
+        }
+    }
+
+    fn update(&mut self, _: &mut UpdateCtx, _: &Book, _: &Book, _: &Env) {
+        ()
+    }
+
+    fn layout(&mut self, _: &mut LayoutCtx, bc: &BoxConstraints, _: &Book, _: &Env) -> Size {
+        // Father sets the size for this child
+        bc.max()
+    }
+
+    fn paint(&mut self, ctx: &mut PaintCtx, _: &Book, env: &Env) {
+        self.paint_bg_rect(ctx, env);
+        self.paint_title(ctx, env);
     }
 }

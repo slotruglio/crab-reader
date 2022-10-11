@@ -1,4 +1,4 @@
-use components::library::Library;
+use components::library::{Library, LibraryList};
 use druid::im::Vector;
 use druid::widget::{Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
@@ -42,7 +42,22 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .rounded(5.0)
         .padding(10.0);
 
-    Scroll::new(inner).vertical()
+    let lscroll = Scroll::new(inner).vertical().expand();
+
+    let library_list = LibraryList::new();
+    let right = Flex::column()
+        .with_child(library_list.lens(CrabReaderState::books))
+        .padding(10.0)
+        .background(Color::GRAY)
+        .rounded(5.0)
+        .padding(10.0)
+        .expand();
+
+    let rscroll = Scroll::new(right).vertical().expand();
+
+    Flex::row()
+        .with_flex_child(lscroll, 1.0)
+        .with_flex_child(rscroll, 1.0)
 }
 
 fn main() -> Result<(), PlatformError> {
