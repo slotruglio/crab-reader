@@ -2,10 +2,11 @@ use druid::{Env, Key, Color, FontDescriptor, FontFamily, FontStyle};
 
 use serde_json;
 
+use druid::piet::*;
 
 //function that saves the current environment to a json file
 pub fn save_env(env: &Env, path: &str) {
-	
+
 	//open a new file, creating it if it doesn't exist
 	let file = std::fs::File::create(path).unwrap();
 
@@ -34,7 +35,7 @@ pub fn save_env(env: &Env, path: &str) {
 				);
 				json.insert(
 					"font_family".to_string(), 
-					serde_json::Value::String(get_font_family_reverse(value.family))
+					serde_json::Value::String(value.family.name().to_string())
 				);
 				json.insert(
 					"font_style".to_string(), 
@@ -96,18 +97,25 @@ pub fn read_env_from_json(env: &mut Env) {
             "font_family" => {
                 //get environment variable called font
                 let font = env.try_get(Key::<FontDescriptor>::new("font"));
+				let mut ctx = NullRenderContext::new();
+				let text = ctx.text();
+				let text_font = text.font_family(value.as_str().unwrap())
+					.or_else(|| text.font_family(value.as_str().unwrap()))
+					.unwrap_or(FontFamily::SYSTEM_UI);
+
                 if font.is_err() {
                     //if it doesn't exist, create it
                     env.set(
                         Key::<FontDescriptor>::new("font"), 
-                        FontDescriptor::new(FontFamily::SYSTEM_UI)
+                        FontDescriptor::new(text_font)
                     );
                 } else {
                     //if it exists, update it
+					
 
                     env.set(
                         Key::<FontDescriptor>::new("font"), 
-                        FontDescriptor::new(get_font_family(value.to_string())).with_size(font.unwrap().size)
+                        FontDescriptor::new(text_font).with_size(font.unwrap().size)
                     ); //TODO: SOSTITUIRE MONOSPACE CON LA VERA FAMILY ATTUALE DELLA VARIABILE value AL POSTO DI MONOSPACE
 
                 }  
@@ -214,22 +222,22 @@ fn get_style_reverse(value: FontStyle) -> String {
 	}
 }
 
-fn get_font_family(value: String) -> FontFamily {
-	match value.as_str() {
-		"MONOSPACE" => FontFamily::MONOSPACE,
-		"SYSTEM_UI" => FontFamily::SYSTEM_UI,
-		"SERIF" => FontFamily::SERIF,
-		"SANS_SERIF" => FontFamily::SANS_SERIF,
-		_ => FontFamily::SYSTEM_UI
-	}
-}
+// fn get_font_family(value: String) -> FontFamily {
+// 	match value.as_str() {
+// 		"MONOSPACE" => FontFamily::MONOSPACE,
+// 		"SYSTEM_UI" => FontFamily::SYSTEM_UI,
+// 		"SERIF" => FontFamily::SERIF,
+// 		"SANS_SERIF" => FontFamily::SANS_SERIF,
+// 		_ => FontFamily::SYSTEM_UI
+// 	}
+// }
 
-fn get_font_family_reverse(value: FontFamily) -> String {
-	match value {
-		FontFamily::MONOSPACE => "MONOSPACE".to_string(),
-		FontFamily::SYSTEM_UI => "SYSTEM_UI".to_string(),
-		FontFamily::SERIF => "SERIF".to_string(),
-		FontFamily::SANS_SERIF => "SANS_SERIF".to_string(),
-		_ => "SYSTEM_UI".to_string()
-	}
-}
+// fn get_font_family_reverse(value: FontFamily) -> String {
+// 	match value {
+// 		FontFamily::MONOSPACE => "MONOSPACE".to_string(),
+// 		FontFamily::SYSTEM_UI => "SYSTEM_UI".to_string(),
+// 		FontFamily::SERIF => "SERIF".to_string(),
+// 		FontFamily::SANS_SERIF => "SANS_SERIF".to_string(),
+// 		_ => "SYSTEM_UI".to_string()
+// 	}
+// }

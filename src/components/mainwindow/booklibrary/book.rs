@@ -2,10 +2,12 @@ use druid::{
     widget::{Flex, Label},
     BoxConstraints, Color, Cursor, Data, Env, Event, EventCtx, FontDescriptor, FontFamily,
     LayoutCtx, Lens, LifeCycle, LifeCycleCtx, PaintCtx, Point, RenderContext, Size, TextLayout,
-    UpdateCtx, Widget, WidgetPod,
+    UpdateCtx, Widget, WidgetPod, Key,
 };
 
 use crate::components::mainwindow::booklibrary::library::SELECTED_BOOK;
+
+use crate::utils::envmanager;
 
 // Book Colors
 
@@ -94,6 +96,10 @@ impl From<Book> for BookWidget {
 
 impl Widget<Book> for BookWidget {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Book, env: &Env) {
+
+        dbg!(env.get(Key::<FontDescriptor>::new("font")));
+
+
         match event {
             Event::MouseDown(_) => {
                 data.select();
