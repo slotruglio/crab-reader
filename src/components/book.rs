@@ -1,14 +1,18 @@
-use druid::Widget;
+use druid::{Widget, ArcStr};
+use druid::piet::TextStorage;
 use druid::text::RichText;
 use druid::widget::{Flex, Container, TextBox, Label, Image, FillStrat, Padding, Scroll, Button};
 use druid::{Color, Data, Lens};
 use std::io::Read;
 use std::io::Write;
 use std::fs::File;
+use std::sync::Arc;
 use epub::doc::EpubDoc;
+
+use crate::utils::text_descriptor::get_chapter_rich_text;
 use crate::utils::{saveload, text_descriptor};
 
-const NUMBER_OF_LINES: usize = 8;
+const NUMBER_OF_LINES: usize = 60;
 
 /// Struct that models EPUB file
 /// Metadata are attributes
@@ -20,7 +24,8 @@ pub struct Book {
     cover: String,
     path: String,
     chapter_number: usize,
-    current_page: usize
+    current_page: usize,
+    rich_text: RichText,
 }
 
 impl Book {
@@ -33,7 +38,6 @@ impl Book {
         let author = book.mdata("creator").unwrap_or("No author".to_string());
         let lang = book.mdata("language").unwrap_or("No lang".to_string());
         let cover_data = book.get_cover().unwrap_or(vec![0]);
-
         let mut title_to_save = "/Users/slotruglio/pds/crab-reader/src/assets/covers/".to_string();
         title_to_save.push_str(title.as_str());
         title_to_save.push_str(".png");
@@ -47,7 +51,19 @@ impl Book {
         let resp = f.write_all(&cover_data);
 
         let (chapter_number, current_page) = saveload::get_page_of_chapter(String::from(path)).unwrap();
-        Book{title, author, lang, cover: title_to_save, path: String::from(path), chapter_number: chapter_number, current_page: current_page}
+        let rich_text = get_chapter_rich_text(path, chapter_number, NUMBER_OF_LINES).get(current_page).unwrap().clone();
+
+
+        Book{
+            title, 
+            author, 
+            lang, 
+            cover: title_to_save, 
+            path: String::from(path), 
+            chapter_number, 
+            current_page, 
+            rich_text,
+        }
     }
     
     /// Method that returns the current chapter number
@@ -58,11 +74,12 @@ impl Book {
     pub fn set_chapter_number(&mut self, chapter: usize) {
         self.chapter_number = chapter;
         self.current_page = 0;
+        self.rich_text = text_descriptor::get_chapter_rich_text(self.path.clone().as_str(), chapter, NUMBER_OF_LINES)[0].clone();
     }
     /// Method that returns the number of 
     /// the last page of the current chapter
     pub fn get_last_page(&self) -> usize {
-        self.split_chapter_in_pages().len()-1 as usize
+        text_descriptor::get_chapter_rich_text(self.path.clone().as_str(), self.chapter_number, NUMBER_OF_LINES).len()-1
     }
     /// Method that returns the current page number
     pub fn get_current_page(&self) -> usize {
@@ -73,8 +90,11 @@ impl Book {
     /// Example: go back and go forward
     pub fn set_chapter_current_page(&mut self, page: usize) {
         self.current_page = page;
+        self.rich_text = text_descriptor::get_chapter_rich_text(self.path.clone().as_str(), self.chapter_number, NUMBER_OF_LINES)[page].clone();
     }
     /// Method that returns the text of the current chapter
+    
+    /* DEPRECATED
     pub fn get_chapter_text(&self) -> String {
         if let Ok(mut book) = EpubDoc::new(self.path.as_str()){
             book.set_current_page(self.chapter_number).unwrap();
@@ -83,6 +103,8 @@ impl Book {
             text
         } else { String::from("No text") }
     }
+    */
+    /* DEPRECATED
     /// Method that returns rich text of the current chapter
     /// ERROR MANAGEMENT: NOT DONE
     pub fn get_chapter_rich_text(&self) -> RichText {
@@ -130,6 +152,9 @@ impl Book {
         text_descriptor::get_rich_text(text, tags)
 
     }
+    */
+    
+    /* DEPRECATED
     /// Method that splits the chapter in blocks of 8 lines ATM
     /// and returns a vector of strings. Each string is a page of the chapter
     pub fn split_chapter_in_pages(&self) -> Vec<String> {
@@ -154,29 +179,31 @@ impl Book {
         pages
         
     }
-    /// Method that returns the page as String of the current chapter
-    pub fn get_page_of_chapter(&self) -> String {
-        let page = self.split_chapter_in_pages();
-        page[self.current_page].clone()
-    }
+    */
 
-    pub fn get_dual_pages(&self) -> (String, String) {
-        let page = self.split_chapter_in_pages();
-        let mut left_page = String::new();
-        let mut right_page = String::new();
+    /// Method that returns the page as String of the current chapter
+    pub fn get_page_of_chapter(&self) -> RichText {
+        self.rich_text.clone()
+    }
+/* 
+    pub fn get_dual_pages(&self) -> (RichText, RichText) {
+        let page = self.rich_text;
+        let mut left_page;
+        let mut right_page;
         if self.current_page % 2 == 0 {
-            left_page = page[self.current_page].clone();
-            if self.current_page+1 < page.len() {
-                right_page = page[self.current_page+1].clone();
+            left_page = pages[self.current_page].clone();
+            if self.current_page+1 < pages.len() {
+                right_page = pages[self.current_page+1].clone();
             }
         }else{
-            right_page = page[self.current_page].clone();
-            if self.current_page-1 < page.len() {
-                left_page = page[self.current_page-1].clone();
+            right_page = pages[self.current_page].clone();
+            if self.current_page-1 < pages.len() {
+                left_page = pages[self.current_page-1].clone();
             }
         }
         (left_page, right_page)
     }
+    */
 
     pub fn get_path(&self) -> String {
         self.path.clone()
