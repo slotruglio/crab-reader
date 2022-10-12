@@ -1,5 +1,5 @@
 use std::{collections::HashMap, error, fs::File, io::Write, path::Path};
-use druid::platform_menus::mac::file::print;
+use super::saveload::get_chapter_html;
 use epub::doc::EpubDoc;
 use serde_json::json;
 /// Method to extract metadata from epub file
@@ -116,4 +116,24 @@ pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>>{
         i += 1;
     }
     Ok(())
+}
+
+pub fn get_chapter_text(path: &str, chapter_number: usize) -> String {
+    let file_name = path.split("/").last().unwrap();
+    let folder_name = file_name.split(".").next().unwrap();
+
+    // try to read from html files
+    if let Ok(text) = get_chapter_html(folder_name, chapter_number) {
+        println!("reading from html files");
+        return text;
+    }
+
+    // if it fails, read from epub
+    if let Ok(mut book) = EpubDoc::new(path){
+        println!("reading from epub file");
+        book.set_current_page(chapter_number).unwrap();
+        let content = book.get_current_str().unwrap();
+        let text = html2text::from_read(content.as_bytes(), 100);
+        text
+    } else { String::from("No text") }
 }
