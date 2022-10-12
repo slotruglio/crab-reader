@@ -228,6 +228,34 @@ impl ListBookItem {
         });
     }
 
+    fn paint_num_pages(&self, ctx: &mut PaintCtx, env: &Env) {
+        let font_family = CairoText::new()
+            .font_family("URW Bookman")
+            .unwrap_or(FontFamily::SYSTEM_UI);
+
+        let font = FontDescriptor::new(font_family)
+            .with_size(18.0)
+            .with_weight(FontWeight::NORMAL);
+
+        let mut layout = TextLayout::new();
+        layout.set_text(format!("0/{} pagine lette", self.0.npages));
+        layout.set_text_color(Color::WHITE);
+        layout.set_font(font);
+        layout.set_wrap_width(ctx.size().width / 4.0);
+        layout.rebuild_if_needed(ctx.text(), env);
+
+        let pos = (
+            ctx.size().to_rect().width() - layout.size().width - 10.0,
+            ctx.size().height / 2.0 - layout.size().height / 2.0,
+        );
+
+        ctx.paint_with_z_index(3, move |ctx| {
+            if let Some(layout) = layout.layout() {
+                ctx.draw_text(layout, pos);
+            }
+        });
+    }
+
     fn paint_title(&self, ctx: &mut PaintCtx, env: &Env) {
         let font_family = CairoText::new()
             .font_family("URW Bookman")
@@ -241,30 +269,14 @@ impl ListBookItem {
         layout.set_text(self.0.title.deref().clone());
         layout.set_text_color(Color::WHITE);
         layout.set_font(font.clone());
-        layout.set_wrap_width(ctx.size().width / 4.0);
+        layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
         let pos: Point = (10.0, ctx.size().height / 2.0 - layout.size().height / 2.0).into();
 
-        let mut npages_layout = TextLayout::new();
-        npages_layout.set_text(format!("0/{} pagine lette", self.0.npages));
-        npages_layout.set_text_color(Color::WHITE);
-        npages_layout.set_font(font);
-        npages_layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
-        npages_layout.rebuild_if_needed(ctx.text(), env);
-
-        let npages_pos = (
-            ctx.size().to_rect().width() - npages_layout.size().width - 10.0,
-            ctx.size().height / 2.0 - npages_layout.size().height / 2.0,
-        );
-
         ctx.paint_with_z_index(3, move |ctx| {
             if let Some(layout) = layout.layout() {
                 ctx.draw_text(layout, pos);
-            }
-
-            if let Some(npages_layout) = npages_layout.layout() {
-                ctx.draw_text(npages_layout, npages_pos);
             }
         });
     }
@@ -304,5 +316,6 @@ impl Widget<Book> for ListBookItem {
     fn paint(&mut self, ctx: &mut PaintCtx, _: &Book, env: &Env) {
         self.paint_bg_rect(ctx, env);
         self.paint_title(ctx, env);
+        self.paint_num_pages(ctx, env);
     }
 }

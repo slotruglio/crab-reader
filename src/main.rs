@@ -1,6 +1,6 @@
 use components::library::{Library, LibraryList};
 use druid::im::Vector;
-use druid::widget::{Flex, Scroll};
+use druid::widget::{Either, Flex, Label, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 
 mod components;
@@ -10,6 +10,7 @@ use components::book::Book;
 struct CrabReaderState {
     user: UserState,
     books: Vector<Book>,
+    display_mode: bool,
 }
 
 impl Default for CrabReaderState {
@@ -17,6 +18,7 @@ impl Default for CrabReaderState {
         Self {
             user: UserState::new(),
             books: Vector::new(),
+            display_mode: true,
         }
     }
 }
@@ -36,28 +38,62 @@ impl UserState {
 
 fn build_ui() -> impl Widget<CrabReaderState> {
     let library = Library::new();
+
+    let activate_cover_btn = Flex::row()
+        .with_child(Label::new("Passa a Lista"))
+        .padding(5.0)
+        .background(Color::GRAY)
+        .rounded(10.0)
+        .on_click(|ctx, data: &mut CrabReaderState, _env| {
+            data.display_mode = !data.display_mode;
+        })
+        .padding(10.0);
+
+    let activate_list_btn = Flex::row()
+        .with_child(Label::new("Passa a Cover"))
+        .padding(5.0)
+        .background(Color::GRAY)
+        .rounded(10.0)
+        .on_click(|ctx, data: &mut CrabReaderState, _env| {
+            data.display_mode = !data.display_mode;
+        })
+        .padding(10.0);
+
+    let btn_either = Either::new(
+        |data: &CrabReaderState, _env| data.display_mode,
+        activate_cover_btn,
+        activate_list_btn,
+    )
+    .align_right();
+
     let inner = Flex::column()
         .with_child(library.lens(CrabReaderState::books))
         .background(Color::GRAY)
         .rounded(5.0)
         .padding(10.0);
 
-    let lscroll = Scroll::new(inner).vertical().expand();
-
     let library_list = LibraryList::new();
+
     let right = Flex::column()
-        .with_child(library_list.lens(CrabReaderState::books))
+        .with_child(library_list.lens(CrabReaderState::books).expand())
         .padding(10.0)
         .background(Color::GRAY)
         .rounded(5.0)
-        .padding(10.0)
-        .expand();
+        .padding(10.0);
 
-    let rscroll = Scroll::new(right).vertical().expand();
+    let scroll_either = Either::new(
+        |data: &CrabReaderState, _env| data.display_mode,
+        inner,
+        right,
+    );
 
-    Flex::row()
-        .with_flex_child(lscroll, 1.0)
-        .with_flex_child(rscroll, 1.0)
+    Scroll::new(
+        Flex::column()
+            .with_child(btn_either)
+            .with_spacer(5.0)
+            .with_child(scroll_either),
+    )
+    .vertical()
 }
 
 fn main() -> Result<(), PlatformError> {
