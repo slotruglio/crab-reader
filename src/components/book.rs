@@ -20,7 +20,9 @@ pub struct Book {
     cover: String,
     path: String,
     chapter_number: usize,
-    current_page: usize
+    current_page: usize,
+    chapter_text: String,
+    chapter_page_text: String,
 }
 
 impl Book {
@@ -49,7 +51,19 @@ impl Book {
         let resp = f.write_all(&cover_data);
 
         let (chapter_number, current_page) = saveload::get_page_of_chapter(String::from(path)).unwrap();
-        Book{title, author, lang, cover: title_to_save, path: String::from(path), chapter_number: chapter_number, current_page: current_page}
+        let chapter_text = epub_utils::get_chapter_text(path, chapter_number);
+        let chapter_page_text = chapter_text[0..200].to_string();
+        Book{
+            title, 
+            author, 
+            lang, 
+            cover: title_to_save, 
+            path: String::from(path), 
+            chapter_number, 
+            current_page,
+            chapter_text,
+            chapter_page_text,
+        }
     }
     
     /// Method that returns the current chapter number
@@ -60,6 +74,7 @@ impl Book {
     pub fn set_chapter_number(&mut self, chapter: usize) {
         self.chapter_number = chapter;
         self.current_page = 0;
+        self.chapter_text = epub_utils::get_chapter_text(self.path.clone().as_str(), chapter);
     }
     /// Method that returns the number of 
     /// the last page of the current chapter
@@ -75,26 +90,11 @@ impl Book {
     /// Example: go back and go forward
     pub fn set_chapter_current_page(&mut self, page: usize) {
         self.current_page = page;
+        self.chapter_page_text = self.split_chapter_in_pages()[page].clone();
     }
     /// Method that returns the text of the current chapter
     pub fn get_chapter_text(&self) -> String {
-        let file_name = self.path.split("/").last().unwrap();
-        let folder_name = file_name.split(".").next().unwrap();
-
-        // try to read from html files
-        if let Ok(text) = saveload::get_chapter_html(folder_name, self.chapter_number) {
-            println!("reading from html files");
-            return text;
-        }
-
-        // if it fails, read from epub
-        if let Ok(mut book) = EpubDoc::new(self.path.as_str()){
-            println!("reading from epub file");
-            book.set_current_page(self.chapter_number).unwrap();
-            let content = book.get_current_str().unwrap();
-            let text = html2text::from_read(content.as_bytes(), 100);
-            text
-        } else { String::from("No text") }
+        epub_utils::get_chapter_text(self.path.clone().as_str(), self.chapter_number)
     }
     /// Method that returns rich text of the current chapter
     /// ERROR MANAGEMENT: NOT DONE
