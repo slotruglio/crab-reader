@@ -1,7 +1,7 @@
 mod components;
 mod utils;
 
-use utils::{epub, saveload};
+use utils::{epub_utils, saveload};
 use components::book::Book;
 use druid::{AppLauncher, WindowDesc, Widget, PlatformError, WidgetExt, Data, Lens, LensExt};
 use druid::widget::{Flex, Label, Scroll, Button, LineBreaking, Switch, Either};
@@ -71,7 +71,7 @@ fn main() -> Result<(), PlatformError> {
     paths.push("/Users/slotruglio/pds/crab-reader/src/assets/books/collodi_pinocchio.epub");
 
     for path in paths {
-        let _data = epub::get_metadata_from_epub(path);
+        let _data = epub_utils::get_metadata_from_epub(path);
         println!("---new book---");
     }
 

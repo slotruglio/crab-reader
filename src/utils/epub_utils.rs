@@ -1,5 +1,7 @@
-use std::{collections::HashMap, error, fs::File, io::Write};
+use std::{collections::HashMap, error, fs::File, io::Write, path::Path};
+use druid::platform_menus::mac::file::print;
 use epub::doc::EpubDoc;
+use serde_json::json;
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
 /// title: title of the book
@@ -63,5 +65,55 @@ pub fn save_book_cover(image: String, name: String, path_to_save: String) -> Res
     filename.push_str(".png");
     let mut file = File::create(filename)?;
     file.write_all(&cover)?;
+    Ok(())
+}
+
+pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>>{
+    let file_name = path.split("/").last().unwrap();
+    let folder_name = file_name.split(".").next().unwrap();
+    println!("Folder name: {}", folder_name);
+    let path_name = format!("src/assets/books/{}", folder_name);
+    println!("Folder path: {}", path_name);
+    std::fs::create_dir_all(format!("/Users/slotruglio/pds/crab-reader/{}", path_name.as_str()))?;
+    
+    let mut book = EpubDoc::new(path)?;
+    
+    let mut metadata_file = File::create(format!("{}/metadata.json", path_name)).unwrap();
+    let mut metadata_map = HashMap::new();
+    metadata_map.insert("title", book.mdata("title").unwrap_or("No title".to_string()));
+    metadata_map.insert("author", book.mdata("creator").unwrap_or("No author".to_string()));
+    metadata_map.insert("lang", book.mdata("language").unwrap_or("No lang".to_string()));
+
+    metadata_map
+    .insert("source", book.mdata("source")
+    .unwrap_or("no source".to_string()));
+
+    metadata_map
+    .insert("date", book.mdata("date")
+    .unwrap_or("no date".to_string()));
+
+    metadata_map
+    .insert("rights", book.mdata("rights")
+    .unwrap_or("no rights".to_string()));
+
+    metadata_map
+    .insert("identifier", book.mdata("identifier")
+    .unwrap_or("no indetifier".to_string()));
+    let json = json!(metadata_map);
+    //json["cover"] = json!(book.get_cover().unwrap_or_default());
+    metadata_file.write_all(json.to_string().as_bytes()).unwrap();
+
+    let len = book.get_num_pages();
+    //extract all chapters
+    let mut i = 0;
+    while i < len {
+        let chapter = book.get_current_str().unwrap();
+        let mut file = File::create(format!("{}/page_{}.html", path_name.as_str(), i)).unwrap();
+        file.write_all(chapter.as_bytes()).unwrap();
+        if let Err(_) = book.go_next() {
+            break;
+        }
+        i += 1;
+    }
     Ok(())
 }

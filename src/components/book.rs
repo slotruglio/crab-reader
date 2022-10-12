@@ -6,7 +6,7 @@ use std::io::Read;
 use std::io::Write;
 use std::fs::File;
 use epub::doc::EpubDoc;
-use crate::utils::{saveload, text_descriptor};
+use crate::utils::{saveload, text_descriptor, epub_utils};
 
 const NUMBER_OF_LINES: usize = 8;
 
@@ -27,6 +27,7 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: &str) -> Book {
+        let result = epub_utils::extract_pages(path).unwrap();
         let mut book = EpubDoc::new(path).unwrap();
         
         let title = book.mdata("title").unwrap_or("No title".to_string());
