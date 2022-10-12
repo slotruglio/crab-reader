@@ -35,9 +35,10 @@ impl Book {
         let lang = book.mdata("language").unwrap_or("No lang".to_string());
         let cover_data = book.get_cover().unwrap_or(vec![0]);
 
-        let mut title_to_save = "/Users/slotruglio/pds/crab-reader/src/assets/covers/".to_string();
-        title_to_save.push_str(title.as_str());
-        title_to_save.push_str(".png");
+        let title_to_save = format!("{}{}{}",
+        "/Users/slotruglio/pds/crab-reader/assets/covers/",
+        title.as_str(),
+        ".png");
 
         println!("Saving cover to {}", title_to_save);
 
@@ -77,7 +78,18 @@ impl Book {
     }
     /// Method that returns the text of the current chapter
     pub fn get_chapter_text(&self) -> String {
+        let file_name = self.path.split("/").last().unwrap();
+        let folder_name = file_name.split(".").next().unwrap();
+
+        // try to read from html files
+        if let Ok(text) = saveload::get_chapter_html(folder_name, self.chapter_number) {
+            println!("reading from html files");
+            return text;
+        }
+
+        // if it fails, read from epub
         if let Ok(mut book) = EpubDoc::new(self.path.as_str()){
+            println!("reading from epub file");
             book.set_current_page(self.chapter_number).unwrap();
             let content = book.get_current_str().unwrap();
             let text = html2text::from_read(content.as_bytes(), 100);

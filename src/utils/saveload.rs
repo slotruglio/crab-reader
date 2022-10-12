@@ -1,4 +1,4 @@
-use std::{fs::{File, OpenOptions}, io::{BufReader, Write}};
+use std::{fs::{File, OpenOptions}, io::{BufReader, Write, Read}};
 
 use serde_json::{json, Value};
 
@@ -42,4 +42,14 @@ pub fn get_page_of_chapter<T: Into<String> + Clone>(book_path: T) -> Result<(usi
     }
     println!("DEBUG reading data: {} {} {}", chapter.clone(), page.clone(), book_path.into());
     Ok((chapter, page))
+}
+
+pub fn get_chapter_html(folder_name: &str, chapter: usize) -> Result<String, Box<dyn std::error::Error>>{
+    let filename = format!("assets/books/{}/page_{}.html", folder_name, chapter);
+    let file = File::open(filename)?;
+    let mut content = String::new();
+    BufReader::new(file).read_to_string(&mut content)?;
+    let text = html2text::from_read(content.as_bytes(), 100);
+    
+    Ok(text)
 }

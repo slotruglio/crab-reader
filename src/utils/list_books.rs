@@ -1,7 +1,7 @@
 /*
 let mut main_view = Flex::column();
 
-    for item in std::fs::read_dir("/Users/slotruglio/pds/crab-reader/src/assets/books/").unwrap() {
+    for item in std::fs::read_dir("/Users/slotruglio/pds/crab-reader/assets/books/").unwrap() {
         let item = item.unwrap();
         let path = item.path();
         let path = path.to_str().unwrap();

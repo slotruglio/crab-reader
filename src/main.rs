@@ -67,21 +67,18 @@ fn build_ui() -> impl Widget<AppState> {
 fn main() -> Result<(), PlatformError> {
 
     let mut paths = Vec::new();
-    paths.push("/Users/slotruglio/pds/crab-reader/src/assets/books/pg69058-images.epub");
-    paths.push("/Users/slotruglio/pds/crab-reader/src/assets/books/collodi_pinocchio.epub");
+    paths.push("/Users/slotruglio/pds/crab-reader/assets/books/epub/pg69058-images.epub");
+    paths.push("/Users/slotruglio/pds/crab-reader/assets/books/epub/collodi_pinocchio.epub");
 
-    for path in paths {
-        let _data = epub_utils::get_metadata_from_epub(path);
+    for path in paths.iter() {
+        let _data = epub_utils::get_metadata_from_epub(path.to_owned());
         println!("---new book---");
     }
 
     let app_state = AppState {
         single_view: true,
-        book: Book::new("/Users/slotruglio/pds/crab-reader/src/assets/books/collodi_pinocchio.epub")
+        book: Book::new(paths[0])
     };
-
-    let book = Book::new("/Users/slotruglio/pds/crab-reader/src/assets/books/pg69058-images.epub");
-    
     
     AppLauncher::with_window(WindowDesc::new(|| build_ui())).launch(app_state)?;
     Ok(())

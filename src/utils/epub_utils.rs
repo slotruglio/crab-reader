@@ -72,7 +72,7 @@ pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>>{
     let file_name = path.split("/").last().unwrap();
     let folder_name = file_name.split(".").next().unwrap();
     println!("Folder name: {}", folder_name);
-    let path_name = format!("src/assets/books/{}", folder_name);
+    let path_name = format!("assets/books/{}", folder_name);
     println!("Folder path: {}", path_name);
     std::fs::create_dir_all(format!("/Users/slotruglio/pds/crab-reader/{}", path_name.as_str()))?;
     
