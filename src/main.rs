@@ -6,11 +6,17 @@ use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, Wi
 mod components;
 use components::book::Book;
 
+#[derive(Clone, Data, PartialEq)]
+enum ViewMode {
+    List,
+    Cover,
+}
+
 #[derive(Clone, Data, Lens)]
 struct CrabReaderState {
     user: UserState,
     books: Vector<Book>,
-    display_mode: bool,
+    display_mode: ViewMode,
 }
 
 impl Default for CrabReaderState {
@@ -18,7 +24,7 @@ impl Default for CrabReaderState {
         Self {
             user: UserState::new(),
             books: Vector::new(),
-            display_mode: true,
+            display_mode: ViewMode::Cover,
         }
     }
 }
@@ -36,64 +42,54 @@ impl UserState {
     }
 }
 
+fn view_mode_toggle_button() -> impl Widget<CrabReaderState> {
+    Label::dynamic(|data: &CrabReaderState, _env: &_| match data.display_mode {
+        ViewMode::List => "Passa a Cover".into(),
+        ViewMode::Cover => "Passa a Lista".into(),
+    })
+    .padding(10.0)
+    .background(Color::GRAY)
+    .rounded(10.0)
+    .on_click(|ctx, data: &mut CrabReaderState, _env| {
+        match data.display_mode {
+            ViewMode::List => data.display_mode = ViewMode::Cover,
+            ViewMode::Cover => data.display_mode = ViewMode::List,
+        }
+        ctx.request_layout();
+    })
+}
+
 fn build_ui() -> impl Widget<CrabReaderState> {
     let library = Library::new();
+    let library_list = LibraryList::new();
 
-    let activate_cover_btn = Flex::row()
-        .with_child(Label::new("Passa a Lista"))
-        .padding(5.0)
-        .background(Color::GRAY)
-        .rounded(10.0)
-        .on_click(|ctx, data: &mut CrabReaderState, _env| {
-            data.display_mode = !data.display_mode;
-        })
-        .padding(10.0);
+    let switcher = view_mode_toggle_button().padding(10.0).align_right();
 
-    let activate_list_btn = Flex::row()
-        .with_child(Label::new("Passa a Cover"))
-        .padding(5.0)
-        .background(Color::GRAY)
-        .rounded(10.0)
-        .on_click(|ctx, data: &mut CrabReaderState, _env| {
-            data.display_mode = !data.display_mode;
-        })
-        .padding(10.0);
-
-    let btn_either = Either::new(
-        |data: &CrabReaderState, _env| data.display_mode,
-        activate_cover_btn,
-        activate_list_btn,
-    )
-    .align_right();
-
-    let inner = Flex::column()
+    let cover_view = Flex::column()
         .with_child(library.lens(CrabReaderState::books))
         .background(Color::GRAY)
         .rounded(5.0)
         .padding(10.0);
 
-    let library_list = LibraryList::new();
-
-    let right = Flex::column()
+    let list_view = Flex::column()
         .with_child(library_list.lens(CrabReaderState::books).expand())
         .padding(10.0)
         .background(Color::GRAY)
         .rounded(5.0)
         .padding(10.0);
 
-    let scroll_either = Either::new(
-        |data: &CrabReaderState, _env| data.display_mode,
-        inner,
-        right,
+    let view_either = Either::new(
+        |data: &CrabReaderState, _env| data.display_mode == ViewMode::List,
+        list_view,
+        cover_view,
     );
 
-    Scroll::new(
-        Flex::column()
-            .with_child(btn_either)
-            .with_spacer(5.0)
-            .with_child(scroll_either),
-    )
-    .vertical()
+    let inner = Flex::column()
+        .with_child(switcher)
+        .with_child(view_either)
+        .padding(10.0);
+
+    Scroll::new(inner).vertical()
 }
 
 fn main() -> Result<(), PlatformError> {

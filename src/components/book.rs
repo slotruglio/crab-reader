@@ -1,6 +1,6 @@
 use druid::image::io::Reader as ImageReader;
 use druid::piet::{CairoText, Text};
-use druid::{FontDescriptor, FontFamily, FontWeight, Point, TextLayout};
+use druid::{FontDescriptor, FontFamily, FontWeight, TextLayout};
 
 use druid::{
     piet::{ImageFormat, InterpolationMode},
@@ -245,8 +245,8 @@ impl ListBookItem {
         layout.rebuild_if_needed(ctx.text(), env);
 
         let pos = (
-            ctx.size().to_rect().width() - layout.size().width - 10.0,
-            ctx.size().height / 2.0 - layout.size().height / 2.0,
+            ctx.size().width - layout.size().width - 10.0,
+            ctx.size().height / 2.0 - layout.size().height / 2.5, // ???
         );
 
         ctx.paint_with_z_index(3, move |ctx| {
@@ -272,7 +272,7 @@ impl ListBookItem {
         layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
-        let pos: Point = (10.0, ctx.size().height / 2.0 - layout.size().height / 2.0).into();
+        let pos = (10.0, ctx.size().height / 2.0 - layout.size().height / 4.0);
 
         ctx.paint_with_z_index(3, move |ctx| {
             if let Some(layout) = layout.layout() {
