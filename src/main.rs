@@ -1,21 +1,15 @@
-use components::library::{Library, LibraryList};
-use druid::im::Vector;
-use druid::widget::{Either, Flex, Label, Scroll};
+use components::library::{CoverLibrary, Library, ListLibrary};
+use components::view_switcher::{SwitcherButton, ViewMode};
+use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 
 mod components;
 use components::book::Book;
 
-#[derive(Clone, Data, PartialEq)]
-enum ViewMode {
-    List,
-    Cover,
-}
-
 #[derive(Clone, Data, Lens)]
 struct CrabReaderState {
     user: UserState,
-    books: Vector<Book>,
+    library: Library,
     display_mode: ViewMode,
 }
 
@@ -23,7 +17,7 @@ impl Default for CrabReaderState {
     fn default() -> Self {
         Self {
             user: UserState::new(),
-            books: Vector::new(),
+            library: Library::new(),
             display_mode: ViewMode::Cover,
         }
     }
@@ -42,37 +36,18 @@ impl UserState {
     }
 }
 
-fn view_mode_toggle_button() -> impl Widget<CrabReaderState> {
-    Label::dynamic(|data: &CrabReaderState, _env: &_| match data.display_mode {
-        ViewMode::List => "Passa a Cover".into(),
-        ViewMode::Cover => "Passa a Lista".into(),
-    })
-    .padding(10.0)
-    .background(Color::GRAY)
-    .rounded(10.0)
-    .on_click(|ctx, data: &mut CrabReaderState, _env| {
-        match data.display_mode {
-            ViewMode::List => data.display_mode = ViewMode::Cover,
-            ViewMode::Cover => data.display_mode = ViewMode::List,
-        }
-        ctx.request_layout();
-    })
-}
-
 fn build_ui() -> impl Widget<CrabReaderState> {
-    let library = Library::new();
-    let library_list = LibraryList::new();
-
-    let switcher = view_mode_toggle_button().padding(10.0).align_right();
+    let library_cover = CoverLibrary::new().lens(CrabReaderState::library);
+    let library_list = ListLibrary::new().lens(CrabReaderState::library);
 
     let cover_view = Flex::column()
-        .with_child(library.lens(CrabReaderState::books))
+        .with_child(library_cover)
         .background(Color::GRAY)
         .rounded(5.0)
         .padding(10.0);
 
     let list_view = Flex::column()
-        .with_child(library_list.lens(CrabReaderState::books).expand())
+        .with_child(library_list)
         .padding(10.0)
         .background(Color::GRAY)
         .rounded(5.0)
@@ -85,7 +60,12 @@ fn build_ui() -> impl Widget<CrabReaderState> {
     );
 
     let inner = Flex::column()
-        .with_child(switcher)
+        .with_child(
+            SwitcherButton
+                .padding(10.0)
+                .align_right()
+                .lens(CrabReaderState::display_mode),
+        )
         .with_child(view_either)
         .padding(10.0);
 
@@ -116,8 +96,8 @@ fn main() -> Result<(), PlatformError> {
     ]
     .into_iter()
     .zip(covers_path_names)
-    .map(|(title, path)| Book::new().with_title(title).with_cover_path(path))
-    .for_each(|book| crab_state.books.push_back(book));
+    .map(|(title, path)| Book::new().with_title(title).with_cover_path(&path))
+    .for_each(|book| crab_state.library.add_book(book));
     AppLauncher::with_window(WindowDesc::new(build_ui)).launch(crab_state)?;
     Ok(())
 }
