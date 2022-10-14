@@ -6,7 +6,6 @@ use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 
 mod components;
-use components::book::Book;
 
 #[derive(Clone, Data, Lens)]
 struct CrabReaderState {
