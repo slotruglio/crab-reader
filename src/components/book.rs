@@ -21,9 +21,12 @@ pub const NORMAL_BG_COLOR: Color = Color::rgb8(40, 40, 40);
 #[derive(Clone, Data, PartialEq)]
 pub struct Book {
     title: Rc<String>,
+    author: Rc<String>,
     npages: u16,
+    read_pages: u16,
     idx: u16,
     cover_path: Rc<String>,
+    description: Rc<String>,
     selected: bool,
 }
 
@@ -31,9 +34,12 @@ impl Book {
     pub fn new() -> Self {
         Self {
             title: Rc::new("".to_string()),
+            author: Rc::new("".to_string()),
             npages: 0,
+            read_pages: 0,
             idx: 0, // Represents the book position in the array... is there a better way?
             cover_path: Rc::new("".to_string()),
+            description: Rc::new("".to_string()),
             selected: false,
         }
     }
@@ -95,7 +101,32 @@ impl Book {
         self.idx
     }
 
-    // Widget utilities
+    pub fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.description = Rc::from(description.into());
+        self
+    }
+
+    pub fn get_description(&self) -> String {
+        (*self.description).clone()
+    }
+
+    pub fn with_read_pages(mut self, read_pages: u16) -> Self {
+        self.read_pages = read_pages;
+        self
+    }
+
+    pub fn get_read_pages(&self) -> u16 {
+        self.read_pages
+    }
+
+    pub fn with_author(mut self, author: impl Into<String>) -> Self {
+        self.author = Rc::from(author.into());
+        self
+    }
+
+    pub fn get_author(&self) -> String {
+        (*self.author).clone()
+    }
 }
 
 pub struct CoverBook {
@@ -307,7 +338,11 @@ impl BookListing {
             .with_weight(FontWeight::NORMAL);
 
         let mut layout = TextLayout::new();
-        layout.set_text(format!("0/{} pagine lette", data.get_npages()));
+        layout.set_text(format!(
+            "{}/{} pagine lette",
+            data.get_read_pages(),
+            data.get_npages()
+        ));
         layout.set_text_color(Color::WHITE);
         layout.set_font(font);
         layout.set_wrap_width(ctx.size().width / 4.0);
