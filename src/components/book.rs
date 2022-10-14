@@ -247,7 +247,7 @@ impl Widget<Book> for CoverBook {
                     Target::Auto,
                 );
                 ctx.submit_notification(cmd);
-                ctx.request_paint();
+                ctx.request_layout();
             }
             _ => {}
         }
@@ -257,7 +257,7 @@ impl Widget<Book> for CoverBook {
         match event {
             LifeCycle::HotChanged(hot) => {
                 self.set_hot(*hot);
-                ctx.request_paint();
+                ctx.request_layout();
             }
             _ => {}
         }
@@ -377,7 +377,7 @@ impl Widget<Book> for BookListing {
                     Target::Auto,
                 );
                 ctx.submit_notification(cmd);
-                ctx.request_paint();
+                ctx.request_layout();
             }
             _ => {}
         }
@@ -387,7 +387,7 @@ impl Widget<Book> for BookListing {
         match event {
             LifeCycle::HotChanged(hot) => {
                 self.set_hot(*hot);
-                ctx.request_paint();
+                ctx.request_layout();
             }
             _ => {}
         }

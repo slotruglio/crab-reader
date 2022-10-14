@@ -1,6 +1,7 @@
+use components::book_details::BookDetails;
 use components::library::{CoverLibrary, Library, ListLibrary};
 use components::view_switcher::{SwitcherButton, ViewMode};
-use druid::widget::{Either, Flex, Label, Scroll};
+use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 
 mod components;
@@ -37,10 +38,10 @@ impl UserState {
 }
 
 fn book_details_panel() -> impl Widget<CrabReaderState> {
-    Flex::column()
-        .with_flex_child(Label::new("Right panel"), 1.0)
+    BookDetails
         .background(Color::GRAY)
         .rounded(10.0)
+        .lens(CrabReaderState::library)
 }
 
 fn build_ui() -> impl Widget<CrabReaderState> {
@@ -57,20 +58,22 @@ fn build_ui() -> impl Widget<CrabReaderState> {
     .padding(10.0);
 
     let scroll = Scroll::new(view_either).vertical();
-    let right_panel = book_details_panel().expand_width().padding(10.0);
 
-    let inner = Flex::row()
-        .with_flex_child(scroll, 2.0)
-        .with_flex_child(right_panel, 1.0);
-
-    Flex::column()
+    let right_panel = book_details_panel().padding(10.0);
+    let right_col = Flex::column()
         .with_child(
             SwitcherButton
                 .padding(10.0)
-                .align_right()
+                .expand_width()
                 .lens(CrabReaderState::display_mode),
         )
-        .with_flex_child(inner, 1.0)
+        .with_flex_child(right_panel, 1.0);
+
+    let inner = Flex::row()
+        .with_flex_child(scroll, 2.0)
+        .with_flex_child(right_col, 1.0);
+
+    Flex::column().with_flex_child(inner, 1.0)
 }
 
 fn main() -> Result<(), PlatformError> {

@@ -48,6 +48,10 @@ impl Library {
         self.books.len()
     }
 
+    pub fn get_selected_book(&self) -> Option<u16> {
+        self.selected_book.clone()
+    }
+
     fn set_selcted_book(&mut self, selected: &Option<u16>) {
         if let Some(idx) = self.selected_book {
             if let Some(old_selected) = self.get_book_mut(idx) {
@@ -219,19 +223,22 @@ impl Widget<Library> for ListLibrary {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             let idx = idx as u16;
-            let book = data.get_book_mut(idx).unwrap(); // Make safe just for fun??
-            inner.event(ctx, event, book, env);
+            if let Some(book) = data.get_book_mut(idx) {
+                inner.event(ctx, event, book, env);
+            }
         }
 
         match event {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     data.set_selcted_book(&None);
+                    ctx.request_layout();
                 }
             }
             Event::Notification(cmd) => {
                 if let Some(selected) = cmd.get(SELECTED_BOOK_SELECTOR) {
                     data.set_selcted_book(selected);
+                    ctx.request_layout();
                 }
             }
             _ => {}

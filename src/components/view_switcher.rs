@@ -102,8 +102,17 @@ impl Widget<ViewMode> for SwitcherButton {
     }
 
     fn layout(&mut self, _: &mut LayoutCtx, bc: &BoxConstraints, _: &ViewMode, _: &Env) -> Size {
-        let w = bc.max().width.min(150.0);
-        let h = bc.max().height.min(35.0);
+        let bc = bc.max();
+        let w = if bc.width.is_finite() {
+            bc.width
+        } else {
+            150.0
+        };
+        let h = if bc.height.is_finite() {
+            bc.height
+        } else {
+            50.0
+        };
         (w, h).into()
     }
 
