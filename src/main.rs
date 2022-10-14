@@ -1,5 +1,6 @@
 use components::book_details::BookDetails;
 use components::library::{CoverLibrary, Library, ListLibrary};
+use components::mockup;
 use components::view_switcher::{SwitcherButton, ViewMode};
 use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
@@ -78,30 +79,11 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
 fn main() -> Result<(), PlatformError> {
     let mut crab_state = CrabReaderState::default();
-    let covers_path_names = [
-        "lotr.jpg",
-        "sotto-lo-stesso-cielo.jpg",
-        "california-la-fine-del-sogno.jpg",
-        "1984.jpg",
-        "451.jpg",
-        "saggio-erotico-sulla-fine-del-mondo.jpg",
-        "sugma.jpg",
-    ]
-    .into_iter()
-    .map(|x| x.to_string());
-    [
-        "Il Signore degli Anelli",
-        "Sotto lo stesso cielo",
-        "California: La Fine del Sogno",
-        "1984",
-        "Farenheit 451",
-        "Saggio erotico sulla fine del mondo",
-        "Libro senza cover :)",
-    ]
-    .into_iter()
-    .zip(covers_path_names)
-    .map(|(title, path)| Book::new().with_title(title).with_cover_path(&path))
-    .for_each(|book| crab_state.library.add_book(book));
-    AppLauncher::with_window(WindowDesc::new(build_ui)).launch(crab_state)?;
+
+    mockup::get_mockup_book_vec().into_iter().for_each(|book| {
+        crab_state.library.add_book(book);
+    });
+
+    AppLauncher::with_window(WindowDesc::new(build_ui).title("CrabReader")).launch(crab_state)?;
     Ok(())
 }
