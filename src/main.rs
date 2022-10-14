@@ -38,7 +38,7 @@ impl UserState {
 }
 
 fn book_details_panel() -> impl Widget<CrabReaderState> {
-    BookDetails
+    BookDetails::new()
         .background(Color::GRAY)
         .rounded(10.0)
         .lens(CrabReaderState::library)
@@ -59,7 +59,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
     let scroll = Scroll::new(view_either).vertical();
 
-    let right_panel = book_details_panel().padding(10.0);
+    let right_panel = Scroll::new(book_details_panel()).vertical().padding(5.0);
     let right_col = Flex::column()
         .with_child(
             SwitcherButton
