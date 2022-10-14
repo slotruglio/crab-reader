@@ -1,6 +1,6 @@
 use components::library::{CoverLibrary, Library, ListLibrary};
 use components::view_switcher::{SwitcherButton, ViewMode};
-use druid::widget::{Either, Flex, Scroll};
+use druid::widget::{Either, Flex, Label, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 
 mod components;
@@ -36,40 +36,41 @@ impl UserState {
     }
 }
 
+fn book_details_panel() -> impl Widget<CrabReaderState> {
+    Flex::column()
+        .with_flex_child(Label::new("Right panel"), 1.0)
+        .background(Color::GRAY)
+        .rounded(10.0)
+}
+
 fn build_ui() -> impl Widget<CrabReaderState> {
     let library_cover = CoverLibrary::new().lens(CrabReaderState::library);
     let library_list = ListLibrary::new().lens(CrabReaderState::library);
 
-    let cover_view = Flex::column()
-        .with_child(library_cover)
-        .background(Color::GRAY)
-        .rounded(5.0)
-        .padding(10.0);
-
-    let list_view = Flex::column()
-        .with_child(library_list)
-        .padding(10.0)
-        .background(Color::GRAY)
-        .rounded(5.0)
-        .padding(10.0);
-
     let view_either = Either::new(
         |data: &CrabReaderState, _env| data.display_mode == ViewMode::List,
-        list_view,
-        cover_view,
-    );
+        library_list.padding(5.0),
+        library_cover,
+    )
+    .background(Color::GRAY)
+    .rounded(10.0)
+    .padding(10.0);
 
-    let inner = Flex::column()
+    let scroll = Scroll::new(view_either).vertical();
+    let right_panel = book_details_panel().expand_width().padding(10.0);
+
+    let inner = Flex::row()
+        .with_flex_child(scroll, 2.0)
+        .with_flex_child(right_panel, 1.0);
+
+    Flex::column()
         .with_child(
             SwitcherButton
                 .padding(10.0)
                 .align_right()
                 .lens(CrabReaderState::display_mode),
         )
-        .with_child(view_either)
-        .padding(10.0);
-
-    Scroll::new(inner).vertical()
+        .with_flex_child(inner, 1.0)
 }
 
 fn main() -> Result<(), PlatformError> {
