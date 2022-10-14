@@ -1,7 +1,7 @@
 use druid::{
     piet::{CairoText, Text},
-    widget::Label,
-    BoxConstraints, Color, Env, FontDescriptor, FontFamily, FontWeight, PaintCtx, Point, Widget,
+    BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx,
+    LifeCycle, LifeCycleCtx, PaintCtx, Point, UpdateCtx, Widget,
 };
 use druid::{RenderContext, TextLayout};
 
@@ -13,42 +13,24 @@ pub struct BookDetails {
 }
 
 impl Widget<Library> for BookDetails {
-    fn event(
-        &mut self,
-        ctx: &mut druid::EventCtx,
-        event: &druid::Event,
-        data: &mut Library,
-        env: &Env,
-    ) {
-        ctx.request_paint();
+    fn event(&mut self, _: &mut EventCtx, _: &Event, _: &mut Library, _: &Env) {
+        ()
     }
 
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &Library,
-        env: &Env,
-    ) {
-        ctx.request_layout();
+    fn lifecycle(&mut self, _: &mut LifeCycleCtx, _: &LifeCycle, _: &Library, _: &Env) {
+        ()
     }
 
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        old_data: &Library,
-        data: &Library,
-        env: &Env,
-    ) {
-        ctx.request_layout();
+    fn update(&mut self, _: &mut UpdateCtx, _: &Library, _: &Library, _: &Env) {
+        ()
     }
 
     fn layout(
         &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
+        _: &mut LayoutCtx,
+        bc: &BoxConstraints,
         data: &Library,
-        env: &Env,
+        _: &Env,
     ) -> druid::Size {
         if data.get_selected_book().is_some() {
             let w = bc.max().width;
