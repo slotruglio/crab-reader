@@ -102,12 +102,14 @@ fn main() -> Result<(), PlatformError> {
         let _data = epub_utils::get_metadata_from_epub(path.to_owned());
         println!("---new book---");
     }
+    let book = Book::new(paths[0]);
+    let page = book.get_page_of_chapter();
 
     let app_state = AppState {
         single_view: true,
         is_editing: false,
-        book: Book::new(paths[0]),
-        text: String::from("Questa è la storia di uno di noi")
+        book: book,
+        text: page,
     };
     
     AppLauncher::with_window(WindowDesc::new(|| build_ui())).launch(app_state)?;

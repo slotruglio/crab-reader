@@ -1,5 +1,5 @@
 use std::{collections::HashMap, error, fs::{File, OpenOptions}, io::{Write, Read}};
-use super::saveload::get_chapter_html;
+use super::saveload::{get_chapter_html, get_chapter_txt};
 use epub::doc::EpubDoc;
 use serde_json::json;
 /// Method to extract metadata from epub file
@@ -68,19 +68,18 @@ pub fn save_book_cover(image: String, name: String, path_to_save: String) -> Res
     Ok(())
 }
 
-pub fn edit_chapter(path: &str, chapter_number: usize, old_text: impl Into<String>, text: impl Into<String>) -> Result<(), Box<dyn error::Error>>{
+pub fn edit_chapter(path: &str, chapter_number: usize, text: impl Into<String>) -> Result<(), Box<dyn error::Error>>{
     let book_name = path.split("/").last().unwrap().split(".").next().unwrap();
-    let saved_book_chapter_path = format!("assets/books/{}/page_{}.html", book_name, chapter_number);
+    let saved_book_chapter_path = format!("assets/books/{}/page_{}.txt", book_name, chapter_number);
     println!("path to get chapter: {}", saved_book_chapter_path);
-    let mut page_html = OpenOptions::new().read(true).write(true).open(saved_book_chapter_path)?;
+    let mut page_html = OpenOptions::new()
+    .write(true)
+    .create(true)
+    .open(saved_book_chapter_path)?;
 
-    let mut content = String::new();
-    page_html.read_to_string(&mut content).unwrap();
+    let text = String::from(text.into());
 
-    let new_content = content.replace(&old_text.into(), &text.into());
-
-
-    page_html.write_all(new_content.as_bytes())?;
+    page_html.write_all(text.as_bytes())?;
     Ok(())
 }
 
@@ -138,6 +137,12 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> String {
     let file_name = path.split("/").last().unwrap();
     let folder_name = file_name.split(".").next().unwrap();
 
+    // try to read from txt files (where edited text is saved)
+    if let Ok(text) = get_chapter_txt(folder_name, chapter_number) {
+        println!("reading from txt file");
+        return text;
+    }
+
     // try to read from html files
     if let Ok(text) = get_chapter_html(folder_name, chapter_number) {
         println!("reading from html files");
@@ -151,5 +156,5 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> String {
         let content = book.get_current_str().unwrap();
         let text = html2text::from_read(content.as_bytes(), 100);
         text
-    } else { String::from("No text") }
+    } else { String::default() }
 }

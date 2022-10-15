@@ -200,11 +200,12 @@ impl Book {
             if old_line != new_line {
                 println!("old_line: {}", old_line);
                 println!("new_line: {}", new_line);
-                if let Ok(()) = epub_utils::edit_chapter(self.path.clone().as_str(), self.chapter_number, old_line, new_line){
+                let new_chapter = self.chapter_text.replace(old_text.as_str(), new_text.as_str());
+                if let Ok(()) = epub_utils::edit_chapter(self.path.clone().as_str(), self.chapter_number, new_chapter) {
                     println!("Text edited");
-                    self.chapter_text = self.get_chapter_text();
+                    self.chapter_text = epub_utils::get_chapter_text(self.path.clone().as_str(), self.chapter_number);
+                    self.chapter_page_text = self.split_chapter_in_pages()[self.current_page].clone();
                 }
-
             }
         }
     }
