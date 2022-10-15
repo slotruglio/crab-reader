@@ -1,9 +1,9 @@
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
-use components::library::{GUILibrary, MockupLibrary};
+use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
-use components::mockup::{self, MockupBook};
+use components::mockup::{self, MockupBook, MockupLibrary};
 use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 mod components;

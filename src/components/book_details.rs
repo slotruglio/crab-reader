@@ -7,8 +7,8 @@ use druid::{RenderContext, TextLayout};
 
 use super::{
     book::GUIBook,
-    library::{GUILibrary, MockupLibrary},
-    mockup::MockupBook,
+    library::GUILibrary,
+    mockup::{MockupBook, MockupLibrary},
 };
 
 pub struct BookDetails {
