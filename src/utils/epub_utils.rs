@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error, fs::File, io::Write, path::Path};
+use std::{collections::HashMap, error, fs::{File, OpenOptions}, io::{Write, Read}};
 use super::saveload::get_chapter_html;
 use epub::doc::EpubDoc;
 use serde_json::json;
@@ -65,6 +65,22 @@ pub fn save_book_cover(image: String, name: String, path_to_save: String) -> Res
     filename.push_str(".png");
     let mut file = File::create(filename)?;
     file.write_all(&cover)?;
+    Ok(())
+}
+
+pub fn edit_chapter(path: &str, chapter_number: usize, old_text: impl Into<String>, text: impl Into<String>) -> Result<(), Box<dyn error::Error>>{
+    let book_name = path.split("/").last().unwrap().split(".").next().unwrap();
+    let saved_book_chapter_path = format!("assets/books/{}/page_{}.html", book_name, chapter_number);
+    println!("path to get chapter: {}", saved_book_chapter_path);
+    let mut page_html = OpenOptions::new().read(true).write(true).open(saved_book_chapter_path)?;
+
+    let mut content = String::new();
+    page_html.read_to_string(&mut content).unwrap();
+
+    let new_content = content.replace(&old_text.into(), &text.into());
+
+
+    page_html.write_all(new_content.as_bytes())?;
     Ok(())
 }
 

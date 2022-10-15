@@ -46,6 +46,7 @@ pub fn get_page_of_chapter<T: Into<String> + Clone>(book_path: T) -> Result<(usi
 
 pub fn get_chapter_html(folder_name: &str, chapter: usize) -> Result<String, Box<dyn std::error::Error>>{
     let filename = format!("assets/books/{}/page_{}.html", folder_name, chapter);
+    println!("filename from where get page: {}", filename);
     let file = File::open(filename)?;
     let mut content = String::new();
     BufReader::new(file).read_to_string(&mut content)?;
