@@ -6,29 +6,36 @@ use serde_json::{json, Value};
 pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usize, page: usize) -> Result<(), Box<dyn std::error::Error>>{
     println!("DEBUG saving data: {} {} {}", chapter.clone(), page.clone(), book_path.clone().into());
     let filename = String::from("src/conf/books_saved.json");
+    let filename2 = filename.clone();
+    let (tx, rx) = channel();
+
+    let thread = std::thread::spawn(move || {
+        let mut json = json!({});
+        if let Ok(opened_file) = File::open(filename2) {
+            println!("DEBUG file exists");
+            let reader = BufReader::new(opened_file);
+            if let Ok(content) = serde_json::from_reader(reader) { json = content};
+        }
+        tx.send(json).unwrap();
+    });
+
     let value = json!({"chapter":chapter, "page":page});
-    println!("DEBUG value: {:?}", value);
-    
-    let mut json: Value;
 
-    if let Ok(opened_file) = File::open(filename.clone()) {
-        println!("DEBUG file exists");
-        let reader = BufReader::new(opened_file);
-        json = serde_json::from_reader(reader)?;
-    }else{
-        println!("DEBUG file doesn't exist");
-        json= json!({});
-    }
-    let file = OpenOptions::new()
-    .write(true)
-    .create(true)
-    .truncate(true)
-    .open(filename)?;
+    if let Ok(()) = thread.join() {
+        let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(filename)?;
 
-    json[book_path.into()] = value;
-    println!("DEBUG json: {:?}", json);
-    serde_json::to_writer_pretty(file, &json)?;
-    Ok(())
+        let mut json = rx.recv().unwrap();
+
+        json[book_path.into()] = value;
+
+        serde_json::to_writer_pretty(file, &json)?;
+        drop(rx);
+        Ok(())
+    }else{ Err("Error while saving data".into()) }
 }
 
 /// function to load the last page of a chapter given the path of the book
