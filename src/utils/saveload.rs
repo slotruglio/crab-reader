@@ -1,4 +1,4 @@
-use std::{fs::{File, OpenOptions}, io::{BufReader, Write, Read}};
+use std::{fs::{File, OpenOptions}, io::{BufReader, Read}, sync::mpsc::channel};
 
 use serde_json::{json, Value};
 
@@ -6,20 +6,28 @@ use serde_json::{json, Value};
 pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usize, page: usize) -> Result<(), Box<dyn std::error::Error>>{
     println!("DEBUG saving data: {} {} {}", chapter.clone(), page.clone(), book_path.clone().into());
     let filename = String::from("src/conf/books_saved.json");
-    let value = json!({ "chapter":chapter, "page":page});
+    let value = json!({"chapter":chapter, "page":page});
+    println!("DEBUG value: {:?}", value);
     
-    if let Ok(file) = File::open(filename.clone()) {
-        let reader = BufReader::new(file);
-        let mut json: Value = serde_json::from_reader(reader)?;
-        json[book_path.into()] = value;
-        let mut file = OpenOptions::new().write(true).open(filename.clone())?;
-        file.write_all(json.to_string().as_bytes())?;
+    let mut json: Value;
+
+    if let Ok(opened_file) = File::open(filename.clone()) {
+        println!("DEBUG file exists");
+        let reader = BufReader::new(opened_file);
+        json = serde_json::from_reader(reader)?;
     }else{
-        let mut file = OpenOptions::new().write(true).create(true).open(filename)?;
-        let mut json = json!({});
-        json[book_path.into()] = value;
-        file.write_all(json.to_string().as_bytes())?;
+        println!("DEBUG file doesn't exist");
+        json= json!({});
     }
+    let file = OpenOptions::new()
+    .write(true)
+    .create(true)
+    .truncate(true)
+    .open(filename)?;
+
+    json[book_path.into()] = value;
+    println!("DEBUG json: {:?}", json);
+    serde_json::to_writer_pretty(file, &json)?;
     Ok(())
 }
 
@@ -53,4 +61,14 @@ pub fn get_chapter_html(folder_name: &str, chapter: usize) -> Result<String, Box
     let text = html2text::from_read(content.as_bytes(), 100);
     
     Ok(text)
+}
+
+pub fn get_chapter_txt(folder_name: &str, chapter: usize) -> Result<String, Box<dyn std::error::Error>>{
+    let filename = format!("assets/books/{}/page_{}.txt", folder_name, chapter);
+    println!("filename from where get page: {}", filename);
+    let file = File::open(filename)?;
+    let mut content = String::new();
+    BufReader::new(file).read_to_string(&mut content)?;
+    
+    Ok(content)
 }
