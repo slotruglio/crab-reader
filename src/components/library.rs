@@ -1,10 +1,6 @@
-use druid::{im::Vector, Data, Lens, Selector};
-
-use super::{book::GUIBook, mockup::MockupBook};
-
+use super::book::GUIBook;
+use druid::{Data, Selector};
 pub const SELECTED_BOOK_SELECTOR: Selector<Option<u16>> = Selector::new("selected-book");
-
-type Book = MockupBook;
 
 /// This trait deinfes all the functionalities that a `Library` struct must expose
 /// in order to be rendered correctly in the GUI of the application
