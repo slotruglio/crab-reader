@@ -3,7 +3,7 @@ use druid::widget::{Scroll, Flex, Label, TextBox, LineBreaking};
 
 use crate::AppState;
 
-use super::book::Book;
+use super::book::{Book, BookReading};
 
 // single page view for text reader
 pub fn build_single_view() -> impl Widget<AppState> {

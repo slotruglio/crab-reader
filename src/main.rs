@@ -1,11 +1,13 @@
 mod components;
 mod utils;
 
-use utils::{epub_utils, saveload};
+use utils::{epub_utils, saveload, button_functions};
 use components::book::Book;
 use components::reader_view::*;
 use druid::{AppLauncher, WindowDesc, Widget, PlatformError, WidgetExt, Data, Lens, LensExt};
 use druid::widget::{Flex, Label, Scroll, Button, LineBreaking, Switch, Either, TextBox};
+
+use crate::components::book::{BookReading, BookManagement};
 
 #[derive(Clone, Data, Lens)]
 struct AppState {
@@ -19,20 +21,15 @@ struct AppState {
 
 fn build_ui() -> impl Widget<AppState> {
     let dynamic_chapter = Label::dynamic(|data: &AppState, _env: &_| data.book.get_chapter_number().clone().to_string());
-    let dynamic_page_number = Label::dynamic(|data: &AppState, _env: &_| data.book.get_current_page().clone().to_string());
+    let dynamic_page_number = Label::dynamic(|data: &AppState, _env: &_| data.book.get_current_page_number().clone().to_string());
     
     let edit_button = Button::from_label(
         Label::dynamic(|data: &AppState, _env: &_| format!("Edit is: {}", data.is_editing.to_string()))
     ).on_click(
         |ctx, data: &mut AppState, _env| {
-            data.is_editing = !data.is_editing;
-
-            // text is the "old page"
-            if data.is_editing {
-                data.text = data.book.get_page_of_chapter().clone();
-            }
-
-            ctx.request_paint();
+            let (new_bool, new_text) = button_functions::edit_button(ctx, &mut data.book, data.text.clone(), data.is_editing);
+            data.is_editing = new_bool;
+            data.text = new_text;
         }
     );
     let edit_row = Flex::row()
@@ -53,27 +50,7 @@ fn build_ui() -> impl Widget<AppState> {
 
     let button = Button::from_label(dynamic_chapter)
     .on_click(|ctx, data: &mut AppState, _env| {
-        
-        if !data.is_editing {
-            let increaser = match data.single_view {
-                true => 1,
-                false => 2
-            };
-            
-            let new_page = data.book.get_current_page() + increaser;
-
-            if new_page > data.book.get_last_page() {
-                data.book.set_chapter_number(data.book.get_chapter_number()+1);
-                println!("Last page of chapter, changing chapter");
-            }else{
-                data.book.set_chapter_current_page(new_page);
-                println!("Changing page of chapter");
-            }
-            // function to save the page that the user is reading
-            saveload::save_page_of_chapter(data.book.get_path(), data.book.get_chapter_number(), data.book.get_current_page()).unwrap();
-            ctx.request_paint();
-            println!("Chapter: {}", data.book.get_chapter_number());
-        }
+        button_functions::change_page(ctx, &mut data.book, data.is_editing, data.single_view, true);
     });
 
    let save_button = Button::from_label(Label::new("Save"))
