@@ -21,7 +21,8 @@ impl CoverLibrary {
     }
 
     pub fn add_child(&mut self, book: &Book) {
-        let widget = BookCover::new().with_cover_image_path(book.get_cover_path().to_string());
+        todo!("Implement cover loading from .epub");
+        let widget = BookCover::new(); // .with_cover_image_path(book.get_cover_path().to_string());
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
@@ -30,7 +31,6 @@ impl CoverLibrary {
 impl Widget<Library> for CoverLibrary {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book_mut(idx) {
                 inner.event(ctx, event, book, env);
             }
@@ -59,7 +59,7 @@ impl Widget<Library> for CoverLibrary {
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
         while self.children.len() < data.number_of_books() {
-            let idx = self.children.len() as u16;
+            let idx = self.children.len();
             if let Some(book) = data.get_book(idx) {
                 self.add_child(book);
                 ctx.children_changed();
@@ -67,7 +67,7 @@ impl Widget<Library> for CoverLibrary {
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            if let Some(book) = data.get_book(idx as u16) {
+            if let Some(book) = data.get_book(idx) {
                 inner.lifecycle(ctx, event, book, env);
             }
         }
@@ -75,7 +75,6 @@ impl Widget<Library> for CoverLibrary {
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(_) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {
                     // TIL: let Some && let Some is unstable
@@ -115,10 +114,9 @@ impl Widget<Library> for CoverLibrary {
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book(idx) {
-                let row = idx / ubooks_per_row as u16;
-                let col = idx % ubooks_per_row as u16;
+                let row = idx / ubooks_per_row;
+                let col = idx % ubooks_per_row;
 
                 let x = spacing + (col as f64 * (book_w + spacing));
                 let y = spacing + (row as f64 * (book_h + spacing));
@@ -138,7 +136,6 @@ impl Widget<Library> for CoverLibrary {
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book(idx) {
                 inner.paint(ctx, book, env);
             }
