@@ -1,10 +1,11 @@
 use druid::{
     image::io::Reader as ImageReader,
-    piet::{ImageFormat, InterpolationMode},
+    piet::{ImageFormat, InterpolationMode, Text},
+    widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
-    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
-    Size, Target, TextLayout, UpdateCtx, Widget,
+    Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
+    LifeCycleCtx, PaintCtx, Rect, RenderContext, Size, Target, TextLayout, UpdateCtx, Widget,
 };
 use std::rc::Rc;
 
@@ -109,14 +110,14 @@ impl BookCover {
     }
 
     fn paint_book_title(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        // let font_family = CairoText::new()
-        // .font_family("URW Bookman")
-        // .unwrap_or(FontFamily::SYSTEM_UI);
+        let font_family = ctx
+            .text()
+            .font_family("URW Bookman")
+            .unwrap_or(FontFamily::SYSTEM_UI);
 
-        // let font = FontDescriptor::new(font_family)
-        // .with_size(18.0)
-        // .with_weight(FontWeight::NORMAL);
-        todo!("Work around CairoText");
+        let font = FontDescriptor::new(font_family)
+            .with_size(18.0)
+            .with_weight(FontWeight::NORMAL);
 
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
