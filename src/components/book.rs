@@ -5,9 +5,6 @@ use std::string::String;
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
 pub trait GUIBook {
-    /// Empty/Default constructor
-    fn new() -> Self;
-
     /// Returns the title
     fn get_title(&self) -> Rc<String>;
 
@@ -371,19 +368,6 @@ impl BookManagement for Book {
 }
 
 impl GUIBook for Book {
-    fn new() -> Self {
-        Self {
-            npages: 0,
-            read_pages: 0,
-            idx: 0,
-            selected: false,
-            title: Rc::new("".to_string()),
-            author: Rc::new("".to_string()),
-            cover_path: Rc::new("".to_string()),
-            description: Rc::new("".to_string()),
-        }
-    }
-
     fn get_title(&self) -> Rc<String> {
         self.title.clone()
     }
