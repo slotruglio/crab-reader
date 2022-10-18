@@ -3,8 +3,10 @@ use druid::{
     Size, UpdateCtx, Widget, WidgetPod,
 };
 
+use crate::Library;
+
 use super::{
-    book::GUIBook,
+    book::Book,
     book_cover::{BookCover, BOOK_WIDGET_SIZE},
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
 };
