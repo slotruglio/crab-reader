@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use druid::{
-    piet::{CairoText, Text},
+    piet::{FontFamilyInner, Text},
     BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx,
     LifeCycle, LifeCycleCtx, PaintCtx, Point, UpdateCtx, Widget,
 };
@@ -132,9 +134,11 @@ impl BookDetails {
 }
 
 fn get_font(font_size: f64, font_weight: FontWeight) -> FontDescriptor {
-    let font_family = CairoText::new()
-        .font_family("URW Bookman")
-        .unwrap_or(FontFamily::SYSTEM_UI);
+    // let font_family = CairoText::new()
+    // .font_family("URW Bookman")
+    // .unwrap_or(FontFamily::SYSTEM_UI);
+    let font_family = FontFamilyInner::Named(Arc::from("URW Bookman"));
+    let ff = FontFamily::new(font_family);
 
     FontDescriptor::new(font_family)
         .with_size(font_size)

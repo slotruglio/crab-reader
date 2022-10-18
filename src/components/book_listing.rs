@@ -1,8 +1,7 @@
 use druid::{
-    piet::{CairoText, Text},
-    BoxConstraints, Color, Command, Data, Env, Event, EventCtx, FontDescriptor, FontFamily,
-    FontWeight, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, Size, Target,
-    TextLayout, UpdateCtx, Widget,
+    piet::Text, BoxConstraints, Color, Command, Data, Env, Event, EventCtx, FontDescriptor,
+    FontFamily, FontWeight, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, Size,
+    Target, TextLayout, UpdateCtx, Widget,
 };
 
 use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};

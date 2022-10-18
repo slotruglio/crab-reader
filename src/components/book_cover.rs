@@ -1,6 +1,6 @@
 use druid::{
     image::io::Reader as ImageReader,
-    piet::{CairoText, ImageFormat, InterpolationMode, Text},
+    piet::{ImageFormat, InterpolationMode, Text},
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,

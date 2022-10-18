@@ -1,5 +1,5 @@
 use druid::{
-    piet::{CairoText, Text},
+    piet::Text,
     BoxConstraints, Color,
     Cursor::{self},
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
