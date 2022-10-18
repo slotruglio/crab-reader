@@ -248,7 +248,7 @@ use super::{
 #[derive(Clone, Lens, PartialEq, Data)]
 pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
-    selected_book: Option<u16>,
+    selected_book: Option<usize>,
 }
 
 impl GUILibrary<Book> for MockupLibrary<Book> {
@@ -264,24 +264,21 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
             .push_back(book.clone().with_index(self.books.len()));
     }
 
-    fn remove_book(&mut self, idx: u16) {
-        let idx = idx as usize;
+    fn remove_book(&mut self, idx: usize) {
         if let Some(_) = self.books.get(idx) {
             self.books.remove(idx);
         }
     }
 
-    fn get_book_mut(&mut self, idx: u16) -> Option<&mut Book> {
-        let idx = idx as usize;
+    fn get_book_mut(&mut self, idx: usize) -> Option<&mut Book> {
         self.books.get_mut(idx)
     }
 
-    fn get_book(&self, idx: u16) -> Option<&Book> {
-        let idx = idx as usize;
+    fn get_book(&self, idx: usize) -> Option<&Book> {
         self.books.get(idx)
     }
 
-    fn get_selected_book_idx(&self) -> Option<u16> {
+    fn get_selected_book_idx(&self) -> Option<usize> {
         self.selected_book.clone()
     }
 
@@ -297,8 +294,8 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         }
     }
 
-    fn set_selected_book_idx(&mut self, idx: u16) {
-        if idx < self.number_of_books() as u16 {
+    fn set_selected_book_idx(&mut self, idx: usize) {
+        if idx < self.number_of_books() {
             self.unselect_current_book();
             self.selected_book = Some(idx);
         }
