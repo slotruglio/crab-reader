@@ -1,21 +1,20 @@
-use std::rc::Rc;
-
+use crate::components::library::GUILibrary;
 use components::book::Book;
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
-use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
-use components::mockup::{self, MockupBook, MockupLibrary};
+use components::mockup::MockupLibrary;
 use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
-mod components;
-mod utils;
-
-type Library = MockupLibrary<MockupBook>;
 use once_cell::sync::Lazy; // 1.3.1
+use std::rc::Rc;
 use std::sync::Mutex;
 use utils::envmanager::MyEnv;
+
+mod components;
+mod utils;
+type Library = MockupLibrary<Book>;
 
 //Create a global ENV variable
 static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
@@ -99,10 +98,6 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
 fn main() -> Result<(), PlatformError> {
     let mut crab_state = CrabReaderState::default();
-
-    mockup::get_mockup_book_vec().iter().for_each(|book| {
-        crab_state.library.add_book(book);
-    });
 
     AppLauncher::with_window(WindowDesc::new(build_ui).title("CrabReader")).launch(crab_state)?;
     Ok(())
