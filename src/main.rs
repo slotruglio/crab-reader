@@ -52,7 +52,7 @@ struct UserState {
 impl UserState {
     pub fn new() -> Self {
         Self {
-            username: "Username".to_string(),
+            username: Rc::from("Username".to_string()),
         }
     }
 }
