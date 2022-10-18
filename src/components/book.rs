@@ -170,8 +170,8 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
-        let _result = epub_utils::extract_pages(path).unwrap();
-        let mut book = EpubDoc::new(path).unwrap();
+        let _result = epub_utils::extract_pages(path.into().as_str()).unwrap();
+        let mut book = EpubDoc::new(path.into().as_str()).unwrap();
 
         let title = book.mdata("title").unwrap_or("No title".to_string());
 
@@ -196,8 +196,7 @@ impl Book {
         let mut f = f.unwrap();
         let _resp = f.write_all(&cover_data);
 
-        let (chapter_number, current_page) =
-            saveload::get_page_of_chapter(String::from(path)).unwrap();
+        let (chapter_number, current_page) = saveload::get_page_of_chapter(path).unwrap();
         let chapter_text = epub_utils::get_chapter_text(path, chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
         todo!()
