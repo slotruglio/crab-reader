@@ -1,3 +1,6 @@
+use std::rc::Rc;
+
+use components::book::Book;
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
@@ -7,8 +10,17 @@ use components::mockup::{self, MockupBook, MockupLibrary};
 use druid::widget::{Either, Flex, Scroll};
 use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 mod components;
+mod utils;
 
 type Library = MockupLibrary<MockupBook>;
+
+#[derive(Clone, Data, Lens)]
+struct AppState {
+    single_view: bool,
+    is_editing: bool,
+    book: Rc<Book>,
+    text: Rc<String>,
+}
 
 #[derive(Clone, Data, Lens)]
 struct CrabReaderState {
@@ -29,7 +41,7 @@ impl Default for CrabReaderState {
 
 #[derive(Clone, Data)]
 struct UserState {
-    username: String,
+    username: Rc<String>,
 }
 
 impl UserState {
