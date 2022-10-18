@@ -1,5 +1,6 @@
 use crate::utils::{epub_utils, saveload, text_descriptor};
 use std::rc::Rc;
+use std::string::String;
 
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
@@ -172,7 +173,7 @@ pub struct Book {
 impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
-    pub fn new(path: &str) -> Book {
+    pub fn new() -> Book {
         let _result = epub_utils::extract_pages(path).unwrap();
         let mut book = EpubDoc::new(path).unwrap();
 
@@ -292,7 +293,7 @@ impl BookReading for Book {
         text_descriptor::get_rich_text(text, tags)
     }
 
-    fn get_page_of_chapter(&self) -> String {
+    fn get_page_of_chapter(&self) -> Rc<String> {
         let page = self.split_chapter_in_pages();
         page[self.current_page].clone()
     }
@@ -372,106 +373,130 @@ impl BookManagement for Book {
 
 impl GUIBook for Book {
     fn new() -> Self {
-        todo!()
+        Self {
+            npages: 0,
+            read_pages: 0,
+            idx: 0,
+            selected: false,
+            title: Rc::new("".to_string()),
+            author: Rc::new("".to_string()),
+            cover_path: Rc::new("".to_string()),
+            description: Rc::new("".to_string()),
+        }
     }
 
     fn get_title(&self) -> Rc<String> {
-        todo!()
+        self.title.clone()
     }
 
-    fn with_title(self, title: impl Into<String>) -> Self {
-        todo!()
+    fn with_title(mut self, title: impl Into<String>) -> Self {
+        self.set_title(title);
+        self
     }
 
     fn set_title(&mut self, title: impl Into<String>) {
-        todo!()
+        self.title = Rc::new(title.into());
     }
 
     fn get_author(&self) -> Rc<String> {
-        todo!()
+        self.author.clone()
     }
 
-    fn with_author(self, author: impl Into<String>) -> Self {
-        todo!()
+    fn with_author(mut self, author: impl Into<String>) -> Self {
+        self.set_author(author);
+        self
     }
 
     fn set_author(&mut self, author: impl Into<String>) {
-        todo!()
+        self.author = Rc::new(author.into());
     }
 
     fn get_number_of_pages(&self) -> u16 {
-        todo!()
+        self.npages
     }
 
-    fn with_number_of_pages(self, npages: u16) -> Self {
-        todo!()
+    fn with_number_of_pages(mut self, npages: u16) -> Self {
+        self.set_number_of_pages(npages);
+        self
     }
 
     fn set_number_of_pages(&mut self, npages: u16) {
-        todo!()
+        self.npages = npages;
     }
 
     fn get_number_of_read_pages(&self) -> u16 {
-        todo!()
+        self.read_pages
     }
 
-    fn with_number_of_read_pages(self, read_pages: u16) -> Self {
-        todo!()
+    fn with_number_of_read_pages(mut self, read_pages: u16) -> Self {
+        self.set_number_of_read_pages(read_pages);
+        self
     }
 
     fn set_number_of_read_pages(&mut self, read_pages: u16) {
-        todo!()
+        self.read_pages = read_pages;
     }
 
     fn get_index(&self) -> u16 {
-        todo!()
+        self.idx
     }
 
-    fn with_index(self, idx: u16) -> Self {
-        todo!()
+    fn with_index(mut self, idx: u16) -> Self {
+        self.set_index(idx);
+        self
     }
 
     fn set_index(&mut self, idx: u16) {
-        todo!()
+        self.idx = idx
     }
 
     fn get_cover_path(&self) -> Rc<String> {
-        todo!()
+        self.cover_path.clone()
     }
 
-    fn with_cover_path(self, cover_path: impl Into<String>) -> Self {
-        todo!()
+    fn with_cover_path(mut self, cover_path: impl Into<String>) -> Self {
+        self.set_cover_path(cover_path);
+        self
     }
 
     fn set_cover_path(&mut self, cover_path: impl Into<String>) {
-        todo!()
+        // TODO: Set to "" if path not found
+        let mut path = "".into();
+        if let Ok(cwd) = std::env::current_dir() {
+            let file_path = cwd.join("src").join("covers").join(cover_path.into());
+            if let Some(file_path) = file_path.to_str() {
+                path = String::from(file_path);
+            }
+        }
+        self.cover_path = Rc::new(path);
     }
 
     fn get_description(&self) -> Rc<String> {
-        todo!()
+        self.description.clone()
     }
 
-    fn with_description(self, description: impl Into<String>) -> Self {
-        todo!()
+    fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.set_description(description);
+        self
     }
 
     fn set_description(&mut self, description: impl Into<String>) {
-        todo!()
+        self.description = Rc::new(description.into());
     }
 
     fn is_selected(&self) -> bool {
-        todo!()
+        self.selected == true
     }
 
     fn set_selected(&mut self, selected: bool) {
-        todo!()
+        self.selected = selected;
     }
 
     fn select(&mut self) {
-        todo!()
+        self.set_selected(true);
     }
 
     fn unselect(&mut self) {
-        todo!()
+        self.set_selected(false);
     }
 }

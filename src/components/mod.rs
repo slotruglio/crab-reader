@@ -6,5 +6,4 @@ pub mod cover_library;
 pub mod display_mode_button;
 pub mod library;
 pub mod listing_library;
-pub mod mockup;
 pub mod reader_view;

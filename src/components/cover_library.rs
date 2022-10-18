@@ -7,15 +7,11 @@ use super::{
     book::GUIBook,
     book_cover::{BookCover, BOOK_WIDGET_SIZE},
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
-    mockup::{MockupBook, MockupLibrary},
 };
 
 pub struct CoverLibrary {
     children: Vec<WidgetPod<Book, BookCover>>,
 }
-
-type Book = MockupBook; // For compat
-type Library = MockupLibrary<Book>;
 
 impl CoverLibrary {
     pub fn new() -> Self {
