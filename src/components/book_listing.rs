@@ -117,18 +117,20 @@ impl<BookState: GUIBook + Data> Widget<BookState> for BookListing {
                 ctx.submit_notification(cmd);
                 ctx.request_layout();
             }
+            Event::MouseMove(_) => {
+                self.set_hot(ctx.is_hot());
+                ctx.request_paint();
+            }
+            Event::Wheel(_) => {
+                self.set_hot(false);
+                ctx.request_paint();
+            }
             _ => {}
         }
     }
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, _: &BookState, _: &Env) {
-        match event {
-            LifeCycle::HotChanged(hot) => {
-                self.set_hot(*hot);
-                ctx.request_layout();
-            }
-            _ => {}
-        }
+    fn lifecycle(&mut self, _: &mut LifeCycleCtx, _: &LifeCycle, _: &BookState, _: &Env) {
+        ()
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &BookState, data: &BookState, _: &Env) {
