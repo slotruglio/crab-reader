@@ -13,6 +13,12 @@ mod components;
 mod utils;
 
 type Library = MockupLibrary<MockupBook>;
+use once_cell::sync::Lazy; // 1.3.1
+use std::sync::Mutex;
+use utils::envmanager::MyEnv;
+
+//Create a global ENV variable
+static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 #[derive(Clone, Data, Lens)]
 struct AppState {

@@ -356,6 +356,7 @@ dependencies = [
  "druid",
  "epub",
  "html2text",
+ "once_cell",
  "serde_json",
 ]
 
