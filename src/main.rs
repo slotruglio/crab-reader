@@ -1,7 +1,12 @@
 mod components;
 mod utils;
 
-use utils::envmanager;
+use once_cell::sync::Lazy; // 1.3.1
+use std::sync::Mutex;
+use utils::envmanager::MyEnv;
+
+//Create a global ENV variable
+static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 use components::mainwindow::{
     menu::make_menu,
@@ -34,8 +39,6 @@ fn main() -> Result<(), PlatformError> {
         .window_size((1280., 720.))
         .menu(menu);
 
-    AppLauncher::with_window(window).configure_env(|env, _| {
-		envmanager::read_env_from_json(env);
-	}).launch(app_state)?;
+    AppLauncher::with_window(window).launch(app_state)?;
     Ok(())
 }

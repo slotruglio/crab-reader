@@ -1,243 +1,142 @@
-use druid::{Env, Key, Color, FontDescriptor, FontFamily, FontStyle};
-
+use druid::{Color, FontDescriptor, FontFamily };
 use serde_json;
 
-use druid::piet::*;
+#[derive(Debug)]
+pub struct MyEnv {
+	pub theme: String,
+	pub font_color: Color,
+	pub font: FontDescriptor,
+}
 
-//function that saves the current environment to a json file
-pub fn save_env(env: &Env, path: &str) {
+impl MyEnv {
+	pub fn new() -> Self {
 
-	//open a new file, creating it if it doesn't exist
-	let file = std::fs::File::create(path).unwrap();
+		let mut new_env: Self = Self {
+			theme: "dark".to_string(),
+			font_color: Color::rgb8(0, 0, 0),
+			font: FontDescriptor::new(FontFamily::SYSTEM_UI),
+		};
 
-	//create a new json object
-	let mut json = serde_json::Map::new();
+		//Take the JSON, turn it into a MAP
+		let json = std::fs::read_to_string("env.json").unwrap();
+		let json: serde_json::Value = serde_json::from_str(&json).unwrap();
+		let json = json.as_object().unwrap();
 
-	//for each key in the environment
+		//SET theme, font_color
+		new_env.theme = json.get("theme").unwrap().as_str().unwrap().to_string();
+		new_env.font_color = MyEnv::get_color(json.get("font_color").unwrap().to_string());
 
-	for key in vec!["font".to_string(), "font_color".to_string(), "background_color".to_string()] {
-		//get the value of the key
-		match key.to_string().as_str() {
-			"font_color" => {
-				let value = env.get(Key::<Color>::new("font_color"));
+		//SET font_size, font_family
+		let font_size_string = json.get("font_size").unwrap().as_str().unwrap();
+		let font_size_numeric: f64;
 
-				json.insert(
-					key.to_string(), 
-					serde_json::Value::String(get_color_reverse(value))
-            	);
-			},
-			"font" => {
-				let value = env.get(Key::<FontDescriptor>::new("font"));
+		match font_size_string {
+			"small" => font_size_numeric = 12.0,
+			"medium" => font_size_numeric = 16.0,
+			"large" => font_size_numeric = 20.0,
+			_ => font_size_numeric = 16.0,
+		}
 
-				json.insert(
-					"font_size".to_string(), 
-					serde_json::Value::String(value.size.to_string())
-				);
-				json.insert(
-					"font_family".to_string(), 
-					serde_json::Value::String(value.family.name().to_string())
-				);
-				json.insert(
-					"font_style".to_string(), 
-					serde_json::Value::String(get_style_reverse(value.style))				
-				);
-			},
-			"background_color" => {
-				let value = env.get(Key::<Color>::new("background_color"));
+		new_env.font = FontDescriptor::new(MyEnv::get_font_family(json.get("font_family").unwrap().to_string()))
+			.with_size(font_size_numeric);
 
-				json.insert(
-					key.to_string(), 
-					serde_json::Value::String(get_color_reverse(value))
-				);
-			},
-			_ => ()
-		}	
+		return new_env;
 	}
 
-	//write the json object to the file
-	serde_json::to_writer_pretty(file, &json).unwrap();
-}
+	pub fn save_to_env(&mut self) {
+		//open a new file, creating it if it doesn't exist
+		let file = std::fs::File::create("env.json").unwrap();
 
+		//create a new json object
+		let mut json = serde_json::Map::new();
 
-//function that reads a json file and put the keys into a druid::env
-pub fn read_env_from_json(env: &mut Env) {
-    let json = std::fs::read_to_string("env.json").unwrap();
+		//add the values to the json object
+		json.insert("theme".to_string(), serde_json::Value::String(self.theme.clone()));
+		json.insert("font_color".to_string(), serde_json::Value::String(MyEnv::get_color_reverse(self.font_color.clone())));
+		json.insert("font_size".to_string(), serde_json::Value::String(MyEnv::get_font_size_reverse(self.font.size)));
+		json.insert("font_family".to_string(), serde_json::Value::String(MyEnv::get_font_family_reverse(self.font.family.clone())));
 
-    let json: serde_json::Value = serde_json::from_str(&json).unwrap();
-
-    let json = json.as_object().unwrap();
-    for (key, value) in json {
-
-        match key.as_str() {
-            "font_color" => env.set(
-                Key::<Color>::new("font_color"), 
-                get_color(value.to_string())
-            ),
-            "background_color" => env.set(
-                Key::<Color>::new("background_color"), 
-                get_color(value.to_string())
-            ),
-            "font_size" => {
-                    //get environment variable called font
-                    let font = env.try_get(Key::<FontDescriptor>::new("font"));
-                    if font.is_err() {
-                        //if it doesn't exist, create it
-                        env.set(
-                            Key::<FontDescriptor>::new("font"), 
-                            FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(value.as_f64().unwrap() as f64)
-                        );
-                    } else {
-                        //if it exists, update it
-                        env.set(
-                            Key::<FontDescriptor>::new("font"), 
-                            font.unwrap().with_size(value.as_f64().unwrap() as f64)
-                        );
-                    }  
-            },
-            "font_family" => {
-                //get environment variable called font
-                let font = env.try_get(Key::<FontDescriptor>::new("font"));
-				let mut ctx = NullRenderContext::new();
-				let text = ctx.text();
-				let text_font = text.font_family(value.as_str().unwrap())
-					.or_else(|| text.font_family(value.as_str().unwrap()))
-					.unwrap_or(FontFamily::SYSTEM_UI);
-
-                if font.is_err() {
-                    //if it doesn't exist, create it
-                    env.set(
-                        Key::<FontDescriptor>::new("font"), 
-                        FontDescriptor::new(text_font)
-                    );
-                } else {
-                    //if it exists, update it
-					
-
-                    env.set(
-                        Key::<FontDescriptor>::new("font"), 
-                        FontDescriptor::new(text_font).with_size(font.unwrap().size)
-                    ); //TODO: SOSTITUIRE MONOSPACE CON LA VERA FAMILY ATTUALE DELLA VARIABILE value AL POSTO DI MONOSPACE
-
-                }  
-            },
-            "font_style" => {
-                //get environment variable called font
-                let font = env.try_get(Key::<FontDescriptor>::new("font"));
-                if font.is_err() {
-                    //if it doesn't exist, create it
-                    env.set(
-                        Key::<FontDescriptor>::new("font"), 
-                        FontDescriptor::new(FontFamily::SYSTEM_UI).with_style(get_style(value.to_string()))
-                        
-                    );
-                } else {
-                    //if it exists, update it
-                    env.set(
-                        Key::<FontDescriptor>::new("font"), 
-                        font.unwrap().with_style(get_style(value.to_string()))
-                    );
-                }  
-            },
-            _ => ()
-        }
-        
-    }
-}
-
-fn get_color(value: String) -> druid::Color {
-    //match value against every color contained in the Color struct
-    match value.as_str() {
-        "AQUA" => druid::Color::AQUA,
-        "BLACK" => druid::Color::BLACK,
-        "BLUE" => druid::Color::BLUE,
-        "FUCHSIA" => druid::Color::FUCHSIA,
-        "GRAY" => druid::Color::GRAY,
-        "GREEN" => druid::Color::GREEN,
-        "LIME" => druid::Color::LIME,
-        "MAROON" => druid::Color::MAROON,
-        "NAVY" => druid::Color::NAVY,
-        "OLIVE" => druid::Color::OLIVE,
-        "PURPLE" => druid::Color::PURPLE,
-        "RED" => druid::Color::RED,
-        "SILVER" => druid::Color::SILVER,
-        "TEAL" => druid::Color::TEAL,
-        "WHITE" => druid::Color::WHITE,
-        "YELLOW" => druid::Color::YELLOW,
-        _ => druid::Color::BLACK
-    }
-}
-
-fn get_color_reverse(value: druid::Color) -> String {
-	//match value against every color contained in the Color struct
-	if value == druid::Color::AQUA {
-		return "AQUA".to_string();
-	} else if value == druid::Color::BLACK {
-		return "BLACK".to_string();
-	} else if value == druid::Color::BLUE {
-		return "BLUE".to_string();
-	} else if value == druid::Color::FUCHSIA {
-		return "FUCHSIA".to_string();
-	} else if value == druid::Color::GRAY {
-		return "GRAY".to_string();
-	} else if value == druid::Color::GREEN {
-		return "GREEN".to_string();
-	} else if value == druid::Color::LIME {
-		return "LIME".to_string();
-	} else if value == druid::Color::MAROON {
-		return "MAROON".to_string();
-	} else if value == druid::Color::NAVY {
-		return "NAVY".to_string();
-	} else if value == druid::Color::OLIVE {
-		return "OLIVE".to_string();
-	} else if value == druid::Color::PURPLE {
-		return "PURPLE".to_string();
-	} else if value == druid::Color::RED {
-		return "RED".to_string();
-	} else if value == druid::Color::SILVER {
-		return "SILVER".to_string();
-	} else if value == druid::Color::TEAL {
-		return "TEAL".to_string();
-	} else if value == druid::Color::WHITE {
-		return "WHITE".to_string();
-	} else if value == druid::Color::YELLOW {
-		return "YELLOW".to_string();
-	} else {
-		return "BLACK".to_string();
+		//write the json object to the file
+		serde_json::to_writer_pretty(file, &json).unwrap();
 	}
-}
 
-fn get_style(value: String) -> FontStyle {
-    match value.as_str() {
-        "ITALIC" => FontStyle::Italic,
-        "REGULAR" => FontStyle::Regular,
-        _ => FontStyle::Regular
-    }
-}
-
-fn get_style_reverse(value: FontStyle) -> String {
-	match value {
-		FontStyle::Italic => "ITALIC".to_string(),
-		FontStyle::Regular => "REGULAR".to_string(),
-		_ => "REGULAR".to_string()
+	pub fn set_property(&mut self, property: String, value: String) {
+		match property.as_str() {
+			"theme" => self.theme = value,
+			"font_color" => self.font_color = MyEnv::get_color(value),
+			"font_size" => self.font = FontDescriptor::new(self.font.family.clone()).with_size(MyEnv::get_font_size(value)),
+			"font_family" => self.font = FontDescriptor::new(MyEnv::get_font_family(value)).with_size(self.font.size),
+			_ => (),
+		}
 	}
+
+	//HELPER METHODS
+	fn get_color(value: String) -> druid::Color {
+		//match value against every color contained in the Color struct
+		match value.as_str() {
+			"BLACK" => druid::Color::BLACK,
+			"NAVY" => druid::Color::NAVY,
+			"WHITE" => druid::Color::WHITE,
+			"TEAL" => druid::Color::TEAL,
+			_ => druid::Color::BLACK
+		}
+	}
+
+	fn get_color_reverse(value: druid::Color) -> String {
+		//match value against every color contained in the Color struct
+		if value == druid::Color::BLACK {
+			return "BLACK".to_string();
+		} else if value == druid::Color::NAVY {
+			return "NAVY".to_string();
+		} else if value == druid::Color::WHITE {
+			return "WHITE".to_string();
+		} else if value == druid::Color::TEAL {
+			return "TEAL".to_string();
+		} else {
+			return "BLACK".to_string();
+		}
+	}
+
+	fn get_font_family(value: String) -> FontFamily {
+		match value.as_str() {
+			"MONOSPACE" => FontFamily::MONOSPACE,
+			"SYSTEM_UI" => FontFamily::SYSTEM_UI,
+			"SERIF" => FontFamily::SERIF,
+			"SANS_SERIF" => FontFamily::SANS_SERIF,
+			_ => FontFamily::SYSTEM_UI
+		}
+	}
+
+	fn get_font_family_reverse(value: FontFamily) -> String {
+		match value {
+			FontFamily::MONOSPACE => "MONOSPACE".to_string(),
+			FontFamily::SYSTEM_UI => "SYSTEM_UI".to_string(),
+			FontFamily::SERIF => "SERIF".to_string(),
+			FontFamily::SANS_SERIF => "SANS_SERIF".to_string(),
+			_ => "SYSTEM_UI".to_string()
+		}
+	}
+
+	fn get_font_size(value: String) -> f64 {
+		match value.as_str() {
+			"small" => 12.0,
+			"medium" => 16.0,
+			"large" => 20.0,
+			_ => 16.0,
+		}
+	}
+
+	fn get_font_size_reverse(value: f64) -> String {
+
+		if value == 12.0 {
+			return "small".to_string();
+		} else if value == 16.0 {
+			return "medium".to_string();
+		} else if value == 20.0 {
+			return "large".to_string();
+		} else {
+			return "medium".to_string();
+		}
+	}
+
 }
-
-// fn get_font_family(value: String) -> FontFamily {
-// 	match value.as_str() {
-// 		"MONOSPACE" => FontFamily::MONOSPACE,
-// 		"SYSTEM_UI" => FontFamily::SYSTEM_UI,
-// 		"SERIF" => FontFamily::SERIF,
-// 		"SANS_SERIF" => FontFamily::SANS_SERIF,
-// 		_ => FontFamily::SYSTEM_UI
-// 	}
-// }
-
-// fn get_font_family_reverse(value: FontFamily) -> String {
-// 	match value {
-// 		FontFamily::MONOSPACE => "MONOSPACE".to_string(),
-// 		FontFamily::SYSTEM_UI => "SYSTEM_UI".to_string(),
-// 		FontFamily::SERIF => "SERIF".to_string(),
-// 		FontFamily::SANS_SERIF => "SANS_SERIF".to_string(),
-// 		_ => "SYSTEM_UI".to_string()
-// 	}
-// }
