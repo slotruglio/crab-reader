@@ -134,7 +134,7 @@ pub trait BookReading {
     fn get_page_of_chapter(&self) -> Rc<String>;
 
     /// Method that returns two pages dealing with two page mode
-    fn get_dual_pages(&self) -> (Rc<String>, Rc<String>);
+    fn get_dual_pages(&self) -> Rc<(String, String)>;
 }
 
 /// Trait that describes book management functions
@@ -173,8 +173,10 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
-        let _result = epub_utils::extract_pages(path).unwrap();
-        let mut book = EpubDoc::new(path).unwrap();
+        //Save pages locally
+        let _result = epub_utils::extract_pages(path.into().as_str()).unwrap();
+        
+        let mut book = EpubDoc::new(path.into().as_str()).unwrap();
 
         let title = book.mdata("title").unwrap_or("No title".to_string());
 
@@ -185,8 +187,7 @@ impl Book {
         let cover_data = book.get_cover().unwrap_or(vec![0]);
 
         let title_to_save = format!(
-            "{}{}{}",
-            "/Users/slotruglio/pds/crab-reader/assets/covers/",
+            "assets/covers/{}{}",
             title.as_str(),
             ".png"
         );
@@ -200,20 +201,20 @@ impl Book {
         let _resp = f.write_all(&cover_data);
 
         let (chapter_number, current_page) =
-            saveload::get_page_of_chapter(String::from(path)).unwrap();
-        let chapter_text = epub_utils::get_chapter_text(path, chapter_number);
+            saveload::get_page_of_chapter(path.into()).unwrap();
+        let chapter_text = epub_utils::get_chapter_text(path.into().as_str(), chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
         todo!()
         // Book {
-        // title,
-        // author,
-        // lang,
+        // title: Rc::new(title),
+        // author: Rc::new(author),
+        // lang: Rc::new(lang),
         // cover: title_to_save,
-        // path: String::from(path),
-        // chapter_number,
-        // current_page,
-        // chapter_text,
-        // chapter_page_text,
+        // path: Rc::new(path.into()),
+        // chapter_number: chapter_number,
+        // current_page: current_page,
+        // chapter_text: Rc::new(chapter_text),
+        // chapter_page_text: Rc::new(chapter_page_text),
         // }
     }
 }
@@ -239,14 +240,14 @@ impl BookReading for Book {
 
     fn set_chapter_current_page_number(&mut self, page: usize) {
         self.current_page = page;
-        self.chapter_page_text = self.split_chapter_in_pages()[page].clone();
+        *self.chapter_page_text = self.split_chapter_in_pages()[page];
     }
 
     fn get_chapter_text(&self) -> Rc<String> {
         if self.chapter_text.len() > 0 {
             return self.chapter_text.clone();
         }
-        epub_utils::get_chapter_text(self.path.clone().as_str(), self.chapter_number)
+        epub_utils::get_chapter_text(self.path.as_str(), self.chapter_number)
     }
 
     fn get_chapter_rich_text(&self) -> RichText {
@@ -294,10 +295,10 @@ impl BookReading for Book {
 
     fn get_page_of_chapter(&self) -> Rc<String> {
         let page = self.split_chapter_in_pages();
-        page[self.current_page].clone()
+        Rc::new(page[self.current_page])
     }
 
-    fn get_dual_pages(&self) -> (String, String) {
+    fn get_dual_pages(&self) -> Rc<(String,String)> {
         let page = self.split_chapter_in_pages();
         let mut left_page = String::new();
         let mut right_page = String::new();
@@ -312,13 +313,13 @@ impl BookReading for Book {
                 left_page = page[self.current_page - 1].clone();
             }
         }
-        (left_page, right_page)
+        Rc::new((left_page, right_page))
     }
 }
 
 impl BookManagement for Book {
     fn get_path(&self) -> String {
-        self.path.clone()
+        self.path.to_string()
     }
 
     fn split_chapter_in_pages(&self) -> Vec<String> {
@@ -362,8 +363,8 @@ impl BookManagement for Book {
                         self.path.clone().as_str(),
                         self.chapter_number,
                     );
-                    self.chapter_page_text =
-                        self.split_chapter_in_pages()[self.current_page].clone();
+                    *self.chapter_page_text =
+                        self.split_chapter_in_pages()[self.current_page];
                 }
             }
         }
