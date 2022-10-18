@@ -62,17 +62,10 @@ impl BookDetails {
     }
 
     fn make_title(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font_family = CairoText::new()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
-
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::SEMI_BOLD);
-
+        let font = get_font(18.0, FontWeight::SEMI_BOLD);
         let lmargin = 7.5;
-
         let mut layout: TextLayout<String> = TextLayout::new();
+
         layout.set_text(data.get_title().to_string());
         layout.set_text_color(Color::WHITE);
         layout.set_font(font);
@@ -92,17 +85,10 @@ impl BookDetails {
     }
 
     fn make_author(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font_family = CairoText::new()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
-
-        let font = FontDescriptor::new(font_family)
-            .with_size(14.0)
-            .with_weight(FontWeight::SEMI_BOLD);
-
+        let font = get_font(14.0, FontWeight::SEMI_BOLD);
         let lmargin = 7.5;
-
         let mut layout: TextLayout<String> = TextLayout::new();
+
         layout.set_text(data.get_author().to_string());
         layout.set_text_color(Color::WHITE);
         layout.set_font(font);
@@ -122,17 +108,9 @@ impl BookDetails {
     }
 
     fn make_description(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font_family = CairoText::new()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
-
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::THIN);
-
-        let mut layout: TextLayout<String> = TextLayout::new();
-
+        let font = get_font(18.0, FontWeight::THIN);
         let lmargin = 15.0;
+        let mut layout: TextLayout<String> = TextLayout::new();
 
         layout.set_text(data.get_description().to_string());
         layout.set_text_color(Color::WHITE);
@@ -151,4 +129,14 @@ impl BookDetails {
             ctx.draw_text(layout, pos);
         }
     }
+}
+
+fn get_font(font_size: f64, font_weight: FontWeight) -> FontDescriptor {
+    let font_family = CairoText::new()
+        .font_family("URW Bookman")
+        .unwrap_or(FontFamily::SYSTEM_UI);
+
+    FontDescriptor::new(font_family)
+        .with_size(font_size)
+        .with_weight(font_weight)
 }
