@@ -292,6 +292,7 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
 
     fn set_selected_book_idx(&mut self, idx: u16) {
         if idx < self.number_of_books() as u16 {
+            self.unselect_current_book();
             self.selected_book = Some(idx);
         }
     }
@@ -305,6 +306,9 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
     }
 
     fn unselect_current_book(&mut self) {
+        if let Some(selected) = self.get_selected_book_mut() {
+            selected.unselect();
+        }
         self.selected_book = None;
     }
 }
