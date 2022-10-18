@@ -56,20 +56,20 @@ pub trait GUIBook {
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
     fn set_index(&mut self, idx: u16);
 
-    /// Returns the path to the cover image
+    /// Returns the cover image, codified as a &[u8].
+    /// The format is for now to be intended to be as RGB8
     ///
-    /// For now, the path is relative to the root of the project (relax this constraint?)
-    fn get_cover_path(&self) -> Rc<String>;
+    fn get_cover(&self) -> Rc<&[u8]>;
 
-    /// Builder pattern for cover path
+    /// Builder method for the cover image, codified as a &[u8].
+    /// The format is for now to be intended to be as RGB8
     ///
-    /// For now, the path is relative to the root of the project (relax this constraint?)
-    fn with_cover_path(self, cover_path: impl Into<String>) -> Self;
+    fn with_cover(self, img: &[u8]) -> Self;
 
-    /// Sets the path to the cover image
+    /// Sets the he cover image, codified as a &[u8].
+    /// The format is for now to be inteded as RGB8
     ///
-    /// For now, the path is relative to the root of the project (relax this constraint?)
-    fn set_cover_path(&mut self, cover_path: impl Into<String>);
+    fn set_cover(&mut self, img: &[u8]);
 
     /// Returns the description (i.e, like a synopsis for the book)
     fn get_description(&self) -> Rc<String>;
@@ -433,31 +433,6 @@ impl GUIBook for Book {
         self.idx = idx
     }
 
-    fn get_cover_path(&self) -> Rc<String> {
-        self.cover_path.clone()
-    }
-
-    fn with_cover_path(mut self, cover_path: impl Into<String>) -> Self {
-        self.set_cover_path(cover_path);
-        self
-    }
-
-    fn set_cover_path(&mut self, cover_path: impl Into<String>) {
-        // TODO: Set to "" if path not found
-        let mut path = "".into();
-        if let Ok(cwd) = std::env::current_dir() {
-            let file_path = cwd.join("src").join("covers").join(cover_path.into());
-            if let Some(file_path) = file_path.to_str() {
-                path = String::from(file_path);
-            }
-        }
-        self.cover_path = Rc::new(path);
-    }
-
-    fn get_description(&self) -> Rc<String> {
-        self.description.clone()
-    }
-
     fn with_description(mut self, description: impl Into<String>) -> Self {
         self.set_description(description);
         self
@@ -481,5 +456,17 @@ impl GUIBook for Book {
 
     fn unselect(&mut self) {
         self.set_selected(false);
+    }
+
+    fn get_cover(&self) -> Rc<&[u8]> {
+        todo!()
+    }
+
+    fn with_cover(self, img: &[u8]) -> Self {
+        todo!()
+    }
+
+    fn set_cover(&mut self, img: &[u8]) {
+        todo!()
     }
 }
