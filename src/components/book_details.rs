@@ -8,16 +8,15 @@ use druid::{
 use druid::{RenderContext, TextLayout};
 
 use super::{
-    book::GUIBook,
+    book::{Book, GUIBook},
     library::GUILibrary,
-    mockup::{MockupBook, MockupLibrary},
+    mockup::MockupLibrary,
 };
 
 pub struct BookDetails {
     y_offset: f64,
 }
 
-type Book = MockupBook; // For compat
 type Library = MockupLibrary<Book>;
 
 impl Widget<Library> for BookDetails {
