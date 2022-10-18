@@ -138,7 +138,7 @@ pub trait BookReading {
 /// not related directly to the reading
 pub trait BookManagement {
     /// Method that returns the path of the book
-    fn get_path(&self) -> String;
+    fn get_path(&self) -> Rc<String>;
 
     /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
     /// and returns a vector of strings. Each string is a page of the chapter
@@ -170,8 +170,9 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
-        let _result = epub_utils::extract_pages(path.into().as_str()).unwrap();
-        let mut book = EpubDoc::new(path.into().as_str()).unwrap();
+        let path: String = path.into();
+        let _result = epub_utils::extract_pages(path.as_str()).unwrap();
+        let mut book = EpubDoc::new(path.as_str()).unwrap();
 
         let title = book.mdata("title").unwrap_or("No title".to_string());
 
@@ -197,7 +198,7 @@ impl Book {
         let _resp = f.write_all(&cover_data);
 
         let (chapter_number, current_page) = saveload::get_page_of_chapter(path).unwrap();
-        let chapter_text = epub_utils::get_chapter_text(path, chapter_number);
+        let chapter_text = epub_utils::get_chapter_text(path.as_str(), chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
         todo!()
         // Book {
@@ -313,7 +314,7 @@ impl BookReading for Book {
 }
 
 impl BookManagement for Book {
-    fn get_path(&self) -> String {
+    fn get_path(&self) -> Rc<String> {
         self.path.clone()
     }
 
