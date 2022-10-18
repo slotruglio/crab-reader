@@ -151,7 +151,7 @@ pub trait BookManagement {
 
 /// Struct that models EPUB file
 /// Metadata are attributes
-#[derive(Clone, Data, Lens)]
+#[derive(Clone, PartialEq, Data, Lens)]
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
