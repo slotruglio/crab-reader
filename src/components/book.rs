@@ -24,37 +24,37 @@ pub trait GUIBook {
     fn set_author(&mut self, author: impl Into<String>);
 
     /// Returns the number of pages
-    fn get_number_of_pages(&self) -> u16;
+    fn get_number_of_pages(&self) -> usize;
 
     /// Builder pattern for number of pages
-    fn with_number_of_pages(self, npages: u16) -> Self;
+    fn with_number_of_pages(self, npages: usize) -> Self;
 
     /// Sets the number of pages for the book
-    fn set_number_of_pages(&mut self, npages: u16);
+    fn set_number_of_pages(&mut self, npages: usize);
 
     /// Returns the number of read pages
-    fn get_number_of_read_pages(&self) -> u16;
+    fn get_number_of_read_pages(&self) -> usize;
 
     /// Builder pattern for number of read pages
-    fn with_number_of_read_pages(self, read_pages: u16) -> Self;
+    fn with_number_of_read_pages(self, read_pages: usize) -> Self;
 
     /// Sets the number of read pages for the book
-    fn set_number_of_read_pages(&mut self, read_pages: u16);
+    fn set_number_of_read_pages(&mut self, read_pages: usize);
 
     /// Returns the index of the book.
     ///
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn get_index(&self) -> u16;
+    fn get_index(&self) -> usize;
 
     /// Builder pattern for index
     ///
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn with_index(self, idx: u16) -> Self;
+    fn with_index(self, idx: usize) -> Self;
 
     /// Sets the index of the book.
     ///
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn set_index(&mut self, idx: u16);
+    fn set_index(&mut self, idx: usize);
 
     /// Returns the cover image, codified as a &[u8].
     /// The format is for now to be intended to be as RGB8
@@ -394,43 +394,43 @@ impl GUIBook for Book {
         self.author = Rc::new(author.into());
     }
 
-    fn get_number_of_pages(&self) -> u16 {
+    fn get_number_of_pages(&self) -> usize {
         self.npages
     }
 
-    fn with_number_of_pages(mut self, npages: u16) -> Self {
+    fn with_number_of_pages(mut self, npages: usize) -> Self {
         self.set_number_of_pages(npages);
         self
     }
 
-    fn set_number_of_pages(&mut self, npages: u16) {
+    fn set_number_of_pages(&mut self, npages: usize) {
         self.npages = npages;
     }
 
-    fn get_number_of_read_pages(&self) -> u16 {
+    fn get_number_of_read_pages(&self) -> usize {
         self.read_pages
     }
 
-    fn with_number_of_read_pages(mut self, read_pages: u16) -> Self {
+    fn with_number_of_read_pages(mut self, read_pages: usize) -> Self {
         self.set_number_of_read_pages(read_pages);
         self
     }
 
-    fn set_number_of_read_pages(&mut self, read_pages: u16) {
+    fn set_number_of_read_pages(&mut self, read_pages: usize) {
         self.read_pages = read_pages;
     }
 
-    fn get_index(&self) -> u16 {
+    fn get_index(&self) -> usize {
         self.idx
     }
 
-    fn with_index(mut self, idx: u16) -> Self {
+    fn with_index(mut self, idx: usize) -> Self {
         self.set_index(idx);
         self
     }
 
-    fn set_index(&mut self, idx: u16) {
-        self.idx = idx
+    fn set_index(&mut self, idx: usize) {
+        self.idx = idx as usize
     }
 
     fn with_description(mut self, description: impl Into<String>) -> Self {
