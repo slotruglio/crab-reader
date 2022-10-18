@@ -6,6 +6,7 @@ use std::{
     error,
     fs::{File, OpenOptions},
     io::{Read, Write},
+    rc::Rc,
 };
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
@@ -180,13 +181,13 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
     // try to read from txt files (where edited text is saved)
     if let Ok(text) = get_chapter_txt(folder_name, chapter_number) {
         println!("reading from txt file");
-        return text;
+        return Rc::from(text);
     }
 
     // try to read from html files
     if let Ok(text) = get_chapter_html(folder_name, chapter_number) {
         println!("reading from html files");
-        return text;
+        return Rc::from(text);
     }
 
     // if it fails, read from epub
@@ -195,8 +196,8 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
         book.set_current_page(chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
         let text = html2text::from_read(content.as_bytes(), 100);
-        text
+        return Rc::from(text);
     } else {
-        String::default()
+        return Rc::from(String::from(""));
     }
 }
