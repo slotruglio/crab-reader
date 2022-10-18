@@ -163,7 +163,6 @@ pub struct Book {
     title: Rc<String>,
     author: Rc<String>,
     lang: Rc<String>,
-    cover_path: Rc<String>,
     path: Rc<String>,
     chapter_text: Rc<String>,
     chapter_page_text: Rc<String>,
@@ -173,7 +172,7 @@ pub struct Book {
 impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
-    pub fn new() -> Book {
+    pub fn new(path: impl Into<String>) -> Book {
         let _result = epub_utils::extract_pages(path).unwrap();
         let mut book = EpubDoc::new(path).unwrap();
 
