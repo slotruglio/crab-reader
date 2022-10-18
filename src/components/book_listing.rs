@@ -29,13 +29,15 @@ impl BookListing {
     }
 
     fn paint_num_pages(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = CairoText::new()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
+        // let font_family = CairoText::new()
+        // .font_family("URW Bookman")
+        // .unwrap_or(FontFamily::SYSTEM_UI);
 
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::NORMAL);
+        // let font = FontDescriptor::new(font_family)
+        // .with_size(18.0)
+        // .with_weight(FontWeight::NORMAL);
+
+        todo!("Work around CairoText");
 
         let mut layout = TextLayout::new();
 
@@ -46,7 +48,7 @@ impl BookListing {
         ));
 
         layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
+        // layout.set_font(font);
         layout.set_wrap_width(ctx.size().width / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
@@ -63,18 +65,19 @@ impl BookListing {
     }
 
     fn paint_title(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = CairoText::new()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
+        // let font_family = CairoText::new()
+        // .font_family("URW Bookman")
+        // .unwrap_or(FontFamily::SYSTEM_UI);
 
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::NORMAL);
+        // let font = FontDescriptor::new(font_family)
+        // .with_size(18.0)
+        // .with_weight(FontWeight::NORMAL);
+        todo!("Work around CairoText");
 
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
         layout.set_text_color(Color::WHITE);
-        layout.set_font(font.clone());
+        // layout.set_font(font.clone());
         layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
