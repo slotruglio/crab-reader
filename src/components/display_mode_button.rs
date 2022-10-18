@@ -1,9 +1,8 @@
 use druid::{
-    piet::Text,
     BoxConstraints, Color,
     Cursor::{self},
-    Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, RenderContext, Size, TextLayout, UpdateCtx, Widget,
+    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, Size,
+    TextLayout, UpdateCtx, Widget,
 };
 
 #[derive(Clone, Data, PartialEq)]
@@ -37,18 +36,19 @@ impl DisplayModeButton {
             DisplayMode::Cover => "Passa a Lista",
         };
 
-        let font_family = CairoText::new()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
+        // let font_family = CairoText::new()
+        // .font_family("URW Bookman")
+        // .unwrap_or(FontFamily::SYSTEM_UI);
 
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::NORMAL);
+        // let font = FontDescriptor::new(font_family)
+        // .with_size(18.0)
+        // .with_weight(FontWeight::NORMAL);
+        todo!("Work around CairoText");
 
         let mut layout: TextLayout<String> = TextLayout::new();
         layout.set_text(text.into());
         layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
+        // layout.set_font(font);
         layout.set_wrap_width(ctx.size().width - 2.5);
         layout.rebuild_if_needed(ctx.text(), env);
 
