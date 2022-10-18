@@ -155,6 +155,7 @@ pub trait BookManagement {
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
+    number_of_pages: usize,
     idx: usize,
     selected: bool,
     title: Rc<String>,
@@ -310,8 +311,8 @@ impl BookReading for Book {
 }
 
 impl BookManagement for Book {
-    fn get_path(&self) -> String {
-        self.path.to_string()
+    fn get_path(&self) -> Rc<String> {
+        self.path.clone()
     }
 
     fn split_chapter_in_pages(&self) -> Vec<String> {
@@ -390,20 +391,20 @@ impl GUIBook for Book {
     }
 
     fn get_number_of_pages(&self) -> usize {
-        self.npages
+        self.number_of_pages
     }
 
-    fn with_number_of_pages(mut self, npages: usize) -> Self {
-        self.set_number_of_pages(npages);
+    fn with_number_of_pages(mut self, number_of_pages: usize) -> Self {
+        self.set_number_of_pages(number_of_pages);
         self
     }
 
-    fn set_number_of_pages(&mut self, npages: usize) {
-        self.npages = npages;
+    fn set_number_of_pages(&mut self, number_of_pages: usize) {
+        self.number_of_pages = number_of_pages;
     }
 
     fn get_number_of_read_pages(&self) -> usize {
-        self.read_pages
+        self.current_page
     }
 
     fn with_number_of_read_pages(mut self, read_pages: usize) -> Self {
@@ -412,7 +413,7 @@ impl GUIBook for Book {
     }
 
     fn set_number_of_read_pages(&mut self, read_pages: usize) {
-        self.read_pages = read_pages;
+        self.current_page = read_pages;
     }
 
     fn get_index(&self) -> usize {
@@ -462,6 +463,10 @@ impl GUIBook for Book {
     }
 
     fn set_cover(&mut self, img: &[u8]) {
+        todo!()
+    }
+
+    fn get_description(&self) -> Rc<String> {
         todo!()
     }
 }
