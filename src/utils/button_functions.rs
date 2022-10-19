@@ -11,7 +11,7 @@ pub fn edit_button(ctx: &mut EventCtx, book: &mut Book, text: String, is_editing
 
     // text is the "old page"
     if is_editing {
-        text = book.get_page_of_chapter().clone();
+        text = book.get_page_of_chapter().to_string();
     }
 
     ctx.request_paint();
