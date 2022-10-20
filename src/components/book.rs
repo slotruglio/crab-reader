@@ -155,7 +155,6 @@ pub struct Book {
     author: Rc<String>,
     lang: Rc<String>,
     path: Rc<String>,
-    cover_u8: Rc<[u8]>,
     chapter_text: Rc<String>,
     chapter_page_text: Rc<String>,
     description: Rc<String>,
@@ -167,7 +166,6 @@ impl Book {
     pub fn new(path: impl Into<String>) -> Book {
         let path = path.into();
         let path_str = path.as_str();
-        let mut cover_data: Rc<[u8]> = Rc::from([]);
 
         epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
         let mut book = EpubDoc::new(&path_str).expect("EpubDoc::new() failed in Book::new()");
@@ -175,16 +173,6 @@ impl Book {
         let title = book.mdata("title").unwrap_or("No title".into());
         let author = book.mdata("creator").unwrap_or("No author".into());
         let lang = book.mdata("language").unwrap_or("No lang".into());
-
-        let binding = book.get_cover().unwrap_or(vec![]);
-        let reader = ImageReader::new(ImageCursor::new(&binding)).with_guessed_format();
-        if let Ok(reader) = reader {
-            if let Ok(image) = reader.decode() {
-                let thumbnail = image.thumbnail_exact(150u32, 250u32);
-                let rgb = thumbnail.to_rgb8().to_vec();
-                cover_data = Rc::from(rgb);
-            }
-        }
 
         let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
@@ -203,7 +191,6 @@ impl Book {
             current_page: 0,                                    // How to recvoer?
             chapter_text,
             chapter_page_text: chapter_page_text.into(),
-            cover_u8: cover_data,
         }
     }
 }
@@ -452,10 +439,19 @@ impl GUIBook for Book {
     }
 
     fn build_cover(&mut self) -> Result<Rc<[u8]>, String> {
-        todo!()
+        self.build_cover_with_size(150, 250)
     }
 
     fn build_cover_with_size(&mut self, width: u32, height: u32) -> Result<Rc<[u8]>, String> {
-        todo!()
+        let epub_path = self.get_path();
+        let epub = EpubDoc::new(epub_path.as_str()).map_err(|e| e.to_string())?;
+        let cover = epub.get_cover().map_err(|e| e.to_string())?;
+        let reader = ImageReader::new(ImageCursor::new(cover))
+            .with_guessed_format()
+            .map_err(|e| e.to_string())?;
+        let image = reader.decode().map_err(|e| e.to_string())?;
+        let thumbnail = image.thumbnail_exact(width, height);
+        let rgb = thumbnail.to_rgb8().to_vec();
+        Ok(rgb.into())
     }
 }
