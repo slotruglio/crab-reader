@@ -97,10 +97,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 }
 
 fn main() -> Result<(), PlatformError> {
-    let mut crab_state = CrabReaderState::default();
-
-    let book = Book::new("src/epubs/bibbia_la_sacra_bibbia.epub");
-
+    let crab_state = CrabReaderState::default();
     AppLauncher::with_window(WindowDesc::new(build_ui).title("CrabReader")).launch(crab_state)?;
     Ok(())
 }
