@@ -19,7 +19,7 @@ pub fn edit_button(
 
     // text is the "old page"
     if is_editing {
-        text = *book.get_page_of_chapter().clone();
+        text = book.get_page_of_chapter().to_string();
     }
 
     ctx.request_paint();
@@ -58,7 +58,7 @@ pub fn change_page(
         }
         // function to save the page that the user is reading
         saveload::save_page_of_chapter(
-            *book.get_path().clone(),
+            book.get_path().to_string(),
             book.get_chapter_number(),
             book.get_current_page_number(),
         )
