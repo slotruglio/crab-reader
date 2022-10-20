@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use druid::{im::Vector, Data, Lens};
 
 use super::{
@@ -11,30 +13,47 @@ pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     selected_book: Option<usize>,
 }
 
-impl GUILibrary<Book> for MockupLibrary<Book> {
-    fn new() -> Self {
-        if let Ok(cwd) = std::env::current_dir() {
-            let dir = cwd.join("src").join("epubs");
-            if let Ok(files) = std::fs::read_dir(dir) {
-                let books: Vector<Book> = files
-                    .filter(|file| file.is_ok())
-                    .map(|file| file.unwrap().path())
-                    .filter(|filename| filename.extension().unwrap() == "epub")
-                    .map(|path| path.to_str().unwrap().to_string())
-                    .map(|path| Book::new(path))
-                    .collect();
-                Self {
-                    books,
-                    selected_book: None,
-                }
-            } else {
-                panic!("Couldn't list `epubs` dir in {}", cwd.display());
+impl MockupLibrary<Book> {
+    pub fn new() -> Self {
+        let mut lib = Self {
+            books: Vector::new(),
+            selected_book: None,
+        };
+
+        if let Ok(paths) = lib.epub_paths() {
+            for path in paths {
+                let path: String = path.to_str().unwrap().to_string();
+                lib.add_book(path);
             }
-        } else {
-            panic!("Cannot get current working directory");
         }
+        lib
     }
 
+    pub fn epub_dir(&self) -> Result<PathBuf, String> {
+        let path = std::env::current_dir()
+            .map_err(|e| e.to_string())?
+            .join("src")
+            .join("epubs");
+        return if path.is_dir() {
+            Ok(path)
+        } else {
+            Err(format!("Dir {} not found", path.display()))
+        };
+    }
+
+    pub fn epub_paths(&self) -> Result<Vector<PathBuf>, String> {
+        let dir = self.epub_dir()?;
+        let files = std::fs::read_dir(dir).map_err(|e| e.to_string())?;
+        let vec: Vector<PathBuf> = files
+            .filter(|file| file.is_ok())
+            .map(|file| file.unwrap().path())
+            .filter(|filename| filename.extension().unwrap() == "epub")
+            .collect();
+        Ok(vec)
+    }
+}
+
+impl GUILibrary<Book> for MockupLibrary<Book> {
     fn add_book(&mut self, path: impl Into<String>) {
         let book = Book::new(path.into()).with_index(self.books.len());
         self.books.push_back(book);
