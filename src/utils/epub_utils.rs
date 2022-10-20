@@ -188,12 +188,11 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
     }
     // if it fails, read from epub
     else if let Ok(mut book) = EpubDoc::new(path) {
-        println!("reading from epub file");
+        println!("DEBUG: reading from epub file");
         book.set_current_page(chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
         let text = html2text::from_read(content.as_bytes(), 100);
         text_rc = text.into()
     }
-
     text_rc
 }

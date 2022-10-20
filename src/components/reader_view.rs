@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use druid::widget::{Flex, Label, LineBreaking, Scroll, TextBox};
 use druid::{LensExt, Widget, WidgetExt};
 
