@@ -187,15 +187,8 @@ impl Book {
 
         let cover_data = book.get_cover().unwrap_or(vec![0]);
 
-        let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
-
-        println!("DEBUG: Saving cover to {}", title_to_save);
-
-        let copy_title = title_to_save.clone();
-        let f = File::create(copy_title);
-        assert!(f.is_ok());
-        let mut f = f.unwrap();
-        let _resp = f.write_all(&cover_data);
+        let cover_path = epub_utils::save_book_cover(&cover_data, &title).unwrap();
+        println!("DEBUG: Saving cover to {}", &cover_path);
 
         let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
@@ -205,7 +198,7 @@ impl Book {
         // title: Rc::new(title),
         // author: Rc::new(author),
         // lang: Rc::new(lang),
-        // cover: title_to_save,
+        // cover: Rc::new(cover_path),
         // path: Rc::new(path.into()),
         // chapter_number: chapter_number,
         // current_page: current_page,
