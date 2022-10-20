@@ -1,4 +1,3 @@
-use crate::components::book::book_derived_lenses::description;
 use crate::utils::{epub_utils, saveload, text_descriptor};
 use std::rc::Rc;
 use std::string::String;
@@ -60,7 +59,7 @@ pub trait GUIBook {
     /// Returns the cover image, codified as a &[u8].
     /// The format is for now to be intended to be as RGB8
     ///
-    fn get_cover(&self) -> Rc<&[u8]>;
+    fn get_cover(&self) -> Rc<[u8]>;
 
     /// Builder method for the cover image, codified as a &[u8].
     /// The format is for now to be intended to be as RGB8
@@ -163,6 +162,7 @@ pub struct Book {
     author: Rc<String>,
     lang: Rc<String>,
     path: Rc<String>,
+    cover_u8: Rc<[u8]>,
     chapter_text: Rc<String>,
     chapter_page_text: Rc<String>,
     description: Rc<String>,
@@ -183,7 +183,7 @@ impl Book {
         let lang = book.mdata("language").unwrap_or("No lang".into());
 
         let binding = book.get_cover().unwrap_or(vec![0]);
-        let cover_data = Box::new(binding.as_slice());
+        let cover_data: Rc<[u8]> = binding.as_slice().into();
 
         let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
 
@@ -213,6 +213,7 @@ impl Book {
             current_page: 0,                                    // How to recvoer?
             chapter_text,
             chapter_page_text: chapter_page_text.into(),
+            cover_u8: cover_data,
         }
     }
 }
@@ -458,19 +459,21 @@ impl GUIBook for Book {
         self.set_selected(false);
     }
 
-    fn get_cover(&self) -> Rc<&[u8]> {
-        todo!()
+    fn get_cover(&self) -> Rc<[u8]> {
+        self.cover_u8.clone()
     }
 
-    fn with_cover(self, img: &[u8]) -> Self {
-        todo!()
+    fn with_cover(mut self, img: &[u8]) -> Self {
+        self.set_cover(img);
+        self
     }
 
     fn set_cover(&mut self, img: &[u8]) {
-        todo!()
+        let rc = img.to_vec().into();
+        self.cover_u8 = rc;
     }
 
     fn get_description(&self) -> Rc<String> {
-        todo!()
+        self.description.clone()
     }
 }
