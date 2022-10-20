@@ -9,7 +9,7 @@ pub trait GUILibrary<B: GUIBook + PartialEq + Data> {
     fn new() -> Self;
 
     /// Add a book to the library
-    fn add_book(&mut self, book: &B);
+    fn add_book(&mut self, book: impl Into<String>);
 
     /// Remove a book from the library
     /// The `idx` argument is the index in the array (relax this constraint??)
