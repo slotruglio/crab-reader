@@ -259,8 +259,9 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
                 let books: Vector<Book> = files
                     .filter(|file| file.is_ok())
                     .map(|file| file.unwrap().path())
-                    .filter(|filename| filename.ends_with(".epub"))
-                    .map(|file| Book::new(file.to_string_lossy()))
+                    .filter(|filename| filename.extension().unwrap() == "epub")
+                    .map(|path| path.to_str().unwrap().to_string())
+                    .map(|path| Book::new(path))
                     .collect();
                 Self {
                     books,
