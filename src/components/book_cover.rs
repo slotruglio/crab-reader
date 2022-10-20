@@ -1,6 +1,7 @@
 use druid::{
     image::io::Reader as ImageReader,
     piet::{ImageFormat, InterpolationMode, Text},
+    widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
@@ -109,7 +110,8 @@ impl BookCover {
     }
 
     fn paint_book_title(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = CairoText::new()
+        let font_family = ctx
+            .text()
             .font_family("URW Bookman")
             .unwrap_or(FontFamily::SYSTEM_UI);
 
@@ -120,7 +122,7 @@ impl BookCover {
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
         layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
+        // layout.set_font(font);
         layout.set_wrap_width(ctx.size().width - 2.5);
         layout.rebuild_if_needed(ctx.text(), env);
 

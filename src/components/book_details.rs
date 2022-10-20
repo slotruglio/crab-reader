@@ -1,23 +1,20 @@
-use std::sync::Arc;
-
+use druid::piet::Text;
 use druid::{
-    piet::{FontFamilyInner, Text},
     BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx,
     LifeCycle, LifeCycleCtx, PaintCtx, Point, UpdateCtx, Widget,
 };
 use druid::{RenderContext, TextLayout};
 
 use super::{
-    book::GUIBook,
+    book::{Book, GUIBook},
     library::GUILibrary,
-    mockup::{MockupBook, MockupLibrary},
+    mockup::MockupLibrary,
 };
 
 pub struct BookDetails {
     y_offset: f64,
 }
 
-type Book = MockupBook; // For compat
 type Library = MockupLibrary<Book>;
 
 impl Widget<Library> for BookDetails {
@@ -64,7 +61,7 @@ impl BookDetails {
     }
 
     fn make_title(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font = get_font(18.0, FontWeight::SEMI_BOLD);
+        let font = get_font(ctx, 18.0, FontWeight::SEMI_BOLD);
         let lmargin = 7.5;
         let mut layout: TextLayout<String> = TextLayout::new();
 
@@ -87,7 +84,7 @@ impl BookDetails {
     }
 
     fn make_author(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font = get_font(14.0, FontWeight::SEMI_BOLD);
+        let font = get_font(ctx, 14.0, FontWeight::SEMI_BOLD);
         let lmargin = 7.5;
         let mut layout: TextLayout<String> = TextLayout::new();
 
@@ -110,7 +107,7 @@ impl BookDetails {
     }
 
     fn make_description(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font = get_font(18.0, FontWeight::THIN);
+        let font = get_font(ctx, 18.0, FontWeight::THIN);
         let lmargin = 15.0;
         let mut layout: TextLayout<String> = TextLayout::new();
 
@@ -133,12 +130,11 @@ impl BookDetails {
     }
 }
 
-fn get_font(font_size: f64, font_weight: FontWeight) -> FontDescriptor {
-    // let font_family = CairoText::new()
-    // .font_family("URW Bookman")
-    // .unwrap_or(FontFamily::SYSTEM_UI);
-    let font_family = FontFamilyInner::Named(Arc::from("URW Bookman"));
-    let ff = FontFamily::new(font_family);
+fn get_font(ctx: &mut PaintCtx, font_size: f64, font_weight: FontWeight) -> FontDescriptor {
+    let font_family = ctx
+        .text()
+        .font_family("URW Bookman")
+        .unwrap_or(FontFamily::SYSTEM_UI);
 
     FontDescriptor::new(font_family)
         .with_size(font_size)

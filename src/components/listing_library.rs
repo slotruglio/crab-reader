@@ -4,12 +4,11 @@ use druid::{
 };
 
 use super::{
+    book::Book,
     book_listing::BookListing,
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
-    mockup::{MockupBook, MockupLibrary},
+    mockup::MockupLibrary,
 };
-
-type Book = MockupBook; // For compat
 type Library = MockupLibrary<Book>;
 
 pub struct ListLibrary {
@@ -30,8 +29,7 @@ impl ListLibrary {
     }
 
     #[allow(dead_code)]
-    pub fn remove_book(&mut self, idx: u16) {
-        let idx = idx as usize;
+    pub fn remove_book(&mut self, idx: usize) {
         if let Some(_) = self.children.get(idx) {
             self.children.remove(idx);
         }
@@ -41,7 +39,6 @@ impl ListLibrary {
 impl Widget<Library> for ListLibrary {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book_mut(idx) {
                 inner.event(ctx, event, book, env);
             }
@@ -70,7 +67,7 @@ impl Widget<Library> for ListLibrary {
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
         while data.number_of_books() > self.children.len() {
-            let idx = self.children.len() as u16;
+            let idx = self.children.len();
             if let Some(book) = data.get_book(idx) {
                 self.add_book(book);
                 ctx.children_changed();
@@ -78,7 +75,6 @@ impl Widget<Library> for ListLibrary {
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book(idx) {
                 inner.lifecycle(ctx, event, book, env);
             }
@@ -87,7 +83,6 @@ impl Widget<Library> for ListLibrary {
 
     fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book(idx) {
                 inner.update(ctx, book, env);
             }
@@ -107,7 +102,6 @@ impl Widget<Library> for ListLibrary {
         let child_spacing = 10.0;
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            let idx = idx as u16;
             if let Some(book) = data.get_book(idx) {
                 let size = (w, child_h).into();
                 let bc = BoxConstraints::tight(size);
@@ -126,7 +120,7 @@ impl Widget<Library> for ListLibrary {
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            if let Some(book) = data.get_book(idx as u16) {
+            if let Some(book) = data.get_book(idx) {
                 inner.paint(ctx, book, env);
             }
         }

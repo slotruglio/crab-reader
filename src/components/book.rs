@@ -5,9 +5,6 @@ use std::string::String;
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
 pub trait GUIBook {
-    /// Empty/Default constructor
-    fn new() -> Self;
-
     /// Returns the title
     fn get_title(&self) -> Rc<String>;
 
@@ -27,52 +24,52 @@ pub trait GUIBook {
     fn set_author(&mut self, author: impl Into<String>);
 
     /// Returns the number of pages
-    fn get_number_of_pages(&self) -> u16;
+    fn get_number_of_pages(&self) -> usize;
 
     /// Builder pattern for number of pages
-    fn with_number_of_pages(self, npages: u16) -> Self;
+    fn with_number_of_pages(self, npages: usize) -> Self;
 
     /// Sets the number of pages for the book
-    fn set_number_of_pages(&mut self, npages: u16);
+    fn set_number_of_pages(&mut self, npages: usize);
 
     /// Returns the number of read pages
-    fn get_number_of_read_pages(&self) -> u16;
+    fn get_number_of_read_pages(&self) -> usize;
 
     /// Builder pattern for number of read pages
-    fn with_number_of_read_pages(self, read_pages: u16) -> Self;
+    fn with_number_of_read_pages(self, read_pages: usize) -> Self;
 
     /// Sets the number of read pages for the book
-    fn set_number_of_read_pages(&mut self, read_pages: u16);
+    fn set_number_of_read_pages(&mut self, read_pages: usize);
 
     /// Returns the index of the book.
     ///
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn get_index(&self) -> u16;
+    fn get_index(&self) -> usize;
 
     /// Builder pattern for index
     ///
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn with_index(self, idx: u16) -> Self;
+    fn with_index(self, idx: usize) -> Self;
 
     /// Sets the index of the book.
     ///
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn set_index(&mut self, idx: u16);
+    fn set_index(&mut self, idx: usize);
 
-    /// Returns the path to the cover image
+    /// Returns the cover image, codified as a &[u8].
+    /// The format is for now to be intended to be as RGB8
     ///
-    /// For now, the path is relative to the root of the project (relax this constraint?)
-    fn get_cover_path(&self) -> Rc<String>;
+    fn get_cover(&self) -> Rc<&[u8]>;
 
-    /// Builder pattern for cover path
+    /// Builder method for the cover image, codified as a &[u8].
+    /// The format is for now to be intended to be as RGB8
     ///
-    /// For now, the path is relative to the root of the project (relax this constraint?)
-    fn with_cover_path(self, cover_path: impl Into<String>) -> Self;
+    fn with_cover(self, img: &[u8]) -> Self;
 
-    /// Sets the path to the cover image
+    /// Sets the he cover image, codified as a &[u8].
+    /// The format is for now to be inteded as RGB8
     ///
-    /// For now, the path is relative to the root of the project (relax this constraint?)
-    fn set_cover_path(&mut self, cover_path: impl Into<String>);
+    fn set_cover(&mut self, img: &[u8]);
 
     /// Returns the description (i.e, like a synopsis for the book)
     fn get_description(&self) -> Rc<String>;
@@ -141,7 +138,7 @@ pub trait BookReading {
 /// not related directly to the reading
 pub trait BookManagement {
     /// Method that returns the path of the book
-    fn get_path(&self) -> String;
+    fn get_path(&self) -> Rc<String>;
 
     /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
     /// and returns a vector of strings. Each string is a page of the chapter
@@ -154,10 +151,11 @@ pub trait BookManagement {
 
 /// Struct that models EPUB file
 /// Metadata are attributes
-#[derive(Clone, Data, Lens)]
+#[derive(Clone, PartialEq, Data, Lens)]
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
+    number_of_pages: usize,
     idx: usize,
     selected: bool,
     title: Rc<String>,
@@ -175,7 +173,7 @@ impl Book {
     pub fn new(path: impl Into<String>) -> Book {
         //Save pages locally
         let _result = epub_utils::extract_pages(path.into().as_str()).unwrap();
-        
+
         let mut book = EpubDoc::new(path.into().as_str()).unwrap();
 
         let title = book.mdata("title").unwrap_or("No title".to_string());
@@ -186,11 +184,7 @@ impl Book {
 
         let cover_data = book.get_cover().unwrap_or(vec![0]);
 
-        let title_to_save = format!(
-            "assets/covers/{}{}",
-            title.as_str(),
-            ".png"
-        );
+        let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
 
         println!("DEBUG: Saving cover to {}", title_to_save);
 
@@ -200,8 +194,7 @@ impl Book {
         let mut f = f.unwrap();
         let _resp = f.write_all(&cover_data);
 
-        let (chapter_number, current_page) =
-            saveload::get_page_of_chapter(path.into()).unwrap();
+        let (chapter_number, current_page) = saveload::get_page_of_chapter(path.into()).unwrap();
         let chapter_text = epub_utils::get_chapter_text(path.into().as_str(), chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
         todo!()
@@ -298,7 +291,7 @@ impl BookReading for Book {
         Rc::new(page[self.current_page])
     }
 
-    fn get_dual_pages(&self) -> Rc<(String,String)> {
+    fn get_dual_pages(&self) -> Rc<(String, String)> {
         let page = self.split_chapter_in_pages();
         let mut left_page = String::new();
         let mut right_page = String::new();
@@ -318,8 +311,8 @@ impl BookReading for Book {
 }
 
 impl BookManagement for Book {
-    fn get_path(&self) -> String {
-        self.path.to_string()
+    fn get_path(&self) -> Rc<String> {
+        self.path.clone()
     }
 
     fn split_chapter_in_pages(&self) -> Vec<String> {
@@ -363,8 +356,7 @@ impl BookManagement for Book {
                         self.path.clone().as_str(),
                         self.chapter_number,
                     );
-                    *self.chapter_page_text =
-                        self.split_chapter_in_pages()[self.current_page];
+                    *self.chapter_page_text = self.split_chapter_in_pages()[self.current_page];
                 }
             }
         }
@@ -372,19 +364,6 @@ impl BookManagement for Book {
 }
 
 impl GUIBook for Book {
-    fn new() -> Self {
-        Self {
-            npages: 0,
-            read_pages: 0,
-            idx: 0,
-            selected: false,
-            title: Rc::new("".to_string()),
-            author: Rc::new("".to_string()),
-            cover_path: Rc::new("".to_string()),
-            description: Rc::new("".to_string()),
-        }
-    }
-
     fn get_title(&self) -> Rc<String> {
         self.title.clone()
     }
@@ -411,68 +390,43 @@ impl GUIBook for Book {
         self.author = Rc::new(author.into());
     }
 
-    fn get_number_of_pages(&self) -> u16 {
-        self.npages
+    fn get_number_of_pages(&self) -> usize {
+        self.number_of_pages
     }
 
-    fn with_number_of_pages(mut self, npages: u16) -> Self {
-        self.set_number_of_pages(npages);
+    fn with_number_of_pages(mut self, number_of_pages: usize) -> Self {
+        self.set_number_of_pages(number_of_pages);
         self
     }
 
-    fn set_number_of_pages(&mut self, npages: u16) {
-        self.npages = npages;
+    fn set_number_of_pages(&mut self, number_of_pages: usize) {
+        self.number_of_pages = number_of_pages;
     }
 
-    fn get_number_of_read_pages(&self) -> u16 {
-        self.read_pages
+    fn get_number_of_read_pages(&self) -> usize {
+        self.current_page
     }
 
-    fn with_number_of_read_pages(mut self, read_pages: u16) -> Self {
+    fn with_number_of_read_pages(mut self, read_pages: usize) -> Self {
         self.set_number_of_read_pages(read_pages);
         self
     }
 
-    fn set_number_of_read_pages(&mut self, read_pages: u16) {
-        self.read_pages = read_pages;
+    fn set_number_of_read_pages(&mut self, read_pages: usize) {
+        self.current_page = read_pages;
     }
 
-    fn get_index(&self) -> u16 {
+    fn get_index(&self) -> usize {
         self.idx
     }
 
-    fn with_index(mut self, idx: u16) -> Self {
+    fn with_index(mut self, idx: usize) -> Self {
         self.set_index(idx);
         self
     }
 
-    fn set_index(&mut self, idx: u16) {
-        self.idx = idx
-    }
-
-    fn get_cover_path(&self) -> Rc<String> {
-        self.cover_path.clone()
-    }
-
-    fn with_cover_path(mut self, cover_path: impl Into<String>) -> Self {
-        self.set_cover_path(cover_path);
-        self
-    }
-
-    fn set_cover_path(&mut self, cover_path: impl Into<String>) {
-        // TODO: Set to "" if path not found
-        let mut path = "".into();
-        if let Ok(cwd) = std::env::current_dir() {
-            let file_path = cwd.join("src").join("covers").join(cover_path.into());
-            if let Some(file_path) = file_path.to_str() {
-                path = String::from(file_path);
-            }
-        }
-        self.cover_path = Rc::new(path);
-    }
-
-    fn get_description(&self) -> Rc<String> {
-        self.description.clone()
+    fn set_index(&mut self, idx: usize) {
+        self.idx = idx as usize
     }
 
     fn with_description(mut self, description: impl Into<String>) -> Self {
@@ -498,5 +452,21 @@ impl GUIBook for Book {
 
     fn unselect(&mut self) {
         self.set_selected(false);
+    }
+
+    fn get_cover(&self) -> Rc<&[u8]> {
+        todo!()
+    }
+
+    fn with_cover(self, img: &[u8]) -> Self {
+        todo!()
+    }
+
+    fn set_cover(&mut self, img: &[u8]) {
+        todo!()
+    }
+
+    fn get_description(&self) -> Rc<String> {
+        todo!()
     }
 }

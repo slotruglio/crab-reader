@@ -29,7 +29,8 @@ impl BookListing {
     }
 
     fn paint_num_pages(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = CairoText::new()
+        let font_family = ctx
+            .text()
             .font_family("URW Bookman")
             .unwrap_or(FontFamily::SYSTEM_UI);
 
@@ -46,7 +47,7 @@ impl BookListing {
         ));
 
         layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
+        // layout.set_font(font);
         layout.set_wrap_width(ctx.size().width / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
@@ -63,7 +64,8 @@ impl BookListing {
     }
 
     fn paint_title(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = CairoText::new()
+        let font_family = ctx
+            .text()
             .font_family("URW Bookman")
             .unwrap_or(FontFamily::SYSTEM_UI);
 

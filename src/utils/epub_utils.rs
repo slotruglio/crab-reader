@@ -5,7 +5,7 @@ use std::{
     collections::HashMap,
     error,
     fs::{File, OpenOptions},
-    io::Write, 
+    io::Write,
     rc::Rc,
 };
 /// Method to extract metadata from epub file
@@ -180,14 +180,11 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
         println!("DEBUG: reading from txt file");
         return Rc::new(text);
     }
-
     // try to read from html files
     else if let Ok(text) = get_chapter_html(folder_name, chapter_number) {
         println!("DEBUG: reading from html files");
         return Rc::new(text);
     }
-
-
     // if it fails, read from epub
     else if let Ok(mut book) = EpubDoc::new(path) {
         println!("DEBUG: reading from epub file");
