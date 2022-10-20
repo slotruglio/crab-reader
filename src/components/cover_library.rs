@@ -21,7 +21,8 @@ impl CoverLibrary {
     }
 
     pub fn add_child(&mut self, book: &Book) {
-        let widget = BookCover::new(book);
+        let cover_image = book.build_cover().map_or(None, |img| Some(img));
+        let widget = BookCover::new().with_cover_image(cover_image);
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
