@@ -22,7 +22,6 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 /// rect with smoothed edges and the book cover as a picture
 pub struct BookCover {
     cover_img: Rc<[u8]>,
-    // cover_img_path: Rc<String>,
     is_hot: bool,
 }
 
@@ -31,38 +30,9 @@ impl BookCover {
         let cover = book.get_cover();
         Self {
             cover_img: cover,
-            // cover_img_path: Rc::new("".to_string()),
             is_hot: false,
         }
     }
-
-    /*
-        These methods are no longer used
-
-    pub fn with_cover_image_path(mut self, path: impl Into<String>) -> Self {
-        let path: String = path.into();
-        self.set_cover_image_path(path);
-        self
-    }
-
-    pub fn set_cover_image_path(&mut self, path: impl Into<String>) {
-        let path: String = path.into();
-        self.cover_img_path = Rc::from(path);
-        self.load_cover_image();
-    }
-
-    fn load_cover_image(&mut self) {
-        let path = self.cover_img_path.to_string();
-        if let Ok(image) = ImageReader::open(path) {
-            if let Ok(image) = image.decode() {
-                let h = BOOK_WIDGET_SIZE.height as u32;
-                let w = BOOK_WIDGET_SIZE.width as u32;
-                let resized = image.thumbnail_exact(w, h).to_rgb8().into_raw();
-                self.cover_img = Box::from(resized.clone());
-            }
-        }
-    }
-    */
 
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
         let blur_radius = 20.0;
