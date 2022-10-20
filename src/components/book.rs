@@ -166,7 +166,7 @@ impl Book {
         let path_str = path.as_str();
 
         epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
-        let mut book = EpubDoc::new(&path_str).expect("EpubDoc::new() failed in Book::new()");
+        let book = EpubDoc::new(&path_str).expect("EpubDoc::new() failed in Book::new()");
 
         let title = book.mdata("title").unwrap_or("No title".into());
         let author = book.mdata("creator").unwrap_or("No author".into());

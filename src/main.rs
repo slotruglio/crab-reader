@@ -17,10 +17,11 @@ mod utils;
 type Library = MockupLibrary<Book>;
 
 //Create a global ENV variable
+#[allow(dead_code)]
 static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 #[derive(Clone, Data, Lens)]
-struct AppState {
+pub struct AppState {
     single_view: bool,
     is_editing: bool,
     book: Rc<Book>,

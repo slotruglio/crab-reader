@@ -2,7 +2,6 @@ use druid::{im::Vector, Data, Lens};
 
 use super::{
     book::{Book, GUIBook},
-    book_cover::BookCover,
     library::GUILibrary,
 };
 

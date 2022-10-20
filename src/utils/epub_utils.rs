@@ -20,12 +20,13 @@ use std::{
 /// identifier: identifier of the book
 
 const SAVED_BOOKS_PATH: &str = "saved_books/";
+#[allow(dead_code)]
 const SAVED_BOOKS_COVERS_PATH: &str = "saved_books/covers/";
 
 pub fn get_metadata_from_epub(
-    path: &str
+    path: &str,
 ) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
-    let mut book = EpubDoc::new(path)?;
+    let book = EpubDoc::new(path)?;
     for key in book.metadata.keys() {
         println!("DEBUG: {}: {}", key, book.mdata(key).unwrap());
     }
@@ -72,10 +73,7 @@ pub fn get_metadata_from_epub(
             .unwrap_or("no indetifier".to_string()),
     );
 
-    metadata.insert(
-        "chapters".to_string(),
-        book.get_num_pages().to_string(),
-    );
+    metadata.insert("chapters".to_string(), book.get_num_pages().to_string());
 
     Ok(metadata)
 }
@@ -86,36 +84,32 @@ pub fn get_metadata_from_epub(
 /// name: name of the file
 /// path: path where to save the cover
 /// returns: Result with the path of the cover saved
-pub fn save_book_cover(
-    image: &Vec<u8>,
-    name: &String,
-) -> Result<String, Box<dyn error::Error>> {
+#[allow(dead_code)]
+pub fn save_book_cover(image: &Vec<u8>, name: &String) -> Result<String, Box<dyn error::Error>> {
     // create dir
     std::fs::create_dir_all(SAVED_BOOKS_COVERS_PATH)?;
 
     let path = format!("{}{}.png", SAVED_BOOKS_COVERS_PATH, &name);
     let mut file = File::create(&path)?;
     file.write_all(image)?;
-    
+
     Ok(path)
 }
 
 pub fn edit_chapter(
     path: &str,
     chapter_number: usize,
-    text: impl Into<String>
+    text: impl Into<String>,
 ) -> Result<(), Box<dyn error::Error>> {
     let book_name = path.split("/").last().unwrap().split(".").next().unwrap();
-    
-    let mut saved_book_chapter_path = format!(
-        "{}{}", SAVED_BOOKS_PATH, book_name
-    );
+
+    let mut saved_book_chapter_path = format!("{}{}", SAVED_BOOKS_PATH, book_name);
 
     std::fs::create_dir_all(&saved_book_chapter_path)?;
 
     saved_book_chapter_path.push_str(format!("/page_{}.txt", chapter_number).as_str());
     println!("DEBUG: path to get chapter: {}", saved_book_chapter_path);
-    
+
     let mut page_html = OpenOptions::new()
         .write(true)
         .create(true)
@@ -137,7 +131,7 @@ pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>> {
 
     let mut metadata_file = File::create(format!("{}/metadata.json", path_name)).unwrap();
     let metadata_map = get_metadata_from_epub(path)?;
-    
+
     let json = json!(metadata_map);
     //json["cover"] = json!(book.get_cover().unwrap_or_default());
     metadata_file

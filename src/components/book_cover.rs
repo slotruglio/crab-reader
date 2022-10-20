@@ -1,5 +1,4 @@
 use druid::{
-    image::io::Reader as ImageReader,
     piet::{ImageFormat, InterpolationMode, Text},
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
@@ -8,10 +7,7 @@ use druid::{
 };
 use std::rc::Rc;
 
-use super::{
-    book::{Book, GUIBook},
-    library::SELECTED_BOOK_SELECTOR,
-};
+use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
 
 const SELECTED_BG_COLOR: Color = Color::rgb8(20, 20, 20);
 const HOT_BG_COLOR: Color = Color::rgb8(70, 70, 70);
@@ -103,7 +99,7 @@ impl BookCover {
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
         layout.set_text_color(Color::WHITE);
-        // layout.set_font(font);
+        layout.set_font(font);
         layout.set_wrap_width(ctx.size().width - 2.5);
         layout.rebuild_if_needed(ctx.text(), env);
 

@@ -47,7 +47,7 @@ impl BookListing {
         ));
 
         layout.set_text_color(Color::WHITE);
-        // layout.set_font(font);
+        layout.set_font(font);
         layout.set_wrap_width(ctx.size().width / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
