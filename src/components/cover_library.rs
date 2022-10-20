@@ -21,7 +21,6 @@ impl CoverLibrary {
     }
 
     pub fn add_child(&mut self, book: &Book) {
-        todo!("Implement cover loading from .epub");
         let widget = BookCover::new(); // .with_cover_image_path(book.get_cover_path().to_string());
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
