@@ -59,10 +59,10 @@ pub trait GUIBook {
     fn set_index(&mut self, idx: usize);
 
     /// Builds the cover image from the cover image data
-    fn build_cover(&mut self) -> Result<Rc<[u8]>, String>;
+    fn build_cover(&self) -> Result<Rc<[u8]>, String>;
 
     /// Builds the cover image from the cover image data with the specified size
-    fn build_cover_with_size(&mut self, width: u32, height: u32) -> Result<Rc<[u8]>, String>;
+    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Rc<[u8]>, String>;
 
     /// Returns the description (i.e, like a synopsis for the book)
     fn get_description(&self) -> Rc<String>;
@@ -89,8 +89,6 @@ use druid::text::RichText;
 
 use druid::{Data, Lens};
 use epub::doc::EpubDoc;
-use std::fs::File;
-use std::io::Write;
 
 const NUMBER_OF_LINES: usize = 8;
 
@@ -438,13 +436,13 @@ impl GUIBook for Book {
         self.description.clone()
     }
 
-    fn build_cover(&mut self) -> Result<Rc<[u8]>, String> {
+    fn build_cover(&self) -> Result<Rc<[u8]>, String> {
         self.build_cover_with_size(150, 250)
     }
 
-    fn build_cover_with_size(&mut self, width: u32, height: u32) -> Result<Rc<[u8]>, String> {
+    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Rc<[u8]>, String> {
         let epub_path = self.get_path();
-        let epub = EpubDoc::new(epub_path.as_str()).map_err(|e| e.to_string())?;
+        let mut epub = EpubDoc::new(epub_path.as_str()).map_err(|e| e.to_string())?;
         let cover = epub.get_cover().map_err(|e| e.to_string())?;
         let reader = ImageReader::new(ImageCursor::new(cover))
             .with_guessed_format()
