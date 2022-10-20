@@ -1,7 +1,6 @@
 use druid::{
     image::io::Reader as ImageReader,
     piet::{ImageFormat, InterpolationMode, Text},
-    widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
@@ -46,7 +45,7 @@ impl BookCover {
     }
 
     fn load_cover_image(&mut self) {
-        let path = (*self.cover_img_path).clone();
+        let path = self.cover_img_path.to_string();
         if let Ok(image) = ImageReader::open(path) {
             if let Ok(image) = image.decode() {
                 let h = BOOK_WIDGET_SIZE.height as u32;
