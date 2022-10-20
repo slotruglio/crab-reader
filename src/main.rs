@@ -1,4 +1,3 @@
-use crate::components::library::GUILibrary;
 use components::book::Book;
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
