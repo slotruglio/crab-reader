@@ -2,6 +2,7 @@ use druid::{im::Vector, Data, Lens};
 
 use super::{
     book::{Book, GUIBook},
+    book_cover::BookCover,
     library::GUILibrary,
 };
 
@@ -35,9 +36,9 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         }
     }
 
-    fn add_book(&mut self, book: &Book) {
-        self.books
-            .push_back(book.clone().with_index(self.books.len()));
+    fn add_book(&mut self, path: impl Into<String>) {
+        let book = Book::new(path.into()).with_index(self.books.len());
+        self.books.push_back(book);
     }
 
     fn remove_book(&mut self, idx: usize) {
