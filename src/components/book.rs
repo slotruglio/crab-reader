@@ -1,4 +1,6 @@
 use crate::utils::{epub_utils, saveload, text_descriptor};
+use druid::image::io::Reader as ImageReader;
+use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
 
@@ -174,6 +176,7 @@ impl Book {
     pub fn new(path: impl Into<String>) -> Book {
         let path = path.into();
         let path_str = path.as_str();
+        let mut cover_data: Rc<[u8]> = Rc::from([]);
 
         epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
         let mut book = EpubDoc::new(&path_str).expect("EpubDoc::new() failed in Book::new()");
@@ -182,8 +185,15 @@ impl Book {
         let author = book.mdata("creator").unwrap_or("No author".into());
         let lang = book.mdata("language").unwrap_or("No lang".into());
 
-        let binding = book.get_cover().unwrap_or(vec![0]);
-        let cover_data: Rc<[u8]> = binding.as_slice().into();
+        let binding = book.get_cover().unwrap_or(vec![]);
+        let reader = ImageReader::new(ImageCursor::new(&binding)).with_guessed_format();
+        if let Ok(reader) = reader {
+            if let Ok(image) = reader.decode() {
+                let thumbnail = image.thumbnail_exact(150u32, 250u32);
+                let rgb = thumbnail.to_rgb8().to_vec();
+                cover_data = Rc::from(rgb);
+            }
+        }
 
         let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
 
