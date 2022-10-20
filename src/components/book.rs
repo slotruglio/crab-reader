@@ -1,3 +1,4 @@
+use crate::components::book::book_derived_lenses::description;
 use crate::utils::{epub_utils, saveload, text_descriptor};
 use std::rc::Rc;
 use std::string::String;
@@ -171,47 +172,48 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
-        //Save pages locally
         let path = path.into();
         let path_str = path.as_str();
 
-        let _result = epub_utils::extract_pages(&path_str).unwrap();
+        epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
+        let mut book = EpubDoc::new(&path_str).expect("EpubDoc::new() failed in Book::new()");
 
-        let mut book = EpubDoc::new(&path_str).unwrap();
+        let title = book.mdata("title").unwrap_or("No title".into());
+        let author = book.mdata("creator").unwrap_or("No author".into());
+        let lang = book.mdata("language").unwrap_or("No lang".into());
 
-        let title = book.mdata("title").unwrap_or("No title".to_string());
-
-        let author = book.mdata("creator").unwrap_or("No author".to_string());
-
-        let lang = book.mdata("language").unwrap_or("No lang".to_string());
-
-        let cover_data = book.get_cover().unwrap_or(vec![0]);
+        let binding = book.get_cover().unwrap_or(vec![0]);
+        let cover_data = Box::new(binding.as_slice());
 
         let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
 
-        println!("DEBUG: Saving cover to {}", title_to_save);
+        println!("DEBUG: Saving cover to {}", &title_to_save);
 
-        let copy_title = title_to_save.clone();
-        let f = File::create(copy_title);
-        assert!(f.is_ok());
-        let mut f = f.unwrap();
-        let _resp = f.write_all(&cover_data);
+        let mut file = File::create(&title_to_save)
+            .expect(format!("Couldn't create file {}", &title_to_save).as_str());
+
+        if let Err(_) = file.write_all(&cover_data) {
+            println!("DEBUG: Coulnd't save file to {}", &title_to_save);
+        }
 
         let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
-        let _chapter_page_text = chapter_text[0..200].to_string();
-        todo!()
-        // Book {
-        // title: Rc::new(title),
-        // author: Rc::new(author),
-        // lang: Rc::new(lang),
-        // cover: title_to_save,
-        // path: Rc::new(path.into()),
-        // chapter_number: chapter_number,
-        // current_page: current_page,
-        // chapter_text: Rc::new(chapter_text),
-        // chapter_page_text: Rc::new(chapter_page_text),
-        // }
+        let chapter_page_text = chapter_text[0..200].to_string();
+
+        Book {
+            title: title.into(),
+            author: author.into(),
+            lang: lang.into(),
+            path: path.into(),
+            chapter_number: chapter_number,
+            number_of_pages: 420, // How to set early?
+            idx: 0,               // How to set early?
+            selected: false,
+            description: "Book description".to_string().into(), // Is this even a field?
+            current_page: 0,                                    // How to recvoer?
+            chapter_text,
+            chapter_page_text: chapter_page_text.into(),
+        }
     }
 }
 
@@ -431,13 +433,13 @@ impl GUIBook for Book {
         self.idx = idx as usize
     }
 
-    fn with_description(mut self, description: impl Into<String>) -> Self {
-        self.set_description(description);
+    fn with_description(mut self, desc: impl Into<String>) -> Self {
+        self.set_description(desc);
         self
     }
 
-    fn set_description(&mut self, description: impl Into<String>) {
-        self.description = Rc::new(description.into());
+    fn set_description(&mut self, desc: impl Into<String>) {
+        self.description = desc.into().into();
     }
 
     fn is_selected(&self) -> bool {
