@@ -58,20 +58,11 @@ pub trait GUIBook {
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
     fn set_index(&mut self, idx: usize);
 
-    /// Returns the cover image, codified as a &[u8].
-    /// The format is for now to be intended to be as RGB8
-    ///
-    fn get_cover(&self) -> Rc<[u8]>;
+    /// Builds the cover image from the cover image data
+    fn build_cover(&mut self) -> Result<Rc<[u8]>, String>;
 
-    /// Builder method for the cover image, codified as a &[u8].
-    /// The format is for now to be intended to be as RGB8
-    ///
-    fn with_cover(self, img: Rc<[u8]>) -> Self;
-
-    /// Sets the he cover image, codified as a &[u8].
-    /// The format is for now to be inteded as RGB8
-    ///
-    fn set_cover(&mut self, img: Rc<[u8]>);
+    /// Builds the cover image from the cover image data with the specified size
+    fn build_cover_with_size(&mut self, width: u32, height: u32) -> Result<Rc<[u8]>, String>;
 
     /// Returns the description (i.e, like a synopsis for the book)
     fn get_description(&self) -> Rc<String>;
@@ -456,21 +447,15 @@ impl GUIBook for Book {
         self.set_selected(false);
     }
 
-    fn get_cover(&self) -> Rc<[u8]> {
-        self.cover_u8.clone()
-    }
-
-    fn with_cover(mut self, img: Rc<[u8]>) -> Self {
-        self.set_cover(img);
-        self
-    }
-
-    fn set_cover(&mut self, img: Rc<[u8]>) {
-        let rc = img.to_vec().into();
-        self.cover_u8 = rc;
-    }
-
     fn get_description(&self) -> Rc<String> {
         self.description.clone()
+    }
+
+    fn build_cover(&mut self) -> Result<Rc<[u8]>, String> {
+        todo!()
+    }
+
+    fn build_cover_with_size(&mut self, width: u32, height: u32) -> Result<Rc<[u8]>, String> {
+        todo!()
     }
 }
