@@ -299,8 +299,6 @@ impl BookReading for Book {
 
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>) {
         let page = self.split_chapter_in_pages();
-        let mut left_page = String::new();
-        let mut right_page = String::new();
 
         let odd = self.current_page % 2;
         let left_page = if odd == 0 {
