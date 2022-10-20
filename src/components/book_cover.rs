@@ -21,17 +21,21 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
 /// rect with smoothed edges and the book cover as a picture
 pub struct BookCover {
-    cover_img: Rc<[u8]>,
+    cover_img: Option<Rc<[u8]>>,
     is_hot: bool,
 }
 
 impl BookCover {
-    pub fn new(book: &Book) -> Self {
-        let cover = book.get_cover();
+    pub fn new() -> Self {
         Self {
-            cover_img: cover,
+            cover_img: None,
             is_hot: false,
         }
+    }
+
+    pub fn with_cover_image(mut self, cover_img: Option<Rc<[u8]>>) -> Self {
+        self.cover_img = cover_img;
+        self
     }
 
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
@@ -53,14 +57,14 @@ impl BookCover {
     }
 
     fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        if self.cover_img.len() == 0 {
+        if self.cover_img.is_none() {
             self.paint_default_cover(ctx, data);
             self.paint_book_title(ctx, env, data);
             return;
         }
 
         let round_factr = 20.0;
-        let image_buffer = &self.cover_img;
+        let image_buffer = self.cover_img.clone().unwrap();
         let paint_rect = ctx.size().to_rect();
         let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
         let w = BOOK_WIDGET_SIZE.width as usize;
