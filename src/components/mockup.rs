@@ -253,9 +253,24 @@ pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
 
 impl GUILibrary<Book> for MockupLibrary<Book> {
     fn new() -> Self {
-        Self {
-            books: Vector::new(),
-            selected_book: None,
+        if let Ok(cwd) = std::env::current_dir() {
+            let dir = cwd.join("src").join("epubs");
+            if let Ok(files) = std::fs::read_dir(dir) {
+                let books: Vector<Book> = files
+                    .filter(|file| file.is_ok())
+                    .map(|file| file.unwrap().path())
+                    .filter(|filename| filename.ends_with(".epub"))
+                    .map(|file| Book::new(file.to_string_lossy()))
+                    .collect();
+                Self {
+                    books,
+                    selected_book: None,
+                }
+            } else {
+                panic!("Couldn't list `epubs` dir in {}", cwd.display());
+            }
+        } else {
+            panic!("Cannot get current working directory");
         }
     }
 
