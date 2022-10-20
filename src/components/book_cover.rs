@@ -8,7 +8,10 @@ use druid::{
 };
 use std::rc::Rc;
 
-use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
+use super::{
+    book::{Book, GUIBook},
+    library::SELECTED_BOOK_SELECTOR,
+};
 
 const SELECTED_BG_COLOR: Color = Color::rgb8(20, 20, 20);
 const HOT_BG_COLOR: Color = Color::rgb8(70, 70, 70);
@@ -24,9 +27,10 @@ pub struct BookCover {
 }
 
 impl BookCover {
-    pub fn new() -> Self {
+    pub fn new(book: &Book) -> Self {
+        let cover = book.get_cover();
         Self {
-            cover_img: Rc::new([]),
+            cover_img: cover,
             // cover_img_path: Rc::new("".to_string()),
             is_hot: false,
         }

@@ -64,12 +64,12 @@ pub trait GUIBook {
     /// Builder method for the cover image, codified as a &[u8].
     /// The format is for now to be intended to be as RGB8
     ///
-    fn with_cover(self, img: &[u8]) -> Self;
+    fn with_cover(self, img: Rc<[u8]>) -> Self;
 
     /// Sets the he cover image, codified as a &[u8].
     /// The format is for now to be inteded as RGB8
     ///
-    fn set_cover(&mut self, img: &[u8]);
+    fn set_cover(&mut self, img: Rc<[u8]>);
 
     /// Returns the description (i.e, like a synopsis for the book)
     fn get_description(&self) -> Rc<String>;
@@ -461,12 +461,12 @@ impl GUIBook for Book {
         self.cover_u8.clone()
     }
 
-    fn with_cover(mut self, img: &[u8]) -> Self {
+    fn with_cover(mut self, img: Rc<[u8]>) -> Self {
         self.set_cover(img);
         self
     }
 
-    fn set_cover(&mut self, img: &[u8]) {
+    fn set_cover(&mut self, img: Rc<[u8]>) {
         let rc = img.to_vec().into();
         self.cover_u8 = rc;
     }

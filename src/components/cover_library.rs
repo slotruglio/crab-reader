@@ -6,7 +6,7 @@ use druid::{
 use crate::Library;
 
 use super::{
-    book::Book,
+    book::{Book, GUIBook},
     book_cover::{BookCover, BOOK_WIDGET_SIZE},
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
 };
@@ -21,7 +21,7 @@ impl CoverLibrary {
     }
 
     pub fn add_child(&mut self, book: &Book) {
-        let widget = BookCover::new(); // .with_cover_image_path(book.get_cover_path().to_string());
+        let widget = BookCover::new(book);
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
