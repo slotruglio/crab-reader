@@ -195,17 +195,6 @@ impl Book {
             }
         }
 
-        let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
-
-        println!("DEBUG: Saving cover to {}", &title_to_save);
-
-        let mut file = File::create(&title_to_save)
-            .expect(format!("Couldn't create file {}", &title_to_save).as_str());
-
-        if let Err(_) = file.write_all(&cover_data) {
-            println!("DEBUG: Coulnd't save file to {}", &title_to_save);
-        }
-
         let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
