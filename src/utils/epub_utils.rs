@@ -174,28 +174,25 @@ pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>> {
 pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
     let file_name = path.split("/").last().unwrap();
     let folder_name = file_name.split(".").next().unwrap();
-    let text: String;
 
     // try to read from txt files (where edited text is saved)
     if let Ok(text) = get_chapter_txt(folder_name, chapter_number) {
-        println!("reading from txt file");
-        text = text;
+        println!("DEBUG: reading from txt file");
+        return Rc::new(text);
     }
     // try to read from html files
     else if let Ok(text) = get_chapter_html(folder_name, chapter_number) {
-        println!("reading from html files");
-        text = text;
+        println!("DEBUG: reading from html files");
+        return Rc::new(text);
     }
     // if it fails, read from epub
     else if let Ok(mut book) = EpubDoc::new(path) {
-        println!("reading from epub file");
+        println!("DEBUG: reading from epub file");
         book.set_current_page(chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
         let text = html2text::from_read(content.as_bytes(), 100);
-        text = text
-    } else {
-        text = String::default()
+        return Rc::new(text);
     }
+    Rc::new(String::default())
 
-    Rc::new(text)
 }

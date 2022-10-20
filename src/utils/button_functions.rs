@@ -19,7 +19,7 @@ pub fn edit_button(
 
     // text is the "old page"
     if is_editing {
-        text = *book.get_page_of_chapter().clone();
+        text = book.get_page_of_chapter().to_string();
     }
 
     ctx.request_paint();
