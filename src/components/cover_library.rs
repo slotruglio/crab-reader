@@ -40,7 +40,7 @@ impl Widget<Library> for CoverLibrary {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     data.unselect_current_book();
-                    ctx.request_paint();
+                    ctx.request_layout();
                 }
             }
             Event::Notification(cmd) => {
@@ -50,7 +50,7 @@ impl Widget<Library> for CoverLibrary {
                     } else {
                         data.unselect_current_book();
                     }
-                    ctx.request_paint();
+                    ctx.request_layout();
                 }
             }
             _ => {}
