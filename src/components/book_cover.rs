@@ -18,19 +18,22 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
 /// rect with smoothed edges and the book cover as a picture
 pub struct BookCover {
-    cover_img: Box<[u8]>,
-    cover_img_path: Rc<String>,
+    cover_img: Rc<[u8]>,
+    // cover_img_path: Rc<String>,
     is_hot: bool,
 }
 
 impl BookCover {
     pub fn new() -> Self {
         Self {
-            cover_img: Box::new([]),
-            cover_img_path: Rc::new("".to_string()),
+            cover_img: Rc::new([]),
+            // cover_img_path: Rc::new("".to_string()),
             is_hot: false,
         }
     }
+
+    /*
+        These methods are no longer used
 
     pub fn with_cover_image_path(mut self, path: impl Into<String>) -> Self {
         let path: String = path.into();
@@ -55,6 +58,7 @@ impl BookCover {
             }
         }
     }
+    */
 
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
         let blur_radius = 20.0;
