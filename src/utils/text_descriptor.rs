@@ -1,4 +1,8 @@
-use druid::{Widget, FontDescriptor, FontFamily, FontWeight, FontStyle, ArcStr, text::{RichText, Attribute}};
+#![allow(dead_code)]
+use druid::{
+    text::{Attribute, RichText},
+    ArcStr, FontDescriptor, FontFamily, FontStyle, FontWeight,
+};
 
 const H1: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
     .with_size(24.0)
@@ -32,7 +36,7 @@ pub fn get_rich_text(text: impl Into<String>, tags: Vec<(usize, usize, String)>)
         let start = tag.0;
         let end = tag.1;
         let tag = tag.2;
-        
+
         let attribute = match tag.as_str() {
             "p" => P,
             "strong" => BOLD,
@@ -40,8 +44,7 @@ pub fn get_rich_text(text: impl Into<String>, tags: Vec<(usize, usize, String)>)
             _ => P,
         };
         let val = Attribute::font_descriptor(attribute);
-        rich_text.add_attribute((start..end), val);
-
+        rich_text.add_attribute(start..end, val);
     }
     rich_text
 }
