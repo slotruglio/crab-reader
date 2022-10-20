@@ -5,9 +5,6 @@ pub const SELECTED_BOOK_SELECTOR: Selector<Option<usize>> = Selector::new("selec
 /// This trait deinfes all the functionalities that a `Library` struct must expose
 /// in order to be rendered correctly in the GUI of the application
 pub trait GUILibrary<B: GUIBook + PartialEq + Data> {
-    /// Empty/default constructo
-    fn new() -> Self;
-
     /// Add a book to the library
     fn add_book(&mut self, book: impl Into<String>);
 
