@@ -171,6 +171,7 @@ impl Book {
         let title = book.mdata("title").unwrap_or("No title".into());
         let author = book.mdata("creator").unwrap_or("No author".into());
         let lang = book.mdata("language").unwrap_or("No lang".into());
+        let desc = book.mdata("description").unwrap_or("No description".into());
 
         let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
@@ -185,8 +186,8 @@ impl Book {
             number_of_pages: 420, // How to set early?
             idx: 0,               // How to set early?
             selected: false,
-            description: "Book description".to_string().into(), // Is this even a field?
-            current_page: 0,                                    // How to recvoer?
+            description: desc.into(),
+            current_page: 0, // How to recvoer?
             chapter_text,
             chapter_page_text: chapter_page_text.into(),
         }
