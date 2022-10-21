@@ -61,6 +61,7 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
     BookDetails::new()
         .background(Color::GRAY)
         .rounded(10.0)
+        .expand_width()
         .lens(CrabReaderState::library)
 }
 
@@ -98,6 +99,11 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
-    AppLauncher::with_window(WindowDesc::new(build_ui).title("CrabReader")).launch(crab_state)?;
+    AppLauncher::with_window(
+        WindowDesc::new(build_ui)
+            .title("CrabReader")
+            .window_size((1280.0, 720.0)),
+    )
+    .launch(crab_state)?;
     Ok(())
 }
