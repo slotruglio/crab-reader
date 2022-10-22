@@ -1,12 +1,8 @@
-use druid::widget::{Button, Container, Flex, Label, LineBreaking};
+use druid::widget::{Button, Flex, Label, LineBreaking};
 use druid::{
-    ArcStr, BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
-    LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetPod,
-    WindowDesc,
+    BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx,
+    LifeCycle, LifeCycleCtx, PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetPod,
 };
-use std::rc::Rc;
-
-use crate::CrabReaderState;
 
 use super::{
     book::{Book, GUIBook},
@@ -17,130 +13,106 @@ use super::{
 type Library = MockupLibrary<Book>;
 
 pub struct BookDetails {
-    title: WidgetPod<Rc<String>, Label<Rc<String>>>,
-    authors: WidgetPod<Rc<String>, Label<Rc<String>>>,
-    percent: WidgetPod<f64, Label<f64>>,
-    read_btn: WidgetPod<String, Box<dyn Widget<String>>>,
+    inner: WidgetPod<Library, Box<dyn Widget<Library>>>,
 }
 
 impl BookDetails {
-    fn title() -> WidgetPod<Rc<String>, Label<Rc<String>>> {
-        let mut label = Label::dynamic(|title: &Rc<String>, _| title.to_string())
-            .with_text_color(Color::rgb8(0, 0, 0))
-            .with_font(FontDescriptor::new(FontFamily::SERIF).with_weight(FontWeight::BOLD))
-            .with_text_size(28.0)
-            .with_text_alignment(druid::TextAlignment::Center);
-        label.set_line_break_mode(LineBreaking::WordWrap);
-        WidgetPod::new(label)
-    }
-
-    fn authors() -> WidgetPod<Rc<String>, Label<Rc<String>>> {
-        let label = Label::dynamic(|authors: &Rc<String>, _| format!("Di {}", authors.to_string()))
-            .with_text_color(Color::rgb8(0, 0, 0))
-            .with_font(FontDescriptor::new(FontFamily::SERIF).with_weight(FontWeight::NORMAL))
-            .with_text_size(14.0)
-            .with_text_alignment(druid::TextAlignment::Center);
-        WidgetPod::new(label)
-    }
-
-    fn read_btn() -> WidgetPod<String, Box<dyn Widget<String>>> {
-        let label_text = ArcStr::from("Continua a Leggere");
-        let btn = Button::<String>::new(label_text).on_click(
-            |ctx: &mut EventCtx, _: &mut String, _: &Env| {
-                // here should be called the function to open the book
-                // and the book's functions lo load chapters and page
-                // Book::load_chapter(), Book::load_page()
-                println!("Continua a leggere");
-                let w = WindowDesc::new(|| {
-                    Container::new(Flex::<CrabReaderState>::row())
-                        .expand()
-                        .background(Color::RED)
-                });
-                ctx.new_window(w);
-            },
-        );
-        WidgetPod::new(Box::new(btn))
-    }
-
-    fn percent() -> WidgetPod<f64, Label<f64>> {
-        let label = Label::dynamic(|percent: &f64, _| format!("Letto al {}%", percent))
-            .with_text_color(Color::rgb8(0, 0, 0))
-            .with_font(FontDescriptor::new(FontFamily::SERIF).with_weight(FontWeight::NORMAL))
-            .with_text_size(14.0)
-            .with_text_alignment(druid::TextAlignment::Center);
-        WidgetPod::new(label)
-    }
-
     pub fn new() -> Self {
-        let title = Self::title();
-        let authors = Self::authors();
-        let read_btn = Self::read_btn();
-        let percent = Self::percent();
+        let header_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
+            .with_weight(FontWeight::BOLD)
+            .with_size(28.0);
+        let info_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
+            .with_weight(FontWeight::NORMAL)
+            .with_size(14.0);
 
-        Self {
-            title,
-            authors,
-            read_btn,
-            percent,
-        }
-    }
+        let mut header_label = Label::new("Dettagli del libro")
+            .with_text_color(Color::rgb8(0, 0, 0))
+            .with_font(header_font)
+            .with_text_alignment(druid::TextAlignment::Start);
+        header_label.set_line_break_mode(LineBreaking::WordWrap);
 
-    fn handle_widget_added(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, env: &Env) {
-        match event {
-            LifeCycle::WidgetAdded => {}
-            _ => {
-                return;
-            }
-        };
+        let title_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |book| {
+                    format!("Titolo: {}", book.get_title().to_string())
+                })
+        })
+        .with_text_color(Color::BLACK)
+        .with_font(info_font.clone())
+        .align_left()
+        .padding(5.0);
 
-        let placeholder = Rc::from(String::from(""));
-        self.title.lifecycle(ctx, event, &placeholder, env);
-        self.authors.lifecycle(ctx, event, &placeholder, env);
-        self.read_btn
-            .lifecycle(ctx, event, &"Read".to_string(), env);
-        self.percent.lifecycle(ctx, event, &0.0, env);
+        let author_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |book| {
+                    format!("Autore: {}", book.get_author().to_string())
+                })
+        })
+        .with_text_color(Color::BLACK)
+        .with_font(info_font.clone())
+        .align_left()
+        .padding(5.0);
+
+        let lang_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |_: &Book| {
+                    format!("Lingua: {}", String::from("//TODO: Add get_lang()"))
+                })
+        })
+        .with_font(info_font.clone())
+        .with_text_color(Color::BLACK)
+        .align_left()
+        .padding(5.0);
+
+        let completion_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |_: &Book| {
+                    format!("Letto al {}%", String::from("//TODO: Add get_compl_perc()"))
+                })
+        })
+        .with_font(info_font.clone())
+        .with_text_color(Color::BLACK)
+        .align_left()
+        .padding(5.0);
+
+        let mut btn_ctls = Flex::row()
+            .with_flex_child(Button::new("Continua a Leggere"), 1.0)
+            .with_flex_child(Button::new("Aggiungi ai Preferiti"), 1.0);
+
+        btn_ctls.set_main_axis_alignment(druid::widget::MainAxisAlignment::SpaceAround);
+
+        let btn_ctls = btn_ctls.expand_width().padding(5.0);
+        
+        // inside the function to open the book there should be
+        // the book's functions lo load chapters and page
+        // Book::load_chapter(), Book::load_page()
+        
+        let widget = Flex::column()
+            .with_child(header_label)
+            .with_child(title_label)
+            .with_child(author_label)
+            .with_child(lang_label)
+            .with_child(completion_label)
+            .with_child(btn_ctls)
+            .expand()
+            .boxed();
+        let inner = WidgetPod::new(widget);
+
+        Self { inner }
     }
 }
 
 impl Widget<Library> for BookDetails {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
-        if let Some(book) = data.get_selected_book_mut() {
-            self.title.event(ctx, event, &mut book.get_title(), env);
-            self.authors.event(ctx, event, &mut book.get_author(), env);
-            self.read_btn
-                .event(ctx, event, &mut "Read".to_string(), env);
-            self.percent.event(ctx, event, &mut 0.0, env);
-        }
+        self.inner.event(ctx, event, data, env);
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
-        self.handle_widget_added(ctx, event, env);
-
-        if let Some(book) = data.get_selected_book() {
-            self.title.lifecycle(ctx, event, &book.get_title(), env);
-            self.authors.lifecycle(ctx, event, &book.get_author(), env);
-            self.read_btn
-                .lifecycle(ctx, event, &"Read".to_string(), env);
-            self.percent.lifecycle(ctx, event, &0.0, env);
-        }
+        self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
-        if let Some(book) = data.get_selected_book() {
-            let title = book.get_title();
-            let authors = book.get_author();
-            if let Some(old_book) = old_data.get_selected_book() {
-                if old_book != book {
-                    self.title.update(ctx, &title, env);
-                    self.authors.update(ctx, &authors, env);
-                    self.percent.update(ctx, &40.0, env);
-                }
-            } else {
-                self.title.update(ctx, &title, env);
-                self.authors.update(ctx, &authors, env);
-                self.percent.update(ctx, &10.0, env);
-            }
-        }
+    fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
+        self.inner.update(ctx, data, env);
     }
 
     fn layout(
@@ -150,45 +122,14 @@ impl Widget<Library> for BookDetails {
         data: &Library,
         env: &Env,
     ) -> Size {
-        if let Some(book) = data.get_selected_book() {
-            let mut hh = 0.0; // Total layout heigth
-            let ww = bc.max().width;
-            let bc = bc.shrink((10.0, 0.0)); // ???
-
-            let title = book.get_title();
-            let title_size = self.title.layout(ctx, &bc, &title, env);
-            self.title.set_origin(ctx, &title, env, (5.0, hh).into());
-            hh += title_size.height - 5.0;
-
-            let author = book.get_author();
-            let authors_size = self.authors.layout(ctx, &bc, &author, env);
-            self.authors.set_origin(ctx, &author, env, (5.0, hh).into());
-            hh += authors_size.height;
-            hh += 10.0;
-
-            let percent = 50.0;
-            let percent_size = self.percent.layout(ctx, &bc, &percent, env);
-            self.percent
-                .set_origin(ctx, &percent, env, (5.0, hh).into());
-            hh += percent_size.height;
-
-            let null = String::from("");
-            let read_btn_size = self.read_btn.layout(ctx, &bc, &null, env);
-            self.read_btn.set_origin(ctx, &null, env, (5.0, hh).into());
-            hh += read_btn_size.height;
-            hh += 10.0;
-
-            return (ww, hh).into();
+        if let Some(_) = data.get_selected_book() {
+            self.inner.layout(ctx, bc, data, env)
+        } else {
+            Size::ZERO
         }
-        (0.0, 0.0).into()
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
-        if let Some(book) = data.get_selected_book() {
-            self.title.paint(ctx, &book.get_title(), env);
-            self.authors.paint(ctx, &book.get_author(), env);
-            self.read_btn.paint(ctx, &"Read".to_string(), env);
-            self.percent.paint(ctx, &30.0, env);
-        }
+        self.inner.paint(ctx, data, env);
     }
 }
