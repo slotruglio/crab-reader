@@ -1,11 +1,15 @@
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 use druid::{im::Vector, Data, Lens};
+
+use crate::utils::epub_utils;
 
 use super::{
     book::{Book, GUIBook},
     library::GUILibrary,
 };
+
+const SAVED_BOOKS_PATH: &str = "saved_books/";
 
 #[derive(Clone, Lens, PartialEq, Data)]
 pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
@@ -19,7 +23,6 @@ impl MockupLibrary<Book> {
             books: Vector::new(),
             selected_book: None,
         };
-
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
                 let path: String = path.to_str().unwrap().to_string();
@@ -47,7 +50,7 @@ impl MockupLibrary<Book> {
         let vec: Vector<PathBuf> = files
             .filter(|file| file.is_ok())
             .map(|file| file.unwrap().path())
-            .filter(|filename| filename.extension().unwrap() == "epub")
+            .filter(|filename| filename.extension().unwrap_or_default() == "epub")
             .collect();
         Ok(vec)
     }
@@ -55,7 +58,15 @@ impl MockupLibrary<Book> {
 
 impl GUILibrary<Book> for MockupLibrary<Book> {
     fn add_book(&mut self, path: impl Into<String>) {
-        let book = Book::new(path.into()).with_index(self.books.len());
+        let path: String = path.into();
+        let file_name = path.split("/").last().unwrap();
+        let folder_name = file_name.split(".").next().unwrap();
+        // extract metadata and chapters
+        if !Path::new(&format!("{}{}",SAVED_BOOKS_PATH, folder_name)).exists() {
+            let _res = epub_utils::extract_all(&path).expect(format!("Failed to extract {}", file_name).as_str());
+        }
+
+        let book = Book::new(path).with_index(self.books.len());
         self.books.push_back(book);
     }
 

@@ -47,6 +47,9 @@ impl BookDetails {
         let label_text = ArcStr::from("Continua a Leggere");
         let btn = Button::<String>::new(label_text).on_click(
             |ctx: &mut EventCtx, _: &mut String, _: &Env| {
+                // here should be called the function to open the book
+                // and the book's functions lo load chapters and page
+                // Book::load_chapter(), Book::load_page()
                 println!("Continua a leggere");
                 let w = WindowDesc::new(|| {
                     Container::new(Flex::<CrabReaderState>::row())

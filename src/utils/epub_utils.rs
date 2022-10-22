@@ -1,12 +1,12 @@
-use super::saveload::{get_chapter_html, get_chapter_txt};
+use super::saveload::{get_chapter, FileExtension};
 use epub::doc::EpubDoc;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::{
     collections::HashMap,
     error,
     fs::{File, OpenOptions},
-    io::Write,
-    rc::Rc,
+    io::{Write, BufReader},
+    rc::Rc, path::Path,
 };
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
@@ -20,13 +20,13 @@ use std::{
 /// identifier: identifier of the book
 
 const SAVED_BOOKS_PATH: &str = "saved_books/";
+
 #[allow(dead_code)]
 const SAVED_BOOKS_COVERS_PATH: &str = "saved_books/covers/";
 
-pub fn get_metadata_from_epub(
-    path: &str,
+fn get_metadata_from_epub(
+    book: &EpubDoc<File>,
 ) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
-    let book = EpubDoc::new(path)?;
     for key in book.metadata.keys() {
         println!("DEBUG: {}: {}", key, book.mdata(key).unwrap());
     }
@@ -121,7 +121,40 @@ pub fn edit_chapter(
     Ok(())
 }
 
-pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>> {
+pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
+    let file_name = path.split("/").last().unwrap();
+    let folder_name = file_name.split(".").next().unwrap();
+    let path_name = format!("{}{}", SAVED_BOOKS_PATH, folder_name);
+    println!("DEBUG: Folder path: {}", path_name);
+    std::fs::create_dir_all(&path_name)?;
+    let mut book = EpubDoc::new(path)?;
+
+    let mut metadata_file = File::create(format!("{}/metadata.json", path_name)).unwrap();
+    let metadata_map = get_metadata_from_epub(&book)?;
+
+    let json = json!(metadata_map);
+    //json["cover"] = json!(book.get_cover().unwrap_or_default());
+    metadata_file
+        .write_all(json.to_string().as_bytes())
+        .unwrap();
+        let len = book.get_num_pages();
+
+    //extract all chapters
+    let mut i = 0;
+    while i < len {
+        let chapter = book.get_current_str().unwrap();
+        let mut file = File::create(format!("{}/page_{}.html", &path_name, i)).unwrap();
+        file.write_all(chapter.as_bytes()).unwrap();
+        if let Err(_) = book.go_next() {
+            break;
+        }
+        i += 1;
+    }
+
+    Ok(())
+}
+
+pub fn extract_metadata(path: &str) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
     let file_name = path.split("/").last().unwrap();
     let folder_name = file_name.split(".").next().unwrap();
     println!("DEBUG: Folder name: {}", folder_name);
@@ -130,13 +163,24 @@ pub fn extract_pages(path: &str) -> Result<(), Box<dyn error::Error>> {
     std::fs::create_dir_all(&path_name)?;
 
     let mut metadata_file = File::create(format!("{}/metadata.json", path_name)).unwrap();
-    let metadata_map = get_metadata_from_epub(path)?;
+    let book = EpubDoc::new(path)?;
+    let metadata_map = get_metadata_from_epub(&book)?;
 
     let json = json!(metadata_map);
     //json["cover"] = json!(book.get_cover().unwrap_or_default());
     metadata_file
         .write_all(json.to_string().as_bytes())
         .unwrap();
+    Ok(metadata_map)
+}
+
+pub fn extract_chapters(path: &str) -> Result<(), Box<dyn error::Error>> {
+    let file_name = path.split("/").last().unwrap();
+    let folder_name = file_name.split(".").next().unwrap();
+    println!("DEBUG: Folder name: {}", folder_name);
+    let path_name = format!("{}{}", SAVED_BOOKS_PATH, folder_name);
+    println!("DEBUG: Folder path: {}", path_name);
+    std::fs::create_dir_all(&path_name)?;
 
     let mut book = EpubDoc::new(path)?;
 
@@ -162,22 +206,44 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
     let mut text_rc: Rc<String> = Rc::from(String::new());
 
     // try to read from txt files (where edited text is saved)
-    if let Ok(text) = get_chapter_txt(folder_name, chapter_number) {
+    if let Ok(text) = get_chapter(folder_name, chapter_number, FileExtension::TXT) {
         println!("DEBUG: reading from txt file");
         text_rc = text.into();
     }
     // try to read from html files
-    else if let Ok(text) = get_chapter_html(folder_name, chapter_number) {
+    else if let Ok(text) = get_chapter(folder_name, chapter_number, FileExtension::HTML) {
         println!("DEBUG: reading from html files");
         text_rc = text.into();
     }
-    // if it fails, read from epub
+    // if it fails, read from epub and save html page
     else if let Ok(mut book) = EpubDoc::new(path) {
         println!("DEBUG: reading from epub file");
         book.set_current_page(chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
         let text = html2text::from_read(content.as_bytes(), 100);
+        // save html page
+        let mut file = File::create(format!("{}/page_{}.html", &path, chapter_number)).unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+
         text_rc = text.into()
     }
     text_rc
+}
+
+pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
+    let book_filename = Path::new(path).file_name().unwrap().to_str().unwrap();
+    let book_name = book_filename.split(".").next().unwrap();
+
+    let metadata_path = format!("{}{}/metadata.json", SAVED_BOOKS_PATH, book_name);
+    if let Ok(metadata_file) = File::open(metadata_path) {
+        let reader = BufReader::new(metadata_file);
+        if let Ok(metadata) = serde_json::from_reader(reader) {
+            return metadata;
+        }
+    }
+
+    // if it fails, read from epub, saves and return metadata
+    let metadata = extract_metadata(path).expect("Failed to extract metadata from epub");
+    metadata
+
 }
