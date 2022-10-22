@@ -8,7 +8,7 @@ use std::string::String;
 /// in order to be rendered visually correct in the GUI of the application.
 pub trait GUIBook {
     /// Returns the title
-    fn get_title(&self) -> Rc<String>;
+    fn get_title(&self) -> String;
 
     /// Builder pattern for title
     fn with_title(self, title: impl Into<String>) -> Self;
@@ -17,7 +17,7 @@ pub trait GUIBook {
     fn set_title(&mut self, title: impl Into<String>);
 
     /// Returns the author
-    fn get_author(&self) -> Rc<String>;
+    fn get_author(&self) -> String;
 
     /// Builder pattern for author
     fn with_author(self, author: impl Into<String>) -> Self;
@@ -59,13 +59,10 @@ pub trait GUIBook {
     fn set_index(&mut self, idx: usize);
 
     /// Builds the cover image from the cover image data
-    fn build_cover(&self) -> Result<Rc<[u8]>, String>;
+    fn build_cover(&self) -> Result<Box<[u8]>, String>;
 
     /// Builds the cover image from the cover image data with the specified size
-    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Rc<[u8]>, String>;
-
-    /// Returns the description (i.e, like a synopsis for the book)
-    fn get_description(&self) -> Rc<String>;
+    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Box<[u8]>, String>;
 
     /// Builder pattern for the description (i.e, like a synopsis for the book)
     fn with_description(self, description: impl Into<String>) -> Self;
@@ -129,7 +126,7 @@ pub trait BookReading {
 /// not related directly to the reading
 pub trait BookManagement {
     /// Method that returns the path of the book
-    fn get_path(&self) -> Rc<String>;
+    fn get_path(&self) -> String;
 
     /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
     /// and returns a vector of strings. Each string is a page of the chapter
@@ -141,7 +138,7 @@ pub trait BookManagement {
 
     /// Method that extracts the book's chapters in local files
     fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
-    
+
     fn load_chapter(&mut self);
 
     fn load_page(&mut self);
@@ -169,7 +166,6 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
-        let start = std::time::Instant::now();
         let path = path.into();
         let path_str = path.as_str();
 
@@ -177,10 +173,22 @@ impl Book {
         // epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
 
         let book_map = epub_utils::get_metadata_of_book(path_str);
-        let title = book_map.get("title").unwrap_or(&"No title".to_string()).to_string();
-        let author = book_map.get("author").unwrap_or(&"No author".to_string()).to_string();
-        let lang = book_map.get("lang").unwrap_or(&"No language".to_string()).to_string();
-        let desc = book_map.get("desc").unwrap_or(&"No description".to_string()).to_string();
+        let title = book_map
+            .get("title")
+            .unwrap_or(&"No title".to_string())
+            .to_string();
+        let author = book_map
+            .get("author")
+            .unwrap_or(&"No author".to_string())
+            .to_string();
+        let lang = book_map
+            .get("lang")
+            .unwrap_or(&"No language".to_string())
+            .to_string();
+        let desc = book_map
+            .get("desc")
+            .unwrap_or(&"No description".to_string())
+            .to_string();
 
         let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
 
@@ -189,7 +197,7 @@ impl Book {
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
         */
-        
+
         Book {
             title: title.into(),
             author: author.into(),
@@ -306,8 +314,8 @@ impl BookReading for Book {
 }
 
 impl BookManagement for Book {
-    fn get_path(&self) -> Rc<String> {
-        self.path.clone()
+    fn get_path(&self) -> String {
+        self.path.to_string()
     }
 
     fn split_chapter_in_pages(&self) -> Vec<Rc<String>> {
@@ -367,8 +375,8 @@ impl BookManagement for Book {
 }
 
 impl GUIBook for Book {
-    fn get_title(&self) -> Rc<String> {
-        self.title.clone()
+    fn get_title(&self) -> String {
+        self.title.to_string()
     }
 
     fn with_title(mut self, title: impl Into<String>) -> Self {
@@ -380,8 +388,8 @@ impl GUIBook for Book {
         self.title = Rc::new(title.into());
     }
 
-    fn get_author(&self) -> Rc<String> {
-        self.author.clone()
+    fn get_author(&self) -> String {
+        self.author.to_string()
     }
 
     fn with_author(mut self, author: impl Into<String>) -> Self {
@@ -457,15 +465,11 @@ impl GUIBook for Book {
         self.set_selected(false);
     }
 
-    fn get_description(&self) -> Rc<String> {
-        self.description.clone()
-    }
-
-    fn build_cover(&self) -> Result<Rc<[u8]>, String> {
+    fn build_cover(&self) -> Result<Box<[u8]>, String> {
         self.build_cover_with_size(150, 250)
     }
 
-    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Rc<[u8]>, String> {
+    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Box<[u8]>, String> {
         let epub_path = self.get_path();
         let mut epub = EpubDoc::new(epub_path.as_str()).map_err(|e| e.to_string())?;
         let cover = epub.get_cover().map_err(|e| e.to_string())?;

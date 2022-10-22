@@ -5,7 +5,6 @@ use druid::{
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
     LifeCycleCtx, PaintCtx, Rect, RenderContext, Size, Target, TextLayout, UpdateCtx, Widget,
 };
-use std::rc::Rc;
 
 use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
 
@@ -17,7 +16,7 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
 /// rect with smoothed edges and the book cover as a picture
 pub struct BookCover {
-    cover_img: Option<Rc<[u8]>>,
+    cover_img: Option<Box<[u8]>>,
     is_hot: bool,
 }
 
@@ -29,7 +28,7 @@ impl BookCover {
         }
     }
 
-    pub fn with_cover_image(mut self, cover_img: Option<Rc<[u8]>>) -> Self {
+    pub fn with_cover_image(mut self, cover_img: Option<Box<[u8]>>) -> Self {
         self.cover_img = cover_img;
         self
     }
