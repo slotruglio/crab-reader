@@ -1,12 +1,13 @@
 use super::saveload::{get_chapter, FileExtension};
 use epub::doc::EpubDoc;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::{
     collections::HashMap,
     error,
     fs::{File, OpenOptions},
-    io::{Write, BufReader},
-    rc::Rc, path::Path,
+    io::{BufReader, Write},
+    path::Path,
+    rc::Rc,
 };
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
@@ -137,7 +138,7 @@ pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
     metadata_file
         .write_all(json.to_string().as_bytes())
         .unwrap();
-        let len = book.get_num_pages();
+    let len = book.get_num_pages();
 
     //extract all chapters
     let mut i = 0;
@@ -245,5 +246,4 @@ pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
     // if it fails, read from epub, saves and return metadata
     let metadata = extract_metadata(path).expect("Failed to extract metadata from epub");
     metadata
-
 }
