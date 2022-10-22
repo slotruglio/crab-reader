@@ -82,7 +82,11 @@ impl BookDetails {
         btn_ctls.set_main_axis_alignment(druid::widget::MainAxisAlignment::SpaceAround);
 
         let btn_ctls = btn_ctls.expand_width().padding(5.0);
-
+        
+        // inside the function to open the book there should be
+        // the book's functions lo load chapters and page
+        // Book::load_chapter(), Book::load_page()
+        
         let widget = Flex::column()
             .with_child(header_label)
             .with_child(title_label)

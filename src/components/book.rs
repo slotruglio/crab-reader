@@ -138,6 +138,13 @@ pub trait BookManagement {
     /// Method that edits the text of the current chapter
     /// new text is already in self.chapter_page_text
     fn edit_text(&mut self, old_text: String);
+
+    /// Method that extracts the book's chapters in local files
+    fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
+    
+    fn load_chapter(&mut self);
+
+    fn load_page(&mut self);
 }
 
 /// Struct that models EPUB file
@@ -162,34 +169,40 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
+        let start = std::time::Instant::now();
         let path = path.into();
         let path_str = path.as_str();
 
-        epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
-        let book = EpubDoc::new(&path_str).expect("EpubDoc::new() failed in Book::new()");
+        // this function has to be called when the book is first added to the library
+        // epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
 
-        let title = book.mdata("title").unwrap_or("No title".into());
-        let author = book.mdata("creator").unwrap_or("No author".into());
-        let lang = book.mdata("language").unwrap_or("No lang".into());
-        let desc = book.mdata("description").unwrap_or("No description".into());
+        let book_map = epub_utils::get_metadata_of_book(path_str);
+        let title = book_map.get("title").unwrap_or(&"No title".to_string()).to_string();
+        let author = book_map.get("author").unwrap_or(&"No author".to_string()).to_string();
+        let lang = book_map.get("lang").unwrap_or(&"No language".to_string()).to_string();
+        let desc = book_map.get("desc").unwrap_or(&"No description".to_string()).to_string();
 
-        let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
+        let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
+
+        /*
+        // these functions have to be called when the you click to read the book
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
         let chapter_page_text = chapter_text[0..200].to_string();
-
+        */
+        
         Book {
             title: title.into(),
             author: author.into(),
             lang: lang.into(),
             path: path.into(),
             chapter_number: chapter_number,
+            current_page: current_page,
             number_of_pages: 420, // How to set early?
             idx: 0,               // How to set early?
             selected: false,
             description: desc.into(),
-            current_page: 0, // How to recvoer?
-            chapter_text,
-            chapter_page_text: chapter_page_text.into(),
+            chapter_text: Rc::new("".into()),
+            chapter_page_text: Rc::new("".into()),
         }
     }
 }
@@ -269,8 +282,7 @@ impl BookReading for Book {
     }
 
     fn get_page_of_chapter(&self) -> Rc<String> {
-        let page = self.split_chapter_in_pages();
-        page[self.current_page].clone()
+        self.chapter_page_text.clone()
     }
 
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>) {
@@ -339,6 +351,18 @@ impl BookManagement for Book {
                 }
             }
         }
+    }
+
+    fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>> {
+        epub_utils::extract_chapters(&self.path)
+    }
+
+    fn load_chapter(&mut self) {
+        self.chapter_text = epub_utils::get_chapter_text(self.path.as_str(), self.chapter_number);
+    }
+
+    fn load_page(&mut self) {
+        self.chapter_page_text = self.split_chapter_in_pages()[self.current_page].clone();
     }
 }
 
