@@ -6,6 +6,9 @@ pub struct MyEnv {
 	pub theme: String,
 	pub font_color: Color,
 	pub font: FontDescriptor,
+	pub books_path: String,
+	pub edits_path: String,
+	pub bookmarks_path: String,
 }
 
 impl MyEnv {
@@ -15,6 +18,9 @@ impl MyEnv {
 			theme: "dark".to_string(),
 			font_color: Color::rgb8(0, 0, 0),
 			font: FontDescriptor::new(FontFamily::SYSTEM_UI),
+			books_path: "".to_string(),
+			edits_path: "".to_string(),
+			bookmarks_path: "".to_string(),
 		};
 
 		//Take the JSON, turn it into a MAP
@@ -39,6 +45,11 @@ impl MyEnv {
 
 		new_env.font = FontDescriptor::new(MyEnv::get_font_family(json.get("font_family").unwrap().to_string()))
 			.with_size(font_size_numeric);
+
+		//SET books_path, edits_path, bookmarks_path
+		new_env.books_path = json.get("books_path").unwrap().as_str().unwrap().to_string();
+		new_env.edits_path = json.get("edits_path").unwrap().as_str().unwrap().to_string();
+		new_env.bookmarks_path = json.get("bookmarks_path").unwrap().as_str().unwrap().to_string();
 
 		return new_env;
 	}
