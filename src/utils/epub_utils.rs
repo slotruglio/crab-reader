@@ -247,3 +247,27 @@ pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
     let metadata = extract_metadata(path).expect("Failed to extract metadata from epub");
     metadata
 }
+
+/// Function that split the text of the chapter
+/// into a vector of strings, each string is a paragraph
+/// calculated by the number of lines and (not now) the font size
+/// You  have to provide the path. Number of lines and font size
+/// You can provide the text of the chapter as a RC String or
+/// you can provide the chapter number
+pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>(path: &str, opt_text: S, chapter_number: U, number_of_lines: usize, font_size: usize) -> Vec<Rc<String>> {
+    // todo(): consider also the font size
+    
+    let text = match opt_text.into() {
+        Some(book_chapter_text) => book_chapter_text,
+        None => get_chapter_text(path, chapter_number.into().unwrap_or(0)),
+    };
+    let lines = text.split("\n\n").collect::<Vec<&str>>();
+    lines
+    .into_iter()
+    .enumerate()
+    .map(|(idx, line)| match idx % number_of_lines {
+        0 => Rc::new(line.to_string()),
+        _ => Rc::new(format!("{}{}", "\n\n", line)),
+    })
+    .collect()
+}

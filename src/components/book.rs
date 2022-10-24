@@ -88,6 +88,7 @@ use druid::{Data, Lens};
 use epub::doc::EpubDoc;
 
 const NUMBER_OF_LINES: usize = 8;
+const FONT_SIZE: usize = 12;
 
 /// trait that describes the book reading functions
 pub trait BookReading {
@@ -319,20 +320,13 @@ impl BookManagement for Book {
     }
 
     fn split_chapter_in_pages(&self) -> Vec<Rc<String>> {
-        // TODO() number_of_lines as parameter
-        // TODO() get first from attribute and then from
-        let text = self.get_chapter_text();
-        let lines = text.split("\n\n").collect::<Vec<&str>>();
-
-        // is this correct
-        lines
-            .into_iter()
-            .enumerate()
-            .map(|(idx, line)| match idx % NUMBER_OF_LINES {
-                0 => Rc::new(line.to_string()),
-                _ => Rc::new(format!("{}{}", "\n\n", line)),
-            })
-            .collect()
+        epub_utils::split_chapter_in_vec(
+            self.path.as_str(),
+            self.get_chapter_text(),
+            None,
+            NUMBER_OF_LINES,
+            FONT_SIZE
+        )
     }
 
     fn edit_text(&mut self, old_text: String) {
