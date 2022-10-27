@@ -4,8 +4,8 @@ use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use druid::widget::{Either, Flex, Scroll};
-use druid::{AppLauncher, Color, Data, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
+use druid::widget::{Either, Flex, Scroll, ViewSwitcher};
+use druid::{AppLauncher, Color, Data, Env, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
 use once_cell::sync::Lazy; // 1.3.1
 use std::rc::Rc;
 use std::sync::Mutex;
@@ -32,6 +32,7 @@ struct CrabReaderState {
     user: UserState,
     library: Library,
     display_mode: DisplayMode,
+    reading: bool,
 }
 
 impl Default for CrabReaderState {
@@ -40,6 +41,7 @@ impl Default for CrabReaderState {
             user: UserState::new(),
             library: Library::new(),
             display_mode: DisplayMode::Cover,
+            reading: false,
         }
     }
 }
@@ -97,10 +99,35 @@ fn build_ui() -> impl Widget<CrabReaderState> {
     Flex::column().with_flex_child(inner, 1.0)
 }
 
+#[derive(Clone, PartialEq, Data)]
+enum VS {
+    Reading,
+    Browsing,
+}
+
+fn vs_child_picker(state: &CrabReaderState, _: &Env) -> VS {
+    if state.reading {
+        VS::Reading
+    } else {
+        VS::Browsing
+    }
+}
+
+fn vs_child_builder(mode: &VS, _: &CrabReaderState, _: &Env) -> Box<dyn Widget<CrabReaderState>> {
+    match mode {
+        VS::Reading => Box::new(build_ui()),
+        VS::Browsing => Box::new(build_ui()),
+    }
+}
+
+fn get_viewswitcher() -> impl Widget<CrabReaderState> {
+    ViewSwitcher::new(vs_child_picker, vs_child_builder)
+}
+
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
     AppLauncher::with_window(
-        WindowDesc::new(build_ui)
+        WindowDesc::new(get_viewswitcher)
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
