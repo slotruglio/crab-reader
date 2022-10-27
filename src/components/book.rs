@@ -1,4 +1,6 @@
 use crate::utils::{epub_utils, saveload, text_descriptor};
+use druid::image::io::Reader as ImageReader;
+use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
 
@@ -6,7 +8,7 @@ use std::string::String;
 /// in order to be rendered visually correct in the GUI of the application.
 pub trait GUIBook {
     /// Returns the title
-    fn get_title(&self) -> Rc<String>;
+    fn get_title(&self) -> String;
 
     /// Builder pattern for title
     fn with_title(self, title: impl Into<String>) -> Self;
@@ -15,7 +17,7 @@ pub trait GUIBook {
     fn set_title(&mut self, title: impl Into<String>);
 
     /// Returns the author
-    fn get_author(&self) -> Rc<String>;
+    fn get_author(&self) -> String;
 
     /// Builder pattern for author
     fn with_author(self, author: impl Into<String>) -> Self;
@@ -56,23 +58,11 @@ pub trait GUIBook {
     /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
     fn set_index(&mut self, idx: usize);
 
-    /// Returns the cover image, codified as a &[u8].
-    /// The format is for now to be intended to be as RGB8
-    ///
-    fn get_cover(&self) -> Rc<&[u8]>;
+    /// Builds the cover image from the cover image data
+    fn build_cover(&self) -> Result<Box<[u8]>, String>;
 
-    /// Builder method for the cover image, codified as a &[u8].
-    /// The format is for now to be intended to be as RGB8
-    ///
-    fn with_cover(self, img: &[u8]) -> Self;
-
-    /// Sets the he cover image, codified as a &[u8].
-    /// The format is for now to be inteded as RGB8
-    ///
-    fn set_cover(&mut self, img: &[u8]);
-
-    /// Returns the description (i.e, like a synopsis for the book)
-    fn get_description(&self) -> Rc<String>;
+    /// Builds the cover image from the cover image data with the specified size
+    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Box<[u8]>, String>;
 
     /// Builder pattern for the description (i.e, like a synopsis for the book)
     fn with_description(self, description: impl Into<String>) -> Self;
@@ -96,10 +86,9 @@ use druid::text::RichText;
 
 use druid::{Data, Lens};
 use epub::doc::EpubDoc;
-use std::fs::File;
-use std::io::Write;
 
 const NUMBER_OF_LINES: usize = 8;
+const FONT_SIZE: usize = 12;
 
 /// trait that describes the book reading functions
 pub trait BookReading {
@@ -138,7 +127,7 @@ pub trait BookReading {
 /// not related directly to the reading
 pub trait BookManagement {
     /// Method that returns the path of the book
-    fn get_path(&self) -> Rc<String>;
+    fn get_path(&self) -> String;
 
     /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
     /// and returns a vector of strings. Each string is a page of the chapter
@@ -147,6 +136,13 @@ pub trait BookManagement {
     /// Method that edits the text of the current chapter
     /// new text is already in self.chapter_page_text
     fn edit_text(&mut self, old_text: String);
+
+    /// Method that extracts the book's chapters in local files
+    fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
+
+    fn load_chapter(&mut self);
+
+    fn load_page(&mut self);
 }
 
 /// Struct that models EPUB file
@@ -171,47 +167,52 @@ impl Book {
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
-        //Save pages locally
         let path = path.into();
         let path_str = path.as_str();
 
-        let _result = epub_utils::extract_pages(&path_str).unwrap();
+        // this function has to be called when the book is first added to the library
+        // epub_utils::extract_pages(&path_str).expect("Couldn't extract pages in Book::new()");
 
-        let mut book = EpubDoc::new(&path_str).unwrap();
+        let book_map = epub_utils::get_metadata_of_book(path_str);
+        let title = book_map
+            .get("title")
+            .unwrap_or(&"No title".to_string())
+            .to_string();
+        let author = book_map
+            .get("author")
+            .unwrap_or(&"No author".to_string())
+            .to_string();
+        let lang = book_map
+            .get("lang")
+            .unwrap_or(&"No language".to_string())
+            .to_string();
+        let desc = book_map
+            .get("desc")
+            .unwrap_or(&"No description".to_string())
+            .to_string();
 
-        let title = book.mdata("title").unwrap_or("No title".to_string());
+        let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
 
-        let author = book.mdata("creator").unwrap_or("No author".to_string());
-
-        let lang = book.mdata("language").unwrap_or("No lang".to_string());
-
-        let cover_data = book.get_cover().unwrap_or(vec![0]);
-
-        let title_to_save = format!("assets/covers/{}{}", title.as_str(), ".png");
-
-        println!("DEBUG: Saving cover to {}", title_to_save);
-
-        let copy_title = title_to_save.clone();
-        let f = File::create(copy_title);
-        assert!(f.is_ok());
-        let mut f = f.unwrap();
-        let _resp = f.write_all(&cover_data);
-
-        let (chapter_number, _current_page) = saveload::get_page_of_chapter(path_str).unwrap();
+        /*
+        // these functions have to be called when the you click to read the book
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
-        let _chapter_page_text = chapter_text[0..200].to_string();
-        todo!()
-        // Book {
-        // title: Rc::new(title),
-        // author: Rc::new(author),
-        // lang: Rc::new(lang),
-        // cover: title_to_save,
-        // path: Rc::new(path.into()),
-        // chapter_number: chapter_number,
-        // current_page: current_page,
-        // chapter_text: Rc::new(chapter_text),
-        // chapter_page_text: Rc::new(chapter_page_text),
-        // }
+        let chapter_page_text = chapter_text[0..200].to_string();
+        */
+
+        Book {
+            title: title.into(),
+            author: author.into(),
+            lang: lang.into(),
+            path: path.into(),
+            chapter_number: chapter_number,
+            current_page: current_page,
+            number_of_pages: 420, // How to set early?
+            idx: 0,               // How to set early?
+            selected: false,
+            description: desc.into(),
+            chapter_text: Rc::new("".into()),
+            chapter_page_text: Rc::new("".into()),
+        }
     }
 }
 
@@ -290,14 +291,11 @@ impl BookReading for Book {
     }
 
     fn get_page_of_chapter(&self) -> Rc<String> {
-        let page = self.split_chapter_in_pages();
-        page[self.current_page].clone()
+        self.chapter_page_text.clone()
     }
 
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>) {
         let page = self.split_chapter_in_pages();
-        let mut left_page = String::new();
-        let mut right_page = String::new();
 
         let odd = self.current_page % 2;
         let left_page = if odd == 0 {
@@ -317,25 +315,18 @@ impl BookReading for Book {
 }
 
 impl BookManagement for Book {
-    fn get_path(&self) -> Rc<String> {
-        self.path.clone()
+    fn get_path(&self) -> String {
+        self.path.to_string()
     }
 
     fn split_chapter_in_pages(&self) -> Vec<Rc<String>> {
-        // TODO() number_of_lines as parameter
-        // TODO() get first from attribute and then from
-        let text = self.get_chapter_text();
-        let lines = text.split("\n\n").collect::<Vec<&str>>();
-
-        // is this correct
-        lines
-            .into_iter()
-            .enumerate()
-            .map(|(idx, line)| match idx % NUMBER_OF_LINES {
-                0 => Rc::new(line.to_string()),
-                _ => Rc::new(format!("{}{}", "\n\n", line)),
-            })
-            .collect()
+        epub_utils::split_chapter_in_vec(
+            self.path.as_str(),
+            self.get_chapter_text(),
+            None,
+            NUMBER_OF_LINES,
+            FONT_SIZE
+        )
     }
 
     fn edit_text(&mut self, old_text: String) {
@@ -363,11 +354,23 @@ impl BookManagement for Book {
             }
         }
     }
+
+    fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>> {
+        epub_utils::extract_chapters(&self.path)
+    }
+
+    fn load_chapter(&mut self) {
+        self.chapter_text = epub_utils::get_chapter_text(self.path.as_str(), self.chapter_number);
+    }
+
+    fn load_page(&mut self) {
+        self.chapter_page_text = self.split_chapter_in_pages()[self.current_page].clone();
+    }
 }
 
 impl GUIBook for Book {
-    fn get_title(&self) -> Rc<String> {
-        self.title.clone()
+    fn get_title(&self) -> String {
+        self.title.to_string()
     }
 
     fn with_title(mut self, title: impl Into<String>) -> Self {
@@ -379,8 +382,8 @@ impl GUIBook for Book {
         self.title = Rc::new(title.into());
     }
 
-    fn get_author(&self) -> Rc<String> {
-        self.author.clone()
+    fn get_author(&self) -> String {
+        self.author.to_string()
     }
 
     fn with_author(mut self, author: impl Into<String>) -> Self {
@@ -431,13 +434,13 @@ impl GUIBook for Book {
         self.idx = idx as usize
     }
 
-    fn with_description(mut self, description: impl Into<String>) -> Self {
-        self.set_description(description);
+    fn with_description(mut self, desc: impl Into<String>) -> Self {
+        self.set_description(desc);
         self
     }
 
-    fn set_description(&mut self, description: impl Into<String>) {
-        self.description = Rc::new(description.into());
+    fn set_description(&mut self, desc: impl Into<String>) {
+        self.description = desc.into().into();
     }
 
     fn is_selected(&self) -> bool {
@@ -456,19 +459,20 @@ impl GUIBook for Book {
         self.set_selected(false);
     }
 
-    fn get_cover(&self) -> Rc<&[u8]> {
-        todo!()
+    fn build_cover(&self) -> Result<Box<[u8]>, String> {
+        self.build_cover_with_size(150, 250)
     }
 
-    fn with_cover(self, img: &[u8]) -> Self {
-        todo!()
-    }
-
-    fn set_cover(&mut self, img: &[u8]) {
-        todo!()
-    }
-
-    fn get_description(&self) -> Rc<String> {
-        todo!()
+    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Box<[u8]>, String> {
+        let epub_path = self.get_path();
+        let mut epub = EpubDoc::new(epub_path.as_str()).map_err(|e| e.to_string())?;
+        let cover = epub.get_cover().map_err(|e| e.to_string())?;
+        let reader = ImageReader::new(ImageCursor::new(cover))
+            .with_guessed_format()
+            .map_err(|e| e.to_string())?;
+        let image = reader.decode().map_err(|e| e.to_string())?;
+        let thumbnail = image.thumbnail_exact(width, height);
+        let rgb = thumbnail.to_rgb8().to_vec();
+        Ok(rgb.into())
     }
 }

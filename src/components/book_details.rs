@@ -1,9 +1,11 @@
-use druid::piet::Text;
+use druid::widget::{Button, Flex, Label, LineBreaking};
 use druid::{
-    BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, Point, UpdateCtx, Widget,
+    BoxConstraints, Color, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
+    LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt,
+    WidgetPod,
 };
-use druid::{RenderContext, TextLayout};
+
+use crate::ENTERING_READING_MODE;
 
 use super::{
     book::{Book, GUIBook},
@@ -11,132 +13,133 @@ use super::{
     mockup::MockupLibrary,
 };
 
-pub struct BookDetails {
-    y_offset: f64,
-}
-
 type Library = MockupLibrary<Book>;
 
-impl Widget<Library> for BookDetails {
-    fn event(&mut self, _: &mut EventCtx, _: &Event, _: &mut Library, _: &Env) {
-        ()
-    }
-
-    fn lifecycle(&mut self, _: &mut LifeCycleCtx, _: &LifeCycle, _: &Library, _: &Env) {
-        ()
-    }
-
-    fn update(&mut self, _: &mut UpdateCtx, _: &Library, _: &Library, _: &Env) {
-        ()
-    }
-
-    fn layout(
-        &mut self,
-        _: &mut LayoutCtx,
-        bc: &BoxConstraints,
-        data: &Library,
-        _: &Env,
-    ) -> druid::Size {
-        if let Some(_) = data.get_selected_book() {
-            let w = bc.max().width;
-            let h = self.y_offset + 10.0;
-            (w, h).into()
-        } else {
-            bc.min()
-        }
-    }
-
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
-        if let Some(book) = data.get_selected_book() {
-            self.make_title(ctx, book, env);
-            self.make_author(ctx, book, env);
-            self.make_description(ctx, book, env)
-        }
-    }
+pub struct BookDetails {
+    inner: WidgetPod<Library, Box<dyn Widget<Library>>>,
 }
 
 impl BookDetails {
     pub fn new() -> Self {
-        Self { y_offset: 0.0 }
-    }
+        let header_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
+            .with_weight(FontWeight::BOLD)
+            .with_size(28.0);
+        let info_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
+            .with_weight(FontWeight::NORMAL)
+            .with_size(14.0);
 
-    fn make_title(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font = get_font(ctx, 18.0, FontWeight::SEMI_BOLD);
-        let lmargin = 7.5;
-        let mut layout: TextLayout<String> = TextLayout::new();
+        let mut header_label = Label::new("Dettagli del libro")
+            .with_text_color(Color::rgb8(0, 0, 0))
+            .with_font(header_font)
+            .with_text_alignment(druid::TextAlignment::Start);
+        header_label.set_line_break_mode(LineBreaking::WordWrap);
 
-        layout.set_text(data.get_title().to_string());
-        layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
-        layout.set_wrap_width(ctx.size().width - 2. * lmargin - 10.0);
-        layout.rebuild_if_needed(ctx.text(), env);
+        let title_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |book| {
+                    format!("Titolo: {}", book.get_title().to_string())
+                })
+        })
+        .with_text_color(Color::BLACK)
+        .with_font(info_font.clone())
+        .align_left()
+        .padding(5.0);
 
-        let pos = Point::new(
-            (ctx.size().width / 2.0 - layout.size().width / 2.0).max(lmargin) - 5.0,
-            10.0,
-        );
+        let author_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |book| {
+                    format!("Autore: {}", book.get_author().to_string())
+                })
+        })
+        .with_text_color(Color::BLACK)
+        .with_font(info_font.clone())
+        .align_left()
+        .padding(5.0);
 
-        self.y_offset = layout.size().height;
+        let lang_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |_: &Book| {
+                    format!("Lingua: {}", String::from("//TODO: Add get_lang()"))
+                })
+        })
+        .with_font(info_font.clone())
+        .with_text_color(Color::BLACK)
+        .align_left()
+        .padding(5.0);
 
-        if let Some(layout) = layout.layout() {
-            ctx.draw_text(layout, pos);
-        }
-    }
+        let completion_label = Label::dynamic(|data: &Library, _| {
+            data.get_selected_book()
+                .map_or("Nessun libro selezionato".into(), |_: &Book| {
+                    format!("Letto al {}%", String::from("//TODO: Add get_compl_perc()"))
+                })
+        })
+        .with_font(info_font.clone())
+        .with_text_color(Color::BLACK)
+        .align_left()
+        .padding(5.0);
 
-    fn make_author(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font = get_font(ctx, 14.0, FontWeight::SEMI_BOLD);
-        let lmargin = 7.5;
-        let mut layout: TextLayout<String> = TextLayout::new();
+        let keep_reading_btn =
+            Button::new("Continua a Leggere").on_click(|ctx, _: &mut Library, _: &Env| {
+                let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
+                ctx.submit_command(cmd.clone());
+                println!("Notification submitted");
+            });
 
-        layout.set_text(data.get_author().to_string());
-        layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
-        layout.set_wrap_width(ctx.size().width - 2. * lmargin - 10.0);
-        layout.rebuild_if_needed(ctx.text(), env);
+        let mut btn_ctls = Flex::row()
+            .with_flex_child(keep_reading_btn, 1.0)
+            .with_flex_child(Button::new("Aggiungi ai Preferiti"), 1.0);
 
-        let pos = Point::new(
-            (ctx.size().width / 2.0 - layout.size().width / 2.0).max(lmargin) - 5.0,
-            self.y_offset + layout.size().height,
-        );
+        btn_ctls.set_main_axis_alignment(druid::widget::MainAxisAlignment::SpaceAround);
 
-        self.y_offset = pos.y + layout.size().height;
+        let btn_ctls = btn_ctls.expand_width().padding(5.0);
 
-        if let Some(layout) = layout.layout() {
-            ctx.draw_text(layout, pos);
-        }
-    }
+        // inside the function to open the book there should be
+        // the book's functions lo load chapters and page
+        // Book::load_chapter(), Book::load_page()
 
-    fn make_description(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let font = get_font(ctx, 18.0, FontWeight::THIN);
-        let lmargin = 15.0;
-        let mut layout: TextLayout<String> = TextLayout::new();
+        let widget = Flex::column()
+            .with_child(header_label)
+            .with_child(title_label)
+            .with_child(author_label)
+            .with_child(lang_label)
+            .with_child(completion_label)
+            .with_child(btn_ctls)
+            .expand()
+            .boxed();
+        let inner = WidgetPod::new(widget);
 
-        layout.set_text(data.get_description().to_string());
-        layout.set_text_color(Color::WHITE);
-        layout.set_font(font);
-        layout.set_wrap_width(ctx.size().width - 2. * lmargin - 5.0);
-        layout.rebuild_if_needed(ctx.text(), env);
-
-        let pos = Point::new(
-            (ctx.size().width / 2.0 - layout.size().width / 2.0).max(lmargin) - 5.0,
-            self.y_offset + 20.0,
-        );
-
-        self.y_offset = pos.y + layout.size().height;
-
-        if let Some(layout) = layout.layout() {
-            ctx.draw_text(layout, pos);
-        }
+        Self { inner }
     }
 }
 
-fn get_font(ctx: &mut PaintCtx, font_size: f64, font_weight: FontWeight) -> FontDescriptor {
-    let font_family = ctx
-        .text()
-        .font_family("URW Bookman")
-        .unwrap_or(FontFamily::SYSTEM_UI);
+impl Widget<Library> for BookDetails {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
+        self.inner.event(ctx, event, data, env);
+    }
 
-    FontDescriptor::new(font_family)
-        .with_size(font_size)
-        .with_weight(font_weight)
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
+        self.inner.lifecycle(ctx, event, data, env);
+    }
+
+    fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
+        self.inner.update(ctx, data, env);
+    }
+
+    fn layout(
+        &mut self,
+        ctx: &mut LayoutCtx,
+        bc: &BoxConstraints,
+        data: &Library,
+        env: &Env,
+    ) -> Size {
+        if let Some(_) = data.get_selected_book() {
+            self.inner.layout(ctx, bc, data, env)
+        } else {
+            Size::ZERO
+        }
+    }
+
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
+        self.inner.paint(ctx, data, env);
+    }
 }

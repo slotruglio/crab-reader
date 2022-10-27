@@ -6,7 +6,7 @@ use druid::{
 use crate::Library;
 
 use super::{
-    book::Book,
+    book::{Book, BookManagement},
     book_cover::{BookCover, BOOK_WIDGET_SIZE},
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
 };
@@ -21,8 +21,7 @@ impl CoverLibrary {
     }
 
     pub fn add_child(&mut self, book: &Book) {
-        todo!("Implement cover loading from .epub");
-        let widget = BookCover::new(); // .with_cover_image_path(book.get_cover_path().to_string());
+        let widget = BookCover::new().with_cover_image(book.get_path());
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
@@ -40,7 +39,7 @@ impl Widget<Library> for CoverLibrary {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     data.unselect_current_book();
-                    ctx.request_paint();
+                    ctx.request_layout();
                 }
             }
             Event::Notification(cmd) => {
@@ -50,7 +49,7 @@ impl Widget<Library> for CoverLibrary {
                     } else {
                         data.unselect_current_book();
                     }
-                    ctx.request_paint();
+                    ctx.request_layout();
                 }
             }
             _ => {}

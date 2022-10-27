@@ -7,26 +7,28 @@ use druid::EventCtx;
 /// Activate or deactivate editing mode
 /// return the new value of is_editing
 /// and the new value of attribute text
+#[allow(dead_code)]
 pub fn edit_button(
     ctx: &mut EventCtx,
     book: &mut Book,
     text: String,
     is_editing: bool,
 ) -> (bool, String) {
-    let mut is_editing = !is_editing;
+    let state_is_editing = !is_editing;
 
-    let mut text = text;
+    let mut text_to_edit = text;
 
-    // text is the "old page"
-    if is_editing {
-        text = book.get_page_of_chapter().to_string();
+    // text_to_edit is the "old page"
+    if state_is_editing {
+        text_to_edit = book.get_page_of_chapter().to_string();
     }
 
     ctx.request_paint();
-    (is_editing, text)
+    (state_is_editing, text_to_edit)
 }
 
-/// Go to the next page of the book
+/// Go to the next or previous page of the book
+#[allow(dead_code)]
 pub fn change_page(
     ctx: &mut EventCtx,
     book: &mut Book,

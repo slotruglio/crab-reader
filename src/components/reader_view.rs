@@ -1,11 +1,12 @@
-use druid::widget::{Flex, Label, LineBreaking, Scroll, TextBox};
-use druid::{LensExt, Widget, WidgetExt};
+use druid::widget::{Flex, Label, LineBreaking, Scroll};
+use druid::{Widget, WidgetExt};
 
 use crate::AppState;
 
-use super::book::{Book, BookReading};
+use super::book::BookReading;
 
 // single page view for text reader
+#[allow(dead_code)]
 pub fn build_single_view() -> impl Widget<AppState> {
     Scroll::new(
         Label::dynamic(|data: &AppState, _env: &_| {
@@ -18,6 +19,7 @@ pub fn build_single_view() -> impl Widget<AppState> {
 }
 
 // single page view for text editing
+#[allow(dead_code)]
 pub fn build_single_view_edit() -> impl Widget<AppState> {
     Scroll::new(
         // TextBox::multiline()
@@ -29,6 +31,7 @@ pub fn build_single_view_edit() -> impl Widget<AppState> {
 }
 
 // dual page view for text reader
+#[allow(dead_code)]
 pub fn build_dual_view() -> impl Widget<AppState> {
     Flex::row()
         .with_child(

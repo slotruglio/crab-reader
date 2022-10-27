@@ -1,13 +1,15 @@
+use druid::image::io::Reader as ImageReader;
+use std::io::Cursor as ImageCursor;
+use std::sync::{Arc, RwLock};
+
 use druid::{
-    image::io::Reader as ImageReader,
     piet::{ImageFormat, InterpolationMode, Text},
-    widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
     LifeCycleCtx, PaintCtx, Rect, RenderContext, Size, Target, TextLayout, UpdateCtx, Widget,
 };
-use std::rc::Rc;
+use epub::doc::EpubDoc;
 
 use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
 
@@ -19,42 +21,35 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
 /// rect with smoothed edges and the book cover as a picture
 pub struct BookCover {
-    cover_img: Box<[u8]>,
-    cover_img_path: Rc<String>,
+    cover_img: Arc<RwLock<Option<Box<[u8]>>>>,
     is_hot: bool,
 }
 
 impl BookCover {
     pub fn new() -> Self {
         Self {
-            cover_img: Box::new([]),
-            cover_img_path: Rc::new("".to_string()),
+            cover_img: Arc::from(RwLock::from(None)),
             is_hot: false,
         }
     }
 
-    pub fn with_cover_image_path(mut self, path: impl Into<String>) -> Self {
+    pub fn with_cover_image(self, path: impl Into<String>) -> Self {
         let path: String = path.into();
-        self.set_cover_image_path(path);
+        let arc = self.cover_img.clone();
+        std::thread::spawn(move || {
+            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
+            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
+            let reader = ImageReader::new(ImageCursor::new(cover))
+                .with_guessed_format()
+                .map_err(|e| e.to_string())
+                .unwrap();
+            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
+            let thumbnail = image.thumbnail_exact(150, 250);
+            let rgb = thumbnail.to_rgb8().to_vec();
+            let mut lock = arc.write().unwrap();
+            *lock = Some(rgb.into_boxed_slice());
+        });
         self
-    }
-
-    pub fn set_cover_image_path(&mut self, path: impl Into<String>) {
-        let path: String = path.into();
-        self.cover_img_path = Rc::from(path);
-        self.load_cover_image();
-    }
-
-    fn load_cover_image(&mut self) {
-        let path = (*self.cover_img_path).clone();
-        if let Ok(image) = ImageReader::open(path) {
-            if let Ok(image) = image.decode() {
-                let h = BOOK_WIDGET_SIZE.height as u32;
-                let w = BOOK_WIDGET_SIZE.width as u32;
-                let resized = image.thumbnail_exact(w, h).to_rgb8().into_raw();
-                self.cover_img = Box::from(resized.clone());
-            }
-        }
     }
 
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
@@ -76,14 +71,15 @@ impl BookCover {
     }
 
     fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        if self.cover_img.len() == 0 {
+        if self.cover_img.read().unwrap().is_none() {
             self.paint_default_cover(ctx, data);
             self.paint_book_title(ctx, env, data);
             return;
         }
 
         let round_factr = 20.0;
-        let image_buffer = &self.cover_img;
+        let binding = self.cover_img.read().unwrap();
+        let image_buffer = binding.as_ref().unwrap();
         let paint_rect = ctx.size().to_rect();
         let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
         let w = BOOK_WIDGET_SIZE.width as usize;
@@ -122,7 +118,7 @@ impl BookCover {
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
         layout.set_text_color(Color::WHITE);
-        // layout.set_font(font);
+        layout.set_font(font);
         layout.set_wrap_width(ctx.size().width - 2.5);
         layout.rebuild_if_needed(ctx.text(), env);
 
@@ -185,7 +181,7 @@ impl<BookData: GUIBook + Data> Widget<BookData> for BookCover {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &BookData, data: &BookData, _: &Env) {
-        if data.same(old_data) {
+        if !data.same(old_data) {
             ctx.request_layout();
         }
     }
