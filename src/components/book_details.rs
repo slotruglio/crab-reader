@@ -1,8 +1,11 @@
 use druid::widget::{Button, Flex, Label, LineBreaking};
 use druid::{
-    BoxConstraints, Color, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetPod,
+    BoxConstraints, Color, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
+    LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt,
+    WidgetPod,
 };
+
+use crate::ENTERING_READING_MODE;
 
 use super::{
     book::{Book, GUIBook},
@@ -75,18 +78,25 @@ impl BookDetails {
         .align_left()
         .padding(5.0);
 
+        let keep_reading_btn =
+            Button::new("Continua a Leggere").on_click(|ctx, _: &mut Library, _: &Env| {
+                let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
+                ctx.submit_command(cmd.clone());
+                println!("Notification submitted");
+            });
+
         let mut btn_ctls = Flex::row()
-            .with_flex_child(Button::new("Continua a Leggere"), 1.0)
+            .with_flex_child(keep_reading_btn, 1.0)
             .with_flex_child(Button::new("Aggiungi ai Preferiti"), 1.0);
 
         btn_ctls.set_main_axis_alignment(druid::widget::MainAxisAlignment::SpaceAround);
 
         let btn_ctls = btn_ctls.expand_width().padding(5.0);
-        
+
         // inside the function to open the book there should be
         // the book's functions lo load chapters and page
         // Book::load_chapter(), Book::load_page()
-        
+
         let widget = Flex::column()
             .with_child(header_label)
             .with_child(title_label)
