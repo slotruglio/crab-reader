@@ -4,8 +4,11 @@ use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use druid::widget::{Either, Flex, Label, LineBreaking, Scroll, ViewSwitcher};
-use druid::{AppLauncher, Color, Data, Env, Lens, PlatformError, Widget, WidgetExt, WindowDesc};
+use druid::widget::{Button, Either, Flex, Label, LineBreaking, Scroll, ViewSwitcher};
+use druid::{
+    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
+    WidgetExt, WindowDesc,
+};
 use once_cell::sync::Lazy; // 1.3.1
 use std::rc::Rc;
 use std::sync::Mutex;
@@ -25,6 +28,9 @@ Ac odio tempor orci dapibus ultrices in iaculis. Turpis egestas integer eget ali
 Eget duis at tellus at urna. Aenean euismod elementum nisi quis. Dictumst quisque sagittis purus sit amet volutpat consequat. Vitae justo eget magna fermentum iaculis eu. At tempor commodo ullamcorper a lacus vestibulum sed arcu. Morbi tempus iaculis urna id. Risus pretium quam vulputate dignissim suspendisse in. Quis lectus nulla at volutpat diam ut venenatis tellus. Et malesuada fames ac turpis egestas maecenas. Lobortis feugiat vivamus at augue. Nulla pharetra diam sit amet nisl suscipit adipiscing bibendum est.
 Habitant morbi tristique senectus et netus et malesuada. Tellus orci ac auctor augue mauris augue. Id venenatis a condimentum vitae sapien pellentesque habitant morbi tristique. Quam lacus suspendisse faucibus interdum posuere lorem ipsum. Luctus accumsan tortor posuere ac ut consequat. Orci porta non pulvinar neque laoreet. Scelerisque eleifend donec pretium vulputate sapien nec sagittis aliquam malesuada. Mauris vitae ultricies leo integer malesuada nunc vel risus commodo. Velit laoreet id donec ultrices tincidunt arcu non. Nec sagittis aliquam malesuada bibendum arcu vitae. Dui accumsan sit amet nulla facilisi morbi tempus iaculis. Accumsan in nisl nisi scelerisque eu ultrices vitae auctor. Dictumst quisque sagittis purus sit amet volutpat consequat mauris.
 Ut consequat semper viverra nam libero justo. Non tellus orci ac auctor augue mauris augue neque gravida. Tempus imperdiet nulla malesuada pellentesque. Non pulvinar neque laoreet suspendisse interdum consectetur libero id faucibus. Semper eget duis at tellus at. Malesuada nunc vel risus commodo viverra. Varius morbi enim nunc faucibus a pellentesque sit amet. Iaculis eu non diam phasellus vestibulum lorem sed risus. Pharetra et ultrices neque ornare aenean euismod elementum. Bibendum neque egestas congue quisque egestas diam. Feugiat in fermentum posuere urna nec tincidunt praesent semper. Lorem donec massa sapien faucibus et molestie ac feugiat. Suscipit tellus mauris a diam maecenas sed enim.";
+
+pub const ENTERING_READING_MODE: Selector<()> = Selector::new("reading-mode.on");
+pub const LEAVING_READING_MODE: Selector<()> = Selector::new("reading-mode.off");
 
 //Create a global ENV variable
 #[allow(dead_code)]
@@ -52,7 +58,7 @@ impl Default for CrabReaderState {
             user: UserState::new(),
             library: Library::new(),
             display_mode: DisplayMode::Cover,
-            reading: true,
+            reading: false,
         }
     }
 }
@@ -143,11 +149,74 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let text = Label::new(LIPSUM)
         .with_line_break_mode(LineBreaking::WordWrap)
         .padding(10.0);
+    let leave_btn = Button::new("Go back to Browsing")
+        .on_click(|_, data: &mut CrabReaderState, _| {
+            data.reading = false;
+        })
+        .center();
     let flex = Flex::column()
         .with_child(title)
+        .with_child(leave_btn)
         .with_spacer(5.0)
         .with_child(text);
     Scroll::new(flex).vertical()
+}
+
+struct DumbDelegate;
+
+impl AppDelegate<CrabReaderState> for DumbDelegate {
+    fn event(
+        &mut self,
+        _: &mut druid::DelegateCtx,
+        _: druid::WindowId,
+        event: druid::Event,
+        _: &mut CrabReaderState,
+        _: &Env,
+    ) -> Option<druid::Event> {
+        Some(event)
+    }
+
+    fn command(
+        &mut self,
+        _: &mut druid::DelegateCtx,
+        _: druid::Target,
+        cmd: &druid::Command,
+        data: &mut CrabReaderState,
+        _: &Env,
+    ) -> Handled {
+        println!("Command: {:?}", cmd);
+        match cmd {
+            notif if notif.is(ENTERING_READING_MODE) => {
+                println!("Entering reading mode!");
+                data.reading = true;
+                Handled::Yes
+            }
+            notif if notif.is(LEAVING_READING_MODE) => {
+                println!("Leaving reading mode!");
+                data.reading = false;
+                Handled::Yes
+            }
+            _ => Handled::No,
+        }
+    }
+
+    fn window_added(
+        &mut self,
+        _: druid::WindowId,
+        _: &mut CrabReaderState,
+        _: &Env,
+        _: &mut druid::DelegateCtx,
+    ) {
+    }
+
+    fn window_removed(
+        &mut self,
+        _: druid::WindowId,
+        _: &mut CrabReaderState,
+        _: &Env,
+        _: &mut druid::DelegateCtx,
+    ) {
+    }
 }
 
 fn main() -> Result<(), PlatformError> {
@@ -157,6 +226,7 @@ fn main() -> Result<(), PlatformError> {
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
+    .delegate(DumbDelegate)
     .launch(crab_state)?;
     Ok(())
 }
