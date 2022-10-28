@@ -193,6 +193,8 @@ impl Book {
 
         let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
 
+        let number_of_pages = epub_utils::get_number_of_pages(path_str);
+
         /*
         // these functions have to be called when the you click to read the book
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
@@ -206,7 +208,7 @@ impl Book {
             path: path.into(),
             chapter_number: chapter_number,
             current_page: current_page,
-            number_of_pages: 420, // How to set early?
+            number_of_pages: number_of_pages,
             idx: 0,               // How to set early?
             selected: false,
             description: desc.into(),
