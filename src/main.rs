@@ -4,12 +4,13 @@ use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use druid::widget::{Button, Either, Flex, Label, LineBreaking, Scroll, ViewSwitcher};
+use druid::widget::{Button, Either, Flex, Label, LineBreaking, Scroll, ViewSwitcher, Switch};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
     WidgetExt, WindowDesc,
 };
-use once_cell::sync::Lazy; // 1.3.1
+use once_cell::sync::Lazy;
+use utils::button_functions; // 1.3.1
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::envmanager::MyEnv;
@@ -154,11 +155,63 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             data.reading = false;
         })
         .center();
+    
+    // todo() switch to change single view and double view
+    // this is a mock to test layout
+    let views_btn = Button::new("Single/Double View")
+        .on_click(|_, data: &mut CrabReaderState, _| {
+            data.reading = false;
+        })
+        .center();
+    
+    let next_btn = Button::new("Next")
+        .on_click(|_, data: &mut CrabReaderState, _| {
+            // todo() integrate change page
+            // integrate AppState Variables
+            // button_functions::change_page(ctx, book, is_editing, single_view, true);
+        })
+        .center();
+    let back_btn = Button::new("Back")
+        .on_click(|_, data: &mut CrabReaderState, _| {
+            // todo() integrate change page
+            // integrate AppState Variables
+            // button_functions::change_page(ctx, book, is_editing, single_view, false);
+        })
+        .center();
+
+    let edit_btn = Button::new("Edit")
+        .on_click(|_, data: &mut CrabReaderState, _| {
+            // todo() integrate edit
+            // integrate AppState Variables
+            // button_functions::edit_button(ctx, book, text, is_editing);
+        })
+        .center();
+
+    // todo() get from Book
+    let current_page = Label::new("1")
+        .with_text_size(12.0)
+        .padding(10.0)
+        .center();
+
+    let header_btns = Flex::row()
+        .with_child(edit_btn)
+        .with_child(views_btn)
+        .center();
+    
+    let footer = Flex::row()
+        .with_child(back_btn)
+        .with_child(current_page)
+        .with_child(next_btn)
+        .center();
+
     let flex = Flex::column()
         .with_child(title)
         .with_child(leave_btn)
+        .with_child(header_btns)
         .with_spacer(5.0)
-        .with_child(text);
+        .with_child(text)
+        .with_child(footer);
+
     Scroll::new(flex).vertical()
 }
 
