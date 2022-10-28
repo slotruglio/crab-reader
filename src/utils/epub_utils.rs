@@ -224,7 +224,8 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
         let content = book.get_current_str().unwrap();
         let text = html2text::from_read(content.as_bytes(), 100);
         // save html page
-        let page_path: PathBuf = [folder_name, &format!("page_{}.html", chapter_number)].iter().collect();
+        let page_path: PathBuf = [SAVED_BOOKS_PATH, folder_name, &format!("page_{}.html", chapter_number)].iter().collect();
+        println!("DEBUG: path to save chapter: {:?}", page_path);
         let mut file = File::create(page_path).unwrap();
         file.write_all(content.as_bytes()).unwrap();
 
@@ -249,6 +250,60 @@ pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
     // if it fails, read from epub, saves and return metadata
     let metadata = extract_metadata(path).expect("Failed to extract metadata from epub");
     metadata
+}
+
+pub fn calculate_number_of_pages(path: &str, number_of_lines: usize, font_size: usize) -> Result<usize, Box<dyn error::Error>> {
+    let mut metadata = get_metadata_of_book(path);
+    let number_of_chapters = metadata["chapters"].parse::<usize>().unwrap_or_default();
+    
+    let n_workers = 4;
+    let pool = threadpool::ThreadPool::new(n_workers);
+
+    let (tx, rx) = std::sync::mpsc::channel();
+    for i in 0..number_of_chapters {
+        let tx = tx.clone();
+        let path = path.to_string();
+        pool.execute(move || {
+            let pages = split_chapter_in_vec(
+                path.as_str(), 
+                Option::None, 
+                i, 
+                number_of_lines, 
+                font_size);
+            tx.send(pages.len()).unwrap();
+        })
+    }
+
+    let number_of_pages: usize = rx.iter().take(number_of_chapters).sum();
+
+    // save number of pages in metadata
+    metadata.insert("total_pages".into(), number_of_pages.to_string());
+
+    let json = json!(metadata);
+    let metadata_path = Path::new(SAVED_BOOKS_PATH)
+        .join(Path::new(path).file_stem().unwrap().to_str().unwrap())
+        .join("metadata.json");
+
+    let metadata_file = OpenOptions::new()
+    .create(true)
+    .truncate(true)
+    .write(true).open(metadata_path)
+    .unwrap();
+
+    serde_json::to_writer_pretty(metadata_file, &json)?;
+
+    Ok(number_of_pages)
+}
+
+pub fn get_number_of_pages(path: &str) -> usize {
+    let metadata = get_metadata_of_book(path);
+    
+    let result = metadata.get("total_pages");
+    if let Some(number_of_pages) = result {
+        number_of_pages.parse::<usize>().unwrap_or_default()
+    } else {
+        calculate_number_of_pages(path, 8, 12).unwrap_or_default()
+    }
 }
 
 /// Function that split the text of the chapter
