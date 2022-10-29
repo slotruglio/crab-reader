@@ -126,7 +126,7 @@ pub fn get_chapter(folder_name: &str, chapter: usize, extension: FileExtension) 
     
     let filename = Path::new(SAVED_BOOKS_PATH)
     .join(folder_name)
-    .join(format!("chapter_{}.{}", chapter, ext));
+    .join(format!("page_{}.{}", chapter, ext));
     println!("filename from where get page: {:?}", filename);
     
     let file = File::open(filename)?;

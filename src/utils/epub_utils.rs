@@ -1,5 +1,6 @@
 use super::saveload::{get_chapter, FileExtension};
 use epub::doc::EpubDoc;
+use html2text::from_read;
 use serde_json::json;
 use std::{
     collections::HashMap,
@@ -215,14 +216,14 @@ pub fn get_chapter_text(path: &str, chapter_number: usize) -> Rc<String> {
     // try to read from html files
     else if let Ok(text) = get_chapter(folder_name, chapter_number, FileExtension::HTML) {
         println!("DEBUG: reading from html files");
-        text_rc = text.into();
+        text_rc = from_read(text.as_bytes(), 100).into();
     }
     // if it fails, read from epub and save html page
     else if let Ok(mut book) = EpubDoc::new(path) {
         println!("DEBUG: reading from epub file");
         book.set_current_page(chapter_number).unwrap();
         let content = book.get_current_str().unwrap();
-        let text = html2text::from_read(content.as_bytes(), 100);
+        let text = from_read(content.as_bytes(), 100);
         // save html page
         let page_path: PathBuf = [SAVED_BOOKS_PATH, folder_name, &format!("page_{}.html", chapter_number)].iter().collect();
         println!("DEBUG: path to save chapter: {:?}", page_path);
