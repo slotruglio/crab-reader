@@ -160,7 +160,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     // this is a mock to test layout
     let views_btn = Button::new("Single/Double View")
         .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading = false;
+            
         })
         .center();
     
