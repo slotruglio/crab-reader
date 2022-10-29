@@ -1,7 +1,7 @@
 use rust_fuzzy_search::fuzzy_compare;
 
 use threadpool::ThreadPool;
-use std::sync::{mpsc::channel, Arc, Mutex};
+use std::sync::{mpsc::channel, Arc, Mutex, Condvar};
 
 use super::epub_utils;
 
@@ -31,6 +31,9 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     let pool = ThreadPool::new(4);
     let (tx, rx) = channel();
 
+    //Setup condition variable holding a usize: this will allow us to save the page number of the best match
+    let pair: Arc<(Mutex<Option<usize>>, Condvar)> = Arc::new((Mutex::new(Some(0)), Condvar::new()));
+
     //This will contain the pages of each chapter, to calculate the global page number
     let chapters_pages_numbers = Arc::new(Mutex::new(vec![0; chapters_number]));
 
@@ -43,36 +46,59 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
         let chapters_pages_numbers_clone = chapters_pages_numbers.clone();
 
         //..create a thread that will calculate the similarity between the physical page and the chapter pages
+        //NOTE: the thread pool will aggregate these functions in 4 threads (see pool initialization)
         pool.execute(move || {
             let result = compute_similarity(book_path_clone, text_clone, i, chapters_pages_numbers_clone);
             tx.send(result).expect("Error in unwrapping");
         });
     }
 
-    //Get all the results from the channel, and filter the ones that are not None
-    let results: Vec<Option<Page>> = rx.iter().take(chapters_number).collect();
-    let results_some = results.iter().filter(|x| x.is_some()).collect::<Vec<_>>();
-    
-    //If there are some.. (pun)
-    if results_some.len() > 0 {
-        //.. get the one with the highest similarity
-        let best_match_page = results_some.iter().max_by(|&a, &b| {
-            let a = a.as_ref().unwrap();
-            let b = b.as_ref().unwrap();
-            a.similarity.partial_cmp(&b.similarity).unwrap()
-        });
-    
-        //Calculate the global page number and return it
-        let mut pages_sum = 0;
-        for i in 0..best_match_page.unwrap().as_ref().unwrap().chapter_number {
-            pages_sum += chapters_pages_numbers.lock().unwrap()[i];
-        }
-        pages_sum += best_match_page.unwrap().as_ref().unwrap().chapter_page_number;
+    //Clone the pair, to pass it to the thread
+    let pair_clone = pair.clone();
 
-        return Some(pages_sum);
+    //This thread receives all the results of the previous threads, finding the best page
+    //After this, it will wake up the main thread (see below)
+    std::thread::spawn(move || {
+        //Get all the results from the channel, and filter the ones that are not None
+        let results: Vec<Option<Page>> = rx.iter().take(chapters_number).collect();
+        let results_some = results.iter().filter(|x| x.is_some()).collect::<Vec<_>>();
+
+        let mut to_return = None;
+
+        //If there are some.. (pun)
+        if results_some.len() > 0 {
+            //.. get the one with the highest similarity
+            let best_match_page = results_some.iter().max_by(|&a, &b| {
+                let a = a.as_ref().unwrap();
+                let b = b.as_ref().unwrap();
+                a.similarity.partial_cmp(&b.similarity).unwrap()
+            });
+        
+            //Calculate the global page number and return it
+            let mut pages_sum = 0;
+            for i in 0..best_match_page.unwrap().as_ref().unwrap().chapter_number {
+                pages_sum += chapters_pages_numbers.lock().unwrap()[i];
+            }
+            pages_sum += best_match_page.unwrap().as_ref().unwrap().chapter_page_number;
+
+            //set the data inside the condition variable to pages_sum
+            to_return = Some(pages_sum);
+        }
+
+        let (lock, cvar) = &*pair_clone;
+        let mut data = lock.lock().unwrap();
+        *data = to_return;
+        cvar.notify_one();
+    });
+
+    //Go to sleep until the thread sends a notification
+    let (lock, cvar) = &*pair;
+    let mut page_number = lock.lock().unwrap();
+    while *page_number == Some(0) {
+        page_number = cvar.wait(page_number).unwrap();
     }
 
-    return None;
+    return *page_number;
 }
 
 
