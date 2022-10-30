@@ -20,7 +20,10 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     //OCR PHASE: Load the LEPTESS model, set the image to the leptess model, get the text
     let mut lt = leptess::LepTess::new(None, "eng").unwrap();
     lt.set_image(physical_page).unwrap();
-    let text = lt.get_utf8_text().unwrap();
+
+    //the text variable contains a book page: there can be words splitted between lines, so join them
+    //also remove all new lines, making the text a single big string
+    let text = lt.get_utf8_text().unwrap().replace("-\n", "").replace("\n", " ");
 
     //EBOOK PHASE: Setup book path and get chapter numbers through the metadata
     let book_path = format!("saved_books/{}", ebook_name);
@@ -61,6 +64,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     std::thread::spawn(move || {
         //Get all the results from the channel, and filter the ones that are not None
         let results: Vec<Option<Page>> = rx.iter().take(chapters_number).collect();
+
         let results_some = results.iter().filter(|x| x.is_some()).collect::<Vec<_>>();
 
         let mut to_return = None;
@@ -110,48 +114,55 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
     let mut chapter_pages_number = chapter_pages_number.lock().unwrap();
     chapter_pages_number[chapter_to_examine] = chapter_pages.len();
 
-    //Iterate through pages_vec
+    //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
 
-        let page = &chapter_pages[i];
+        //replace all \n characters with spaces. the \n characters may be attached to words
+        let page = &chapter_pages[i].replace("\n", " ");
 
-        //Take the first 10 words of text and page and join them into a lowercase string
-        let text_words: Vec<&str> = text.split_whitespace().take(10).collect();
-        let text_substring = text_words.join(" ").to_lowercase();
-        let page_words: Vec<&str> = page.split_whitespace().take(10).collect();
-        let page_substring = page_words.join(" ").to_lowercase();
-
-        //Compute the similarity between the two strings
-        let mut similarity = fuzzy_compare(text_substring.as_str(), page_substring.as_str());
-
-        //If the similarity is less than 0.8, skip the page
-        if similarity < 0.8 {
+        //if the page is empty, skip it
+        if page.len() == 0 {
             continue;
         }
 
-        //While the similarity remains higher than 0.8, keep comparing the next 10 words and so on
-        let mut i = 20;
-        while similarity > 0.8 {
-            let text_words: Vec<&str> = text.split_whitespace().skip(i-10).take(i).collect();
-            let text_substring = text_words.join(" ").to_lowercase();
-            let page_words: Vec<&str> = page.split_whitespace().skip(i-10).take(i).collect();
-            let page_substring = page_words.join(" ").to_lowercase();
+        let mut j = 0;
+        let mut similarity;
+
+        //calculate the TOTAL number of words in the text and in the page
+        let text_words_number = text.split_whitespace().count();
+        let page_words_number = page.split_whitespace().count();
+
+        //Continue while the similarity is higher than 0.7 and the we aren't left with less than 5 words in the text or in the page
+        loop {
+
+            println!("----------------");
+
+            let text_words: Vec<&str> = text.split_whitespace().clone().skip(j).take(10).collect();
+            let text_substring = text_words.join(" ");
+            let page_words: Vec<&str> = page.split_whitespace().clone().skip(j).take(10).collect();
+            let page_substring = page_words.join(" ");
+
             similarity = fuzzy_compare(text_substring.as_str(), page_substring.as_str());
 
-            i += 10;
-            //If we reached the end of the page or the text, return the page
-            if i > text_words.len() || i > page_words.len() {
-
-                return Some(Page {
-                    similarity,
-                    chapter_number: chapter_to_examine,
-                    chapter_page_number: i
-                });
+            //print text substring and page substring
+            println!("text: {}", text_substring);
+            println!("page: {}", page_substring);
+            println!("j: {}, text_words_number: {}, page_words_number: {}", j, text_words_number, page_words_number);
+            println!("similarity: {}", similarity);
+           
+            j += 10;
+            if !(similarity > 0.6 && text_words_number-5 > j && page_words_number-5 > j) {
+                break;
             }
         }
 
-        //If we reach this point, that means the similarity dropped below 0.8 at a certain point
-        //Thus we skip this page and go to the next one
+        if similarity > 0.6 {
+            return Some(Page {
+                chapter_number: chapter_to_examine,
+                chapter_page_number: i,
+                similarity: similarity,
+            });
+        }
     }
 
     //No page had a similarity higher than 0.8, return None
@@ -159,28 +170,30 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 }
 
 
-pub fn get_physical_page() {
-
-    /*
-    Secondo me quello che vuole nel secondo punto è:
-    1. Fai due foto al libro cartaceo (potrebbero essere la prima pagina del capitolo 1 e l’ultima pagina dell’ultimo capitolo 
-    2. Ottieni informazioni delle pagine tramite OCR
-    2.1 ottieni numero di caratteri per pagina (permette di capire quanto testo ci va in una pagina fisica, così risolvi il problema dell’impaginazione ecc)
-    2.2 ottieni il numero della pagina (così sai quante sono le pagine in totale in cui c’è testo del libro)
-    3. Stima la posizione del testo che hai nella tua pagina dell’ebook nel libro fisico
-
-    TRADOTTO
-    1. Il metodo prende due path in input, prima e ultima pagina cartacea
-    2. Prendi il numero di caratteri per pagina e il numero di pagine totali
-    3. Prendi il testo dall'ebook e STIMA una pagina cartacea
-    
-    Per fare questa stima bisogna considerare:
-    - il numero di caratteri per pagina del cartaceo
-    - Il numero di caratteri nell'ebook fino alla pagina virtuale in questione
-    - Ad esempio se abbiamo 30 caratteri per ogni pagina cartacea, e nell'ebook siamo arrivati a 100 caratteri, allora la pagina cartacea in cui ci siamo è 100/30 = 3.33
-
-    Calcoli più difficili ma più precisi(forse) possono includere il numero di caratteri per ogni pagina cartacea e il numero di caratteri PER OGNI PAGINA VIRTUALE
-    */
+//This method needs to be completed and tested
+pub fn get_physical_page(first_physical_page_path: String, second_physical_page_path: String, actual_ebook_page: String, actual_ebook_page_number: usize) -> usize {
 
     todo!();
+
+    //OCR PHASE: Load the LEPTESS model, get the two physical pages texts
+    let mut lt = leptess::LepTess::new(None, "eng").unwrap();
+    lt.set_image(first_physical_page_path).unwrap();
+    let first_text = lt.get_utf8_text().unwrap();
+    lt.set_image(second_physical_page_path).unwrap();
+    let second_text = lt.get_utf8_text().unwrap();
+
+    //get the number of characters of the first PHYSICAL page
+    let first_text_chars = first_text.chars().count();
+
+    //get the number of characters of the current EBOOK page
+    let actual_ebook_page_chars = actual_ebook_page.chars().count();
+
+    //Multiply the number of chars in the actual ebook page by the page number of the actual ebook page
+    //We'll get the total amount of characters in the ebook until the actual page
+    //Divide this quantity by the number of chars contained in a single physical page
+    //We'll get the page number of the physical page we're looking for
+    let physical_page_number = (actual_ebook_page_chars * actual_ebook_page_number) / first_text_chars;
+
+    return physical_page_number;
+
 }
