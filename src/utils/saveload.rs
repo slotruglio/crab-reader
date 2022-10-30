@@ -1,7 +1,7 @@
 use std::{
     fs::{File, OpenOptions},
     io::{BufReader, Read},
-    sync::mpsc::channel
+    sync::mpsc::channel, path::Path
 };
 
 use serde_json::{json, Value};
@@ -124,8 +124,11 @@ pub fn get_chapter(folder_name: &str, chapter: usize, extension: FileExtension) 
         FileExtension::EPUB => "epub",
     };
     
-    let filename = format!("{}{}/page_{}.{}", SAVED_BOOKS_PATH, folder_name, chapter, ext);
-    println!("filename from where get page: {}", filename);
+    let filename = Path::new(SAVED_BOOKS_PATH)
+    .join(folder_name)
+    .join(format!("page_{}.{}", chapter, ext));
+    println!("filename from where get page: {:?}", filename);
+    
     let file = File::open(filename)?;
     let mut content = String::new();
     BufReader::new(file).read_to_string(&mut content)?;
