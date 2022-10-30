@@ -6,7 +6,7 @@ use druid::{
 use crate::Library;
 
 use super::{
-    book::{Book, BookManagement},
+    book::Book,
     book_cover::{BookCover, BOOK_WIDGET_SIZE},
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
 };
@@ -20,8 +20,8 @@ impl CoverLibrary {
         Self { children: vec![] }
     }
 
-    pub fn add_child(&mut self, book: &Book) {
-        let widget = BookCover::new().with_cover_image(book.get_path());
+    pub fn add_child(&mut self) {
+        let widget = BookCover::new(); // .with_cover_image(book.get_path());
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
@@ -58,11 +58,8 @@ impl Widget<Library> for CoverLibrary {
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
         while self.children.len() < data.number_of_books() {
-            let idx = self.children.len();
-            if let Some(book) = data.get_book(idx) {
-                self.add_child(book);
-                ctx.children_changed();
-            };
+            self.add_child();
+            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
