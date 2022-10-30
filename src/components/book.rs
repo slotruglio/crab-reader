@@ -1,8 +1,10 @@
 use crate::utils::{epub_utils, saveload, text_descriptor};
+use derivative::Derivative;
 use druid::image::io::Reader as ImageReader;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
+use std::sync::{Arc, RwLock};
 
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
@@ -81,9 +83,15 @@ pub trait GUIBook {
 
     /// Set the book as unselected
     fn unselect(&mut self);
-}
-use druid::text::RichText;
 
+    /// Returns the cover of this book
+    fn get_cover_image(&self) -> Option<Arc<Vec<u8>>>;
+
+    /// Uh?
+    fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>>;
+}
+
+use druid::text::RichText;
 use druid::{Data, Lens};
 use epub::doc::EpubDoc;
 
@@ -147,7 +155,8 @@ pub trait BookManagement {
 
 /// Struct that models EPUB file
 /// Metadata are attributes
-#[derive(Clone, PartialEq, Data, Lens)]
+#[derive(Derivative, Clone, Data, Lens)]
+#[derivative(PartialEq)]
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
@@ -161,6 +170,8 @@ pub struct Book {
     chapter_text: Rc<String>,
     chapter_page_text: Rc<String>,
     description: Rc<String>,
+    #[derivative(PartialEq = "ignore")]
+    cover_img: Arc<RwLock<Option<Arc<Vec<u8>>>>>,
 }
 
 impl Book {
@@ -201,7 +212,7 @@ impl Book {
         let chapter_page_text = chapter_text[0..200].to_string();
         */
 
-        Book {
+        let mut this = Book {
             title: title.into(),
             author: author.into(),
             lang: lang.into(),
@@ -214,7 +225,29 @@ impl Book {
             description: desc.into(),
             chapter_text: Rc::new("".into()),
             chapter_page_text: Rc::new("".into()),
-        }
+            cover_img: Arc::from(RwLock::from(None)),
+        };
+        this.load_cover_image();
+        this
+    }
+
+    fn load_cover_image(&mut self) {
+        let path = self.get_path();
+        let arc = self.get_cover_image_setter();
+        let _title = self.get_title();
+        std::thread::spawn(move || {
+            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
+            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
+            let reader = ImageReader::new(ImageCursor::new(cover))
+                .with_guessed_format()
+                .map_err(|e| e.to_string())
+                .unwrap();
+            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
+            let thumbnail = image.thumbnail_exact(150, 250);
+            let rgb = thumbnail.to_rgb8().to_vec();
+            let mut lock = arc.write().unwrap();
+            *lock = Some(Arc::from(rgb));
+        });
     }
 }
 
@@ -327,7 +360,7 @@ impl BookManagement for Book {
             self.get_chapter_text(),
             None,
             NUMBER_OF_LINES,
-            FONT_SIZE
+            FONT_SIZE,
         )
     }
 
@@ -476,5 +509,16 @@ impl GUIBook for Book {
         let thumbnail = image.thumbnail_exact(width, height);
         let rgb = thumbnail.to_rgb8().to_vec();
         Ok(rgb.into())
+    }
+
+    fn get_cover_image(&self) -> Option<Arc<Vec<u8>>> {
+        if let Ok(cover) = self.cover_img.read() {
+            return (*cover).clone();
+        }
+        None
+    }
+
+    fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>> {
+        self.cover_img.clone()
     }
 }
