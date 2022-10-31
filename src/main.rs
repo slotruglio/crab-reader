@@ -5,6 +5,7 @@ use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
+use components::reader_view::{build_single_view_edit, build_single_view, build_dual_view};
 use druid::widget::{Button, Either, Flex, Label, LineBreaking, Scroll, ViewSwitcher, Switch};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
@@ -172,11 +173,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .padding(10.0)
         .center();
     
-    let text = Label::dynamic(
-        |data: &CrabReaderState, _env: &_| data.library.get_selected_book().unwrap().get_page_of_chapter().to_string(),
-    )
-        .with_line_break_mode(LineBreaking::WordWrap)
-        .padding(10.0);
+    let text = Either::new(
+        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+        build_single_view_edit(),
+        Either::new(
+            |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
+            build_single_view(),
+            build_dual_view()
+        )
+    );
     
     let leave_btn = Button::new("Go back to Browsing")
         .on_click(|_, data: &mut CrabReaderState, _| {
@@ -222,6 +227,19 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         })
         .center();
 
+    let save_changes_btn = Button::new("Save")
+    .on_click(|ctx, data: &mut CrabReaderState, _| {
+        
+        data.reading_state.is_editing = Some(false);
+    })
+    .center();
+
+    let undo_changes_btn = Button::new("Undo")
+    .on_click(|_, data: &mut CrabReaderState, _| {
+        data.reading_state.is_editing = Some(false);
+    })
+    .center();
+
     let current_page = Label::dynamic(
         |data: &CrabReaderState, _env: &_| format!("Page {}",data.library.get_selected_book().unwrap().get_current_page_number().to_string())
     )
@@ -234,11 +252,19 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(views_btn)
         .center();
     
-    let footer = Flex::row()
+    let footer = Either::new(
+        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+        Flex::row()
+        .with_child(undo_changes_btn)
+        .with_child(save_changes_btn)
+        .center(),
+
+        Flex::row()
         .with_child(back_btn)
         .with_child(current_page)
         .with_child(next_btn)
-        .center();
+        .center()
+    );
 
     let flex = Flex::column()
         .with_child(title)
