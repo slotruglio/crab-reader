@@ -187,6 +187,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
+        .fix_height(64.0)
         .center();
     
     // todo() switch to change single view and double view
@@ -195,6 +196,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .on_click(|_, data: &mut CrabReaderState, _| {
             data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
         })
+        .fix_height(64.0)
         .center();
     
     let next_btn = Button::new("Next")
@@ -225,6 +227,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             data.reading_state.text = Some(text.into());
             data.reading_state.is_editing = Some(status);
         })
+        .fix_height(64.0)
         .center();
 
     let save_changes_btn = Button::new("Save")
@@ -252,6 +255,14 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(edit_btn)
         .with_child(views_btn)
         .center();
+
+    let header = Flex::row()
+        .with_child(leave_btn)
+        .with_default_spacer()
+        .with_flex_child(title, 1.0)
+        .with_default_spacer()
+        .with_child(header_btns)
+        .center();
     
     let footer = Either::new(
         |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
@@ -268,10 +279,8 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     );
 
     let flex = Flex::column()
-        .with_child(title)
+        .with_child(header)
         .with_child(current_chapter)
-        .with_child(leave_btn)
-        .with_child(header_btns)
         .with_spacer(5.0)
         .with_child(text)
         .with_child(footer);
