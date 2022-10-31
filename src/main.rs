@@ -245,7 +245,20 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     .center();
 
     let current_page = Label::dynamic(
-        |data: &CrabReaderState, _env: &_| format!("Page {}",data.library.get_selected_book().unwrap().get_current_page_number().to_string())
+        |data: &CrabReaderState, _env: &_| {
+            let page_number = data.library.get_selected_book().unwrap().get_current_page_number();
+            let odd = page_number % 2;
+
+            if data.reading_state.single_view.unwrap() {
+                format!("Page {}", page_number.to_string())
+            } else {
+                if odd == 0 {
+                    format!("Page {}-{}", page_number.to_string(), (page_number + 1).to_string())
+                } else {
+                    format!("Page {}-{}", (page_number - 1).to_string(), page_number.to_string())
+                }
+            }
+        }
     )
         .with_text_size(12.0)
         .padding(10.0)
@@ -283,10 +296,11 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(current_chapter)
         .with_spacer(5.0)
         .with_child(text)
-        .with_spacer(5.0)
-        .with_child(footer);
+        .with_flex_spacer(5.0)
+        .with_child(footer)
+        .with_spacer(5.0);
 
-    Scroll::new(flex).vertical()
+    flex
 }
 
 struct DumbDelegate;
