@@ -44,18 +44,19 @@ pub fn build_dual_view() -> impl Widget<CrabReaderState> {
                     data.library.get_selected_book().unwrap().get_dual_pages().0.to_string()
                 })
                 .with_line_break_mode(LineBreaking::WordWrap)
-                .fix_size(400.0, 300.0)
             )
-            .vertical(),
+            .vertical()
+            .fix_size(400.0, 300.0),
         )
+        .with_spacer(20.0)
         .with_child(
             Scroll::new(
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
                     data.library.get_selected_book().unwrap().get_dual_pages().1.to_string()
                 })
                 .with_line_break_mode(LineBreaking::WordWrap)
-                .fix_size(400.0, 300.0)
             )
-            .vertical(),
+            .vertical()
+            .fix_size(400.0, 300.0),
         )
 }
