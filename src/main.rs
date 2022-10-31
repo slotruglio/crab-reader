@@ -1,4 +1,4 @@
-use components::book::{Book, BookReading, GUIBook};
+use components::book::{Book, BookReading, GUIBook, BookManagement};
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
@@ -229,8 +229,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let save_changes_btn = Button::new("Save")
     .on_click(|ctx, data: &mut CrabReaderState, _| {
-        
+        data.library.get_selected_book_mut().unwrap().edit_text(data.reading_state.text.as_ref().unwrap().to_string());
         data.reading_state.is_editing = Some(false);
+        ctx.request_paint();
     })
     .center();
 
