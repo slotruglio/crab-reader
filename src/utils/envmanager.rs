@@ -3,18 +3,25 @@ use serde_json;
 
 #[derive(Debug)]
 pub struct MyEnv {
-    pub theme: String,
-    pub font_color: Color,
-    pub font: FontDescriptor,
+	pub theme: String,
+	pub font_color: Color,
+	pub font: FontDescriptor,
+	pub books_path: String,
+	pub edits_path: String,
+	pub bookmarks_path: String,
 }
 
 impl MyEnv {
-    pub fn new() -> Self {
-        let mut new_env: Self = Self {
-            theme: "dark".to_string(),
-            font_color: Color::rgb8(0, 0, 0),
-            font: FontDescriptor::new(FontFamily::SYSTEM_UI),
-        };
+	pub fn new() -> Self {
+
+		let mut new_env: Self = Self {
+			theme: "dark".to_string(),
+			font_color: Color::rgb8(0, 0, 0),
+			font: FontDescriptor::new(FontFamily::SYSTEM_UI),
+			books_path: "".to_string(),
+			edits_path: "".to_string(),
+			bookmarks_path: "".to_string(),
+		};
 
         //Take the JSON, turn it into a MAP
         let json = std::fs::read_to_string("env.json").unwrap();
@@ -41,8 +48,13 @@ impl MyEnv {
         ))
         .with_size(font_size_numeric);
 
-        return new_env;
-    }
+		//SET books_path, edits_path, bookmarks_path
+		new_env.books_path = json.get("books_path").unwrap().as_str().unwrap().to_string();
+		new_env.edits_path = json.get("edits_path").unwrap().as_str().unwrap().to_string();
+		new_env.bookmarks_path = json.get("bookmarks_path").unwrap().as_str().unwrap().to_string();
+
+		return new_env;
+	}
 
     #[allow(dead_code)]
     pub fn save_to_env(&mut self) {
