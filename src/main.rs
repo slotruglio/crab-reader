@@ -181,7 +181,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             build_single_view(),
             build_dual_view()
         )
-    );
+    ).fix_size(800.0, 450.0);
     
     let leave_btn = Button::new("Go back to Browsing")
         .on_click(|_, data: &mut CrabReaderState, _| {
@@ -283,6 +283,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(current_chapter)
         .with_spacer(5.0)
         .with_child(text)
+        .with_spacer(5.0)
         .with_child(footer);
 
     Scroll::new(flex).vertical()
