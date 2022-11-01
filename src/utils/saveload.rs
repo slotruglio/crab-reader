@@ -1,5 +1,5 @@
 use std::{
-    fs::{File, OpenOptions},
+    fs::{File, OpenOptions, create_dir_all},
     io::{BufReader, Read},
     sync::mpsc::channel, path::Path
 };
@@ -30,6 +30,9 @@ pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usiz
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
             if let Ok(content) = serde_json::from_reader(reader) { json = content};
+        } else {
+            println!("DEBUG file doesn't exist");
+            create_dir_all(Path::new(CONFIG_PATH).parent().unwrap()).unwrap();
         }
         tx.send(json).unwrap();
     });
