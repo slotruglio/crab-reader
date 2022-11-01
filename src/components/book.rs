@@ -301,15 +301,15 @@ impl BookReading for Book {
 
         let odd = self.current_page % 2;
         let left_page = if odd == 0 {
-            page[self.current_page].clone()
+            page.get(self.current_page).unwrap_or(&Rc::new("".into())).clone()
         } else {
-            page[self.current_page - 1].clone()
+            page.get(self.current_page-1).unwrap_or(&Rc::new("".into())).clone()
         };
 
         let right_page = if odd == 0 {
-            page[self.current_page + 1].clone()
+            page.get(self.current_page+1).unwrap_or(&Rc::new("".into())).clone()
         } else {
-            page[self.current_page].clone()
+            page.get(self.current_page).unwrap_or(&Rc::new("".into())).clone()
         };
 
         (left_page, right_page)
