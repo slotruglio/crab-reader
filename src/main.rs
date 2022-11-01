@@ -246,7 +246,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let current_page = Label::dynamic(
         |data: &CrabReaderState, _env: &_| {
-            let page_number = data.library.get_selected_book().unwrap().get_current_page_number();
+            let page_number = data.library.get_selected_book().unwrap().get_cumulative_current_page_number();
             let odd = page_number % 2;
 
             if data.reading_state.single_view.unwrap() {
