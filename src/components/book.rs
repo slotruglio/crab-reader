@@ -104,7 +104,9 @@ pub trait BookReading {
     fn get_chapter_number(&self) -> usize;
 
     /// Method that set the chapter number
-    fn set_chapter_number(&mut self, chapter: usize);
+    /// chapter number must be in the range [0, number_of_chapters)
+    /// next is true if the chapter number is incremented, false otherwise
+    fn set_chapter_number(&mut self, chapter: usize, next: bool);
 
     /// Method that returns the number of
     /// the last page of the current chapter
@@ -261,11 +263,11 @@ impl BookReading for Book {
         self.chapter_number
     }
 
-    fn set_chapter_number(&mut self, chapter: usize) {
+    fn set_chapter_number(&mut self, chapter: usize, next: bool) {
         self.chapter_number = chapter;
-        self.current_page = 0;
-        self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), chapter, 0);
         self.chapter_text = epub_utils::get_chapter_text(self.path.clone().as_str(), chapter);
+        self.current_page = if next { 0 } else { self.get_last_page_number() };
+        self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), chapter, self.current_page);
     }
 
     fn get_last_page_number(&self) -> usize {
