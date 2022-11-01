@@ -110,8 +110,11 @@ pub trait BookReading {
     /// the last page of the current chapter
     fn get_last_page_number(&self) -> usize;
 
-    /// Method that returns the current page number
+    /// Method that returns the current page number with respect to the chapter
     fn get_current_page_number(&self) -> usize;
+
+    /// Method that return the current page number with respect to the total number of pages
+    fn get_cumulative_current_page_number(&self) -> usize;
 
     /// Method that set the current page number
     /// you can use it to change page
@@ -161,6 +164,7 @@ pub struct Book {
     chapter_number: usize,
     current_page: usize,
     number_of_pages: usize,
+    cumulative_current_page: usize,
     idx: usize,
     selected: bool,
     title: Rc<String>,
@@ -205,7 +209,7 @@ impl Book {
         let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
 
         let number_of_pages = epub_utils::get_number_of_pages(path_str);
-
+        let cumulative_current_page = epub_utils::get_cumulative_current_page_number(path_str, chapter_number, current_page);
         /*
         // these functions have to be called when the you click to read the book
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
@@ -219,6 +223,7 @@ impl Book {
             path: path.into(),
             chapter_number: chapter_number,
             current_page: current_page,
+            cumulative_current_page: cumulative_current_page,
             number_of_pages: number_of_pages,
             idx: 0,               // How to set early?
             selected: false,
@@ -259,6 +264,7 @@ impl BookReading for Book {
     fn set_chapter_number(&mut self, chapter: usize) {
         self.chapter_number = chapter;
         self.current_page = 0;
+        self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), chapter, 0);
         self.chapter_text = epub_utils::get_chapter_text(self.path.clone().as_str(), chapter);
     }
 
@@ -270,8 +276,13 @@ impl BookReading for Book {
         self.current_page
     }
 
+    fn get_cumulative_current_page_number(&self) -> usize {
+        self.cumulative_current_page
+    }
+
     fn set_chapter_current_page_number(&mut self, page: usize) {
         self.current_page = page;
+        self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), self.chapter_number, page);
         self.chapter_page_text = Rc::from(self.split_chapter_in_pages()[page].clone());
     }
 
