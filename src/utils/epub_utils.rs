@@ -290,11 +290,13 @@ pub fn calculate_number_of_pages(path: &str, number_of_lines: usize, font_size: 
     
     // cumulative pages per chapter
     for i in 0..pages_per_chapter.len() {
-        if i > 0 {
-            pages_per_chapter[i] += pages_per_chapter[i-1];
-            pages_per_chapter_start_end[i].0 = pages_per_chapter[i-1]+1;
+        if i == 0 {
+            pages_per_chapter_start_end[i] = (0, pages_per_chapter[i]-1);
+        } else {
+            let start = pages_per_chapter_start_end[i-1].1 + 1;
+            let end = start + pages_per_chapter[i] - 1;
+            pages_per_chapter_start_end[i] = (start, end);
         }
-        pages_per_chapter_start_end[i].1 = pages_per_chapter[i];
     }
 
 
@@ -334,20 +336,18 @@ pub fn get_number_of_pages(path: &str) -> usize {
 }
 
 // get number of pages per chapter where the index of the vector is the chapter number
-// and the tuple is the start and end page of the chapter (start, end)
+// and the tuple is the start and end indexes page of the chapter (start, end)
 pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
     let metadata = get_metadata_of_book(path);
     
     let result = metadata.get("pages_per_chapter");
     if let Some(pages_per_chapter) = result {
-        let mut vec_as_str = pages_per_chapter.to_string();
-        vec_as_str.trim_matches(|c| c == '[' || c == ']');
-        vec_as_str.split(',').map(
+        let vec_as_str = pages_per_chapter.to_string();
+        vec_as_str.trim_matches(|c| c == '[' || c == ']').split(',').map(
             |s| {
-                let mut start_end = s.trim_matches(|c| c == '(' || c == ')').split('-');
-                let start = start_end.next().unwrap().parse::<usize>().unwrap_or_default();
-                let end = start_end.next().unwrap().parse::<usize>().unwrap_or_default();
-                (start, end)
+                let start_end = s.trim_matches(|c| c == '(' || c == ')' || c == ' ')
+                .split('-').map(|s| s.parse::<usize>().unwrap_or_default()).collect::<Vec<usize>>();
+                (start_end[0], start_end[1])
             }
         ).collect()
     } else {
@@ -359,7 +359,7 @@ pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
 pub fn get_cumulative_current_page_number(path: &str, chapter: usize, page: usize) -> usize {
     let pages_per_chapter = get_start_end_pages_per_chapter(path);
     if chapter > 0 {
-        pages_per_chapter[chapter-1].1 + page
+        pages_per_chapter[chapter].0 + page
     } else {
         page
     }
