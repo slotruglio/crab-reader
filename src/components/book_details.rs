@@ -6,6 +6,7 @@ use druid::{
 };
 
 use crate::ENTERING_READING_MODE;
+use crate::components::book::BookManagement;
 
 use super::{
     book::{Book, GUIBook},
@@ -79,7 +80,10 @@ impl BookDetails {
         .padding(5.0);
 
         let keep_reading_btn =
-            Button::new("Continua a Leggere").on_click(|ctx, _: &mut Library, _: &Env| {
+            Button::new("Continua a Leggere").on_click(|ctx, library: &mut Library, _: &Env| {
+                let current_book = library.get_selected_book_mut().unwrap();
+                current_book.load_chapter();
+                current_book.load_page();
                 let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
                 ctx.submit_command(cmd.clone());
                 println!("Notification submitted");

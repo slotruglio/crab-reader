@@ -1,6 +1,6 @@
 use crate::{
     components::book::{Book, BookManagement, BookReading},
-    utils::saveload,
+    utils::saveload, ReadingState,
 };
 use druid::EventCtx;
 
@@ -9,22 +9,15 @@ use druid::EventCtx;
 /// and the new value of attribute text
 #[allow(dead_code)]
 pub fn edit_button(
-    ctx: &mut EventCtx,
-    book: &mut Book,
-    text: String,
-    is_editing: bool,
-) -> (bool, String) {
-    let state_is_editing = !is_editing;
-
-    let mut text_to_edit = text;
-
-    // text_to_edit is the "old page"
-    if state_is_editing {
-        text_to_edit = book.get_page_of_chapter().to_string();
+    reading_state: &mut ReadingState,
+    book: &Book,
+) {
+    if !reading_state.is_editing.unwrap() && reading_state.single_view.unwrap() {
+        reading_state.is_editing = Some(true);
+        reading_state.text = book.get_page_of_chapter().to_string();
+    } else {
+        println!("DEBUG: EDIT BUTTON DISABLED");
     }
-
-    ctx.request_paint();
-    (state_is_editing, text_to_edit)
 }
 
 /// Go to the next or previous page of the book
@@ -64,4 +57,26 @@ pub fn change_page(
         ctx.request_paint();
         println!("DEBUG: Chapter: {}", book.get_chapter_number());
     }
+}
+
+pub fn save_button(
+    ctx: &mut EventCtx,
+    reading_state: &mut ReadingState,
+    book: &mut Book,
+) {
+    if reading_state.text != book.get_page_of_chapter().to_string() {
+        book.edit_text(reading_state.text.clone());
+        reading_state.is_editing = Some(false);
+        reading_state.text = String::default();
+        ctx.request_paint();
+    } else {
+        println!("DEBUG: NO CHANGES MADE");
+    }
+}
+
+pub fn undo_button(
+    reading_state: &mut ReadingState
+) {
+    reading_state.is_editing = Some(false);
+    reading_state.text = String::default();
 }

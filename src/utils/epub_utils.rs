@@ -104,23 +104,20 @@ pub fn edit_chapter(
     chapter_number: usize,
     text: impl Into<String>,
 ) -> Result<(), Box<dyn error::Error>> {
-    let book_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
+    let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
+    let mut path_name: PathBuf = [SAVED_BOOKS_PATH, folder_name].iter().collect();
+    println!("DEBUG: Folder path: {:?}", path_name);
+    std::fs::create_dir_all(&path_name)?;
+    path_name = path_name.join(format!("page_{}.txt", chapter_number));
 
-    let mut saved_book_chapter_path: PathBuf = [SAVED_BOOKS_PATH, book_name].iter().collect();
-
-    std::fs::create_dir_all(&saved_book_chapter_path)?;
-
-    saved_book_chapter_path.push(format!("{}.json", chapter_number));
-    println!("DEBUG: path to get chapter: {:?}", saved_book_chapter_path);
-
-    let mut page_html = OpenOptions::new()
+    let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open(saved_book_chapter_path)?;
+        .truncate(true)
+        .open(&path_name)?;
 
-    let text = String::from(text.into());
+    file.write_all(text.into().as_bytes())?;
 
-    page_html.write_all(text.as_bytes())?;
     Ok(())
 }
 
