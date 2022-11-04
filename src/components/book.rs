@@ -1,4 +1,4 @@
-use crate::utils::epub_utils::edit_chapter;
+use crate::utils::epub_utils::{edit_chapter, split_chapter_in_vec};
 use crate::utils::{epub_utils, saveload, text_descriptor};
 use druid::image::io::Reader as ImageReader;
 use std::io::Cursor as ImageCursor;
@@ -350,9 +350,6 @@ impl BookManagement for Book {
         let new_chapter_text = match other_new_text.into() {
             Some(new_text_1) => {
                 let (old_page_0, old_page_1) = self.get_dual_pages();
-                if old_page_0.to_string() == new_text && old_page_1.to_string() == new_text_1 {
-                    return;
-                }
 
                 let new_chapter_text = self.get_chapter_text()
                 .replace(
@@ -368,9 +365,6 @@ impl BookManagement for Book {
             None => {
                 // single page edit mode
                 let old_page = self.get_page_of_chapter();
-                if old_page.to_string() == new_text {
-                    return;
-                }
 
                 self.get_chapter_text()
                 .replace(
@@ -381,8 +375,21 @@ impl BookManagement for Book {
         };
 
         let _ = edit_chapter(self.path.as_str(), self.chapter_number, new_chapter_text);
-        // here we have to redo count of pages and split
+        
+
+        let old_len = self.split_chapter_in_pages().len();
+        // check if the split's number of pages is the same as before
         self.load_chapter();
+
+        let new_len = split_chapter_in_vec(self.path.as_str(), None, self.chapter_number, NUMBER_OF_LINES, FONT_SIZE).len();
+        if new_len != old_len {
+            println!("DEBUG: new_len: {}, old_len: {}", new_len, old_len);
+            // recalculate pages
+            let (total_len, _) = epub_utils::calculate_number_of_pages(self.path.as_str(), NUMBER_OF_LINES, FONT_SIZE).unwrap();
+            self.number_of_pages = total_len;
+            self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), self.chapter_number, self.current_page);
+        }
+
         self.load_page();
     }
 
