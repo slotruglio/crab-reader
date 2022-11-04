@@ -1,7 +1,8 @@
 use std::{
-    fs::{File, OpenOptions},
-    io::{BufReader, Read},
-    sync::mpsc::channel, path::Path
+    fs::{create_dir_all, File, OpenOptions},
+    io::BufReader,
+    path::Path,
+    sync::mpsc::channel,
 };
 
 use serde_json::{json, Value};
@@ -12,16 +13,24 @@ const SAVED_BOOKS_PATH: &str = "saved_books/";
 pub enum FileExtension {
     TXT,
     HTML,
-    EPUB, 
+    EPUB,
 }
-
 
 // todo: add path as parameter
 // waiting for implementation of this env var
 
 /// function to save page of chapter of currently opened book
-pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usize, page: usize, ) -> Result<(), Box<dyn std::error::Error>>{
-    println!("DEBUG saving data: {} {} {}", chapter, page, book_path.clone().into());
+pub fn save_page_of_chapter<T: Into<String> + Clone>(
+    book_path: T,
+    chapter: usize,
+    page: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!(
+        "DEBUG saving data: {} {} {}",
+        chapter,
+        page,
+        book_path.clone().into()
+    );
     let (tx, rx) = channel();
 
     let thread = std::thread::spawn(move || {
@@ -29,7 +38,12 @@ pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usiz
         if let Ok(opened_file) = File::open(CONFIG_PATH) {
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
-            if let Ok(content) = serde_json::from_reader(reader) { json = content};
+            if let Ok(content) = serde_json::from_reader(reader) {
+                json = content
+            };
+        } else {
+            println!("DEBUG file doesn't exist");
+            create_dir_all(Path::new(CONFIG_PATH).parent().unwrap()).unwrap();
         }
         tx.send(json).unwrap();
     });
@@ -38,10 +52,10 @@ pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usiz
 
     if let Ok(()) = thread.join() {
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(CONFIG_PATH)?;
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(CONFIG_PATH)?;
 
         let mut json = rx.recv().unwrap();
 
@@ -50,10 +64,14 @@ pub fn save_page_of_chapter<T: Into<String> + Clone>(book_path: T, chapter: usiz
         serde_json::to_writer_pretty(file, &json)?;
         drop(rx);
         Ok(())
-    }else{ Err("Error while saving data".into()) }
+    } else {
+        Err("Error while saving data".into())
+    }
 }
 
-pub fn remove_savedata_of_book<T: Into<String> + Clone>(book_path: T) -> Result<(), Box<dyn std::error::Error>>{
+pub fn remove_savedata_of_book<T: Into<String> + Clone>(
+    book_path: T,
+) -> Result<(), Box<dyn std::error::Error>> {
     let (tx, rx) = channel();
 
     let thread = std::thread::spawn(move || {
@@ -61,7 +79,9 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(book_path: T) -> Result<
         if let Ok(opened_file) = File::open(CONFIG_PATH) {
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
-            if let Ok(content) = serde_json::from_reader(reader) { json = content};
+            if let Ok(content) = serde_json::from_reader(reader) {
+                json = content
+            };
         }
         tx.send(json).unwrap();
     });
@@ -70,19 +90,21 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(book_path: T) -> Result<
         let mut json = rx.recv().unwrap();
         if json[book_path.clone().into()].is_object() {
             let file = OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(CONFIG_PATH)?;
+                .write(true)
+                .truncate(true)
+                .open(CONFIG_PATH)?;
 
             json.as_object_mut().unwrap().remove(&book_path.into());
             serde_json::to_writer_pretty(file, &json)?;
         }
         drop(rx);
         Ok(())
-    }else{ Err("Error while saving data".into()) }
+    } else {
+        Err("Error while saving data".into())
+    }
 }
 
-pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>>{
+pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
     if std::path::Path::new(CONFIG_PATH).exists() {
         std::fs::remove_file(CONFIG_PATH)?
     }
@@ -90,7 +112,9 @@ pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>>{
 }
 
 /// function to load the last read page of a chapter given the path of the book
-pub fn get_page_of_chapter<T: Into<String> + Clone>(book_path: T) -> Result<(usize, usize), Box<dyn std::error::Error>>{
+pub fn get_page_of_chapter<T: Into<String> + Clone>(
+    book_path: T,
+) -> Result<(usize, usize), Box<dyn std::error::Error>> {
     let mut chapter = 1;
     let mut page = 0;
 
@@ -98,10 +122,10 @@ pub fn get_page_of_chapter<T: Into<String> + Clone>(book_path: T) -> Result<(usi
         let reader = BufReader::new(file);
         let json: Value = serde_json::from_reader(reader)?;
 
-        if let Some(value) = json.get(book_path.clone().into()){
+        if let Some(value) = json.get(book_path.clone().into()) {
             let chapter_value = value.get("chapter").and_then(|v| v.as_u64());
             let page_value = value.get("page").and_then(|v| v.as_u64());
-            
+
             if chapter_value.is_some() && page_value.is_some() {
                 chapter = chapter_value.unwrap() as usize;
                 page = page_value.unwrap() as usize;
@@ -109,33 +133,44 @@ pub fn get_page_of_chapter<T: Into<String> + Clone>(book_path: T) -> Result<(usi
                 chapter = 1;
                 page = 0;
             }
-            
         };
-        
     }
-    println!("DEBUG reading data: {} {} {}", &chapter, &page, book_path.into());
+    println!(
+        "DEBUG reading data: {} {} {}",
+        &chapter,
+        &page,
+        book_path.into()
+    );
     Ok((chapter, page))
 }
 
-pub fn get_chapter(folder_name: &str, chapter: usize, extension: FileExtension) -> Result<String, Box<dyn std::error::Error>>{
+pub fn get_chapter(
+    folder_name: &str,
+    chapter: usize,
+    extension: FileExtension,
+) -> Result<String, String> {
+    let slice = get_chapter_bytes(folder_name, chapter, extension)?;
+    String::from_utf8(slice).map_err(|e| e.to_string())
+}
+
+pub fn get_chapter_bytes(
+    folder_name: impl Into<String>,
+    chapter: usize,
+    extension: FileExtension,
+) -> Result<Vec<u8>, String> {
     let ext = match extension {
         FileExtension::TXT => "txt",
         FileExtension::HTML => "html",
         FileExtension::EPUB => "epub",
     };
-    
-    let filename = Path::new(SAVED_BOOKS_PATH)
-    .join(folder_name)
-    .join(format!("page_{}.{}", chapter, ext));
-    println!("filename from where get page: {:?}", filename);
-    
-    let file = File::open(filename)?;
-    let mut content = String::new();
-    BufReader::new(file).read_to_string(&mut content)?;
-    
-    Ok(content)
-}
 
+    let filename = Path::new(SAVED_BOOKS_PATH)
+        .join(&folder_name.into())
+        .join(format!("page_{}.{}", chapter, ext));
+    println!("filename from where get page: {:?}", filename);
+
+    std::fs::read(filename).map_err(|e| e.to_string())
+}
 
 #[cfg(test)]
 mod tests {
@@ -147,7 +182,7 @@ mod tests {
     // fn save_page_of_chapter
     #[test]
     #[ignore]
-    fn save_create_file_and_write_correctly(){
+    fn save_create_file_and_write_correctly() {
         let book_path = "test_book";
         let chapter = 1;
         let page = 1;
@@ -177,16 +212,17 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn save_overwrite_file_and_write_correctly_the_same_book(){
+    fn save_overwrite_file_and_write_correctly_the_same_book() {
         let book_path = "test_book";
 
         // assert that file doesn't exist
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), false);
 
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":0, "page":0}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
@@ -215,7 +251,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn save_a_book_different_from_one_already_in_file(){
+    fn save_a_book_different_from_one_already_in_file() {
         let book_path = "test_book";
         let chapter = 1;
         let page = 1;
@@ -229,13 +265,14 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":chapter, "page":page}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
@@ -247,7 +284,10 @@ mod tests {
 
         // assert that file contains correct data
         let json: Value = serde_json::from_reader(reader).unwrap();
-        assert_eq!(json, json!({book_path:{"chapter":chapter, "page":page}, book_path2:{"chapter":chapter2, "page":page2}}));
+        assert_eq!(
+            json,
+            json!({book_path:{"chapter":chapter, "page":page}, book_path2:{"chapter":chapter2, "page":page2}})
+        );
 
         // delete file
         std::fs::remove_file(CONFIG_PATH).unwrap();
@@ -259,7 +299,7 @@ mod tests {
     // fn remove_savedata_of_book
     #[test]
     #[ignore]
-    fn remove_from_not_existing_file_book_s_savedata(){
+    fn remove_from_not_existing_file_book_s_savedata() {
         let book_path = "test_book";
 
         // assert that file doesn't exist
@@ -274,7 +314,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn remove_from_file_existing_book_s_savedata(){
+    fn remove_from_file_existing_book_s_savedata() {
         let book_path = "test_book";
         let chapter = 1;
         let page = 1;
@@ -284,13 +324,14 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":chapter, "page":page}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
@@ -321,13 +362,14 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
@@ -351,7 +393,7 @@ mod tests {
     // fn remove_all_savedata
     #[test]
     #[ignore]
-    fn remove_all_savedata_from_not_existing_file(){
+    fn remove_all_savedata_from_not_existing_file() {
         // assert that file doesn't exist
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), false);
 
@@ -364,7 +406,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn remove_all_savedata_from_existing_file(){
+    fn remove_all_savedata_from_existing_file() {
         let book_path = "test_book";
         let chapter = 1;
         let page = 1;
@@ -374,13 +416,14 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":chapter, "page":page}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
@@ -394,17 +437,17 @@ mod tests {
     // fn get_page_of_chapter
     #[test]
     #[ignore]
-    fn get_savedata_from_not_existing_file(){
+    fn get_savedata_from_not_existing_file() {
         // assert that file doesn't exist
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), false);
 
         // assert that function returns (1,0)
-        assert_eq!(get_page_of_chapter("test_book").unwrap(), (1,0));
+        assert_eq!(get_page_of_chapter("test_book").unwrap(), (1, 0));
     }
 
     #[test]
     #[ignore]
-    fn get_savedata_from_existing_file_with_book_inside(){
+    fn get_savedata_from_existing_file_with_book_inside() {
         let book_path = "test_book";
         let chapter = 1;
         let page = 1;
@@ -414,18 +457,19 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":chapter, "page":page}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
         // assert that function returns (1,0)
-        assert_eq!(get_page_of_chapter(book_path).unwrap(), (chapter,page));
+        assert_eq!(get_page_of_chapter(book_path).unwrap(), (chapter, page));
 
         // delete file
         std::fs::remove_file(CONFIG_PATH).unwrap();
@@ -436,7 +480,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn get_savedata_from_existing_file_without_book_inside(){
+    fn get_savedata_from_existing_file_without_book_inside() {
         let book_path = "test_book";
 
         // assert that file doesn't exist
@@ -444,18 +488,19 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
         // assert that function returns (1,0)
-        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1,0));
+        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1, 0));
 
         // delete file
         std::fs::remove_file(CONFIG_PATH).unwrap();
@@ -466,7 +511,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn get_savedata_from_existing_file_with_book_inside_with_wrong_data(){
+    fn get_savedata_from_existing_file_with_book_inside_with_wrong_data() {
         let book_path = "test_book";
 
         // assert that file doesn't exist
@@ -474,18 +519,19 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":"ciao", "page":"ciao"}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
         // assert that function returns (1,0)
-        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1,0));
+        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1, 0));
 
         // delete file
         std::fs::remove_file(CONFIG_PATH).unwrap();
@@ -496,7 +542,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn get_savedata_from_existing_file_with_book_inside_with_wrong_data2(){
+    fn get_savedata_from_existing_file_with_book_inside_with_wrong_data2() {
         let book_path = "test_book";
 
         // assert that file doesn't exist
@@ -507,12 +553,12 @@ mod tests {
 
         let json_to_write = json!({book_path:{"chapter":"ciao", "page":1}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
         // assert that function returns (1,0)
-        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1,0));
+        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1, 0));
 
         // delete file
         std::fs::remove_file(CONFIG_PATH).unwrap();
@@ -523,7 +569,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn get_savedata_from_existing_file_with_book_inside_with_wrong_data3(){
+    fn get_savedata_from_existing_file_with_book_inside_with_wrong_data3() {
         let book_path = "test_book";
 
         // assert that file doesn't exist
@@ -531,18 +577,19 @@ mod tests {
 
         // create file with one book
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(CONFIG_PATH).unwrap();
+            .write(true)
+            .create(true)
+            .open(CONFIG_PATH)
+            .unwrap();
 
         let json_to_write = json!({book_path:{"chapter":1, "page":"ciao"}});
         serde_json::to_writer_pretty(file, &json_to_write).unwrap();
-        
+
         // assert that file exists
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), true);
 
         // assert that function returns (1,0)
-        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1,0));
+        assert_eq!(get_page_of_chapter(book_path).unwrap(), (1, 0));
 
         // delete file
         std::fs::remove_file(CONFIG_PATH).unwrap();
@@ -550,5 +597,4 @@ mod tests {
         // assert that file doesn't exist
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), false);
     }
-
 }

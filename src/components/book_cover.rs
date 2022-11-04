@@ -1,7 +1,3 @@
-use druid::image::io::Reader as ImageReader;
-use std::io::Cursor as ImageCursor;
-use std::sync::{Arc, RwLock};
-
 use druid::{
     piet::{ImageFormat, InterpolationMode, Text},
     BoxConstraints, Color, Command,
@@ -9,7 +5,6 @@ use druid::{
     Data, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight, LayoutCtx, LifeCycle,
     LifeCycleCtx, PaintCtx, Rect, RenderContext, Size, Target, TextLayout, UpdateCtx, Widget,
 };
-use epub::doc::EpubDoc;
 
 use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
 
@@ -21,36 +16,32 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
 /// rect with smoothed edges and the book cover as a picture
 pub struct BookCover {
-    cover_img: Arc<RwLock<Option<Box<[u8]>>>>,
     is_hot: bool,
 }
 
 impl BookCover {
     pub fn new() -> Self {
-        Self {
-            cover_img: Arc::from(RwLock::from(None)),
-            is_hot: false,
-        }
+        Self { is_hot: false }
     }
 
-    pub fn with_cover_image(self, path: impl Into<String>) -> Self {
-        let path: String = path.into();
-        let arc = self.cover_img.clone();
-        std::thread::spawn(move || {
-            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
-            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
-            let reader = ImageReader::new(ImageCursor::new(cover))
-                .with_guessed_format()
-                .map_err(|e| e.to_string())
-                .unwrap();
-            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
-            let thumbnail = image.thumbnail_exact(150, 250);
-            let rgb = thumbnail.to_rgb8().to_vec();
-            let mut lock = arc.write().unwrap();
-            *lock = Some(rgb.into_boxed_slice());
-        });
-        self
-    }
+    // pub fn with_cover_image(self, path: impl Into<String>) -> Self {
+    // let path: String = path.into();
+    // let arc = self.cover_img.clone();
+    // std::thread::spawn(move || {
+    // let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
+    // let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
+    // let reader = ImageReader::new(ImageCursor::new(cover))
+    // .with_guessed_format()
+    // .map_err(|e| e.to_string())
+    // .unwrap();
+    // let image = reader.decode().map_err(|e| e.to_string()).unwrap();
+    // let thumbnail = image.thumbnail_exact(150, 250);
+    // let rgb = thumbnail.to_rgb8().to_vec();
+    // let mut lock = arc.write().unwrap();
+    // *lock = Some(rgb.into_boxed_slice());
+    // });
+    // self
+    // }
 
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
         let blur_radius = 20.0;
@@ -71,28 +62,32 @@ impl BookCover {
     }
 
     fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        if self.cover_img.read().unwrap().is_none() {
-            self.paint_default_cover(ctx, data);
-            self.paint_book_title(ctx, env, data);
+        if let Some(cover) = data.get_cover_image() {
+            let round_factr = 20.0;
+            let paint_rect = ctx.size().to_rect();
+            let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
+            let w = BOOK_WIDGET_SIZE.width as usize;
+            let h = BOOK_WIDGET_SIZE.height as usize;
+
+            if let Ok(image) = ctx.make_image(w, h, &cover, ImageFormat::Rgb) {
+                ctx.paint_with_z_index(2, move |ctx| {
+                    ctx.with_save(|ctx| {
+                        ctx.clip(paint_rounded);
+                        ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+                    });
+                });
+            }
             return;
         }
 
-        let round_factr = 20.0;
-        let binding = self.cover_img.read().unwrap();
-        let image_buffer = binding.as_ref().unwrap();
-        let paint_rect = ctx.size().to_rect();
-        let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
-        let w = BOOK_WIDGET_SIZE.width as usize;
-        let h = BOOK_WIDGET_SIZE.height as usize;
+        self.paint_default_cover(ctx, data);
+        self.paint_book_title(ctx, env, data);
+        return;
+        //}
 
-        if let Ok(image) = ctx.make_image(w, h, &image_buffer, ImageFormat::Rgb) {
-            ctx.paint_with_z_index(2, move |ctx| {
-                ctx.with_save(|ctx| {
-                    ctx.clip(paint_rounded);
-                    ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
-                });
-            });
-        }
+        //});
+        //});
+        //}
     }
 
     fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook) {
