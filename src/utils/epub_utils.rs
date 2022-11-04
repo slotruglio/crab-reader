@@ -104,23 +104,20 @@ pub fn edit_chapter(
     chapter_number: usize,
     text: impl Into<String>,
 ) -> Result<(), Box<dyn error::Error>> {
-    let book_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
+    let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
+    let mut path_name: PathBuf = [SAVED_BOOKS_PATH, folder_name].iter().collect();
+    println!("DEBUG: Folder path: {:?}", path_name);
+    std::fs::create_dir_all(&path_name)?;
+    path_name = path_name.join(format!("page_{}.txt", chapter_number));
 
-    let mut saved_book_chapter_path: PathBuf = [SAVED_BOOKS_PATH, book_name].iter().collect();
-
-    std::fs::create_dir_all(&saved_book_chapter_path)?;
-
-    saved_book_chapter_path.push(format!("{}.json", chapter_number));
-    println!("DEBUG: path to get chapter: {:?}", saved_book_chapter_path);
-
-    let mut page_html = OpenOptions::new()
+    let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open(saved_book_chapter_path)?;
+        .truncate(true)
+        .open(&path_name)?;
 
-    let text = String::from(text.into());
+    file.write_all(text.into().as_bytes())?;
 
-    page_html.write_all(text.as_bytes())?;
     Ok(())
 }
 
@@ -269,11 +266,7 @@ pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
     metadata
 }
 
-pub fn calculate_number_of_pages(
-    path: &str,
-    number_of_lines: usize,
-    font_size: usize,
-) -> Result<(usize, Vec<(usize, usize)>), Box<dyn error::Error>> {
+pub fn calculate_number_of_pages(path: &str, number_of_lines: usize, font_size: usize) -> Result<(usize, Vec<(usize, usize)>), Box<dyn error::Error>> {
     let mut metadata = get_metadata_of_book(path);
     let number_of_chapters = metadata["chapters"].parse::<usize>().unwrap_or_default();
 
@@ -285,8 +278,12 @@ pub fn calculate_number_of_pages(
         let tx = tx.clone();
         let path = path.to_string();
         pool.execute(move || {
-            let pages =
-                split_chapter_in_vec(path.as_str(), Option::None, i, number_of_lines, font_size);
+            let pages = split_chapter_in_vec(
+                path.as_str(), 
+                Option::None, 
+                i, 
+                number_of_lines, 
+                font_size);
             println!("DEBUG: chapter {} has {} pages", i, pages.len());
             // send tuple with index of chapter and number of pages
             tx.send((i, pages.len())).unwrap();
@@ -303,30 +300,21 @@ pub fn calculate_number_of_pages(
     }
 
     let mut pages_per_chapter_start_end = vec![(0, 0); number_of_chapters];
-
+    
     // cumulative pages per chapter
     for i in 0..pages_per_chapter.len() {
         if i == 0 {
-            pages_per_chapter_start_end[i] = (0, pages_per_chapter[i] - 1);
+            pages_per_chapter_start_end[i] = (0, pages_per_chapter[i]-1);
         } else {
-            let start = pages_per_chapter_start_end[i - 1].1 + 1;
+            let start = pages_per_chapter_start_end[i-1].1 + 1;
             let end = start + pages_per_chapter[i] - 1;
             pages_per_chapter_start_end[i] = (start, end);
         }
     }
 
+
     // save number of pages per chapter in metadata
-    metadata.insert(
-        "pages_per_chapter".into(),
-        format!(
-            "[{}]",
-            pages_per_chapter_start_end
-                .iter()
-                .map(|(a, b)| format!("({}-{})", a, b))
-                .collect::<Vec<String>>()
-                .join(", ")
-        ),
-    );
+    metadata.insert("pages_per_chapter".into(), format!("[{}]", pages_per_chapter_start_end.iter().map(|(a, b)| format!("({}-{})", a, b)).collect::<Vec<String>>().join(", ")));
     // save number of pages in metadata
     metadata.insert("total_pages".into(), number_of_pages.to_string());
 
@@ -365,22 +353,17 @@ pub fn get_number_of_pages(path: &str) -> usize {
 // and the tuple is the start and end indexes page of the chapter (start, end)
 pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
     let metadata = get_metadata_of_book(path);
-
+    
     let result = metadata.get("pages_per_chapter");
     if let Some(pages_per_chapter) = result {
         let vec_as_str = pages_per_chapter.to_string();
-        vec_as_str
-            .trim_matches(|c| c == '[' || c == ']')
-            .split(',')
-            .map(|s| {
-                let start_end = s
-                    .trim_matches(|c| c == '(' || c == ')' || c == ' ')
-                    .split('-')
-                    .map(|s| s.parse::<usize>().unwrap_or_default())
-                    .collect::<Vec<usize>>();
+        vec_as_str.trim_matches(|c| c == '[' || c == ']').split(',').map(
+            |s| {
+                let start_end = s.trim_matches(|c| c == '(' || c == ')' || c == ' ')
+                .split('-').map(|s| s.parse::<usize>().unwrap_or_default()).collect::<Vec<usize>>();
                 (start_end[0], start_end[1])
-            })
-            .collect()
+            }
+        ).collect()
     } else {
         calculate_number_of_pages(path, 8, 12).unwrap_or_default().1
     }

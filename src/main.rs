@@ -1,15 +1,15 @@
-use components::book::{Book, BookReading, GUIBook, BookManagement};
+use components::book::{Book, BookReading, GUIBook};
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use components::reader_view::{build_single_view_edit, build_single_view, build_dual_view};
-use druid::widget::{Button, Either, Flex, Label, LineBreaking, Scroll, ViewSwitcher, Switch};
+use components::reader_view::{build_single_view_edit, build_single_view, build_dual_view, build_dual_view_edit};
+use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
-    WidgetExt, WindowDesc,
+    WidgetExt, WindowDesc, EventCtx,
 };
 use once_cell::sync::Lazy;
 use utils::button_functions; // 1.3.1
@@ -32,19 +32,20 @@ static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 pub struct ReadingState {
     single_view: Option<bool>,
     is_editing: Option<bool>,
-    text: Option<Rc<String>>
+    text_0: String,
+    text_1: String,
 }
 
 impl ReadingState {
     fn enable<S: Into<Option<Rc<String>>>>(&mut self, text: S) {
         self.single_view = Some(true);
         self.is_editing = Some(false);
-        self.text = text.into()
     }
     fn disable(&mut self){
         self.single_view = None;
         self.is_editing = None;
-        self.text = None;
+        self.text_0 = String::default();
+        self.text_1 = String::default();
     }
 }
 
@@ -53,7 +54,8 @@ impl Default for ReadingState {
         Self {
             single_view: None,
             is_editing: None,
-            text: None
+            text_0: String::default(),
+            text_1: String::default(),
         }
     }
 }
@@ -174,11 +176,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .center();
     
     let text = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-        build_single_view_edit(),
+        |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
         Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
-            build_single_view(),
+            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+            build_single_view_edit(),
+            build_single_view()
+        ),
+        Either::new(
+            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+            build_dual_view_edit(),
             build_dual_view()
         )
     ).fix_size(800.0, 450.0);
@@ -201,46 +207,66 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     
     let next_btn = Button::new("Next")
         .on_click(|ctx, data: &mut CrabReaderState, _| {
-
+            println!("DEBUG: PRESSED NEXT START");
             let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(ctx, book, data.reading_state.is_editing.unwrap(), data.reading_state.single_view.unwrap(), true);
+            button_functions::change_page(
+                ctx, 
+                book, 
+                data.reading_state.is_editing.unwrap(), 
+                data.reading_state.single_view.unwrap(), 
+                true
+            );
+            println!("DEBUG: PRESSED NEXT END\n");
         })
         .center();
 
     let back_btn = Button::new("Back")
         .on_click(|ctx, data: &mut CrabReaderState, _| {
-
+            println!("DEBUG: PRESSED BACK START");
             let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(ctx, book, data.reading_state.is_editing.unwrap(), data.reading_state.single_view.unwrap(), false);
+            button_functions::change_page(
+                ctx, 
+                book, 
+                data.reading_state.is_editing.unwrap(), 
+                data.reading_state.single_view.unwrap(), 
+                false
+            );
+
+            println!("DEBUG: PRESSED BACK END\n");
         })
         .center();
 
     let edit_btn = Button::new("Edit")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            let (status, text) = button_functions::edit_button(
-                ctx, 
-                data.library.get_selected_book_mut().unwrap(), 
-                data.reading_state.text.as_ref().unwrap().to_string(),
-                data.reading_state.is_editing.unwrap()
+        .on_click(|_, data: &mut CrabReaderState, _| {
+            println!("DEBUG: PRESSED EDIT BUTTON");
+
+            button_functions::edit_button(
+                &mut data.reading_state, 
+                data.library.get_selected_book().unwrap()
             );
 
-            data.reading_state.text = Some(text.into());
-            data.reading_state.is_editing = Some(status);
         })
         .fix_height(64.0)
         .center();
 
     let save_changes_btn = Button::new("Save")
-    .on_click(|ctx, data: &mut CrabReaderState, _| {
-        data.library.get_selected_book_mut().unwrap().edit_text(data.reading_state.text.as_ref().unwrap().to_string());
-        data.reading_state.is_editing = Some(false);
-        ctx.request_paint();
+    .on_click(|ctx: &mut EventCtx, data: &mut CrabReaderState, _| {
+        println!("DEBUG: PRESSED SAVE BUTTON");
+
+        button_functions::save_button(
+            ctx,
+            &mut data.reading_state,
+            &mut data.library.get_selected_book_mut().unwrap()
+        );
+
     })
     .center();
 
     let undo_changes_btn = Button::new("Undo")
     .on_click(|_, data: &mut CrabReaderState, _| {
-        data.reading_state.is_editing = Some(false);
+
+        button_functions::undo_button(&mut data.reading_state);
+
     })
     .center();
 

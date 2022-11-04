@@ -1,10 +1,10 @@
-use druid::widget::{Flex, Label, LineBreaking, Scroll};
-use druid::{Widget, WidgetExt};
+use druid::widget::{Flex, Label, LineBreaking, Scroll, TextBox};
+use druid::{Widget, WidgetExt, LensExt};
 
 
-use crate::CrabReaderState;
+use crate::{CrabReaderState, ReadingState};
 
-use super::book::BookReading;
+use super::book::{BookReading};
 use super::library::GUILibrary;
 
 // single page view for text reader
@@ -22,14 +22,14 @@ pub fn build_single_view() -> impl Widget<CrabReaderState> {
 // single page view for text editing
 #[allow(dead_code)]
 pub fn build_single_view_edit() -> impl Widget<CrabReaderState> {
+
+    let text_box = TextBox::multiline()
+        .with_placeholder("Text editing is not yet implemented")
+        .lens(CrabReaderState::reading_state.then(ReadingState::text_0));
+
     Scroll::new(
-        // TextBox::multiline()
-        // .fix_size(400.0, 300.0)
-        // .lens(AppState::book.then(Book::chapter_page_text)),
-        Label::new(
-            "Text editing is not yet implemented"
-        )
-        .fix_size(400.0, 300.0)
+        text_box.fix_size(500.0, 500.0)
+        
     )
     .vertical()
 }
@@ -59,4 +59,34 @@ pub fn build_dual_view() -> impl Widget<CrabReaderState> {
             .vertical()
             .fix_size(400.0, 300.0),
         )
+}
+
+// dual page view for text editing
+#[allow(dead_code)]
+pub fn build_dual_view_edit() -> impl Widget<CrabReaderState> {
+
+    let text_box_page_0 = TextBox::multiline()
+        .with_placeholder("Text editing is not yet implemented")
+        .lens(CrabReaderState::reading_state.then(ReadingState::text_0));
+
+    let text_box_page_1 = TextBox::multiline()
+    .with_placeholder("Text editing is not yet implemented")
+    .lens(CrabReaderState::reading_state.then(ReadingState::text_1));
+    
+
+    Flex::row()
+        .with_child(
+            Scroll::new(
+                text_box_page_0.fix_size(500.0, 500.0)
+            )
+            .vertical()
+        )
+        .with_spacer(10.0)
+        .with_child(
+            Scroll::new(
+                text_box_page_1.fix_size(500.0, 500.0)
+            )
+            .vertical()
+        ).center()
+        
 }
