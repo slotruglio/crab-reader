@@ -209,7 +209,13 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .on_click(|ctx, data: &mut CrabReaderState, _| {
             println!("DEBUG: PRESSED NEXT START");
             let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(ctx, book, data.reading_state.is_editing.unwrap(), data.reading_state.single_view.unwrap(), true);
+            button_functions::change_page(
+                ctx, 
+                book, 
+                data.reading_state.is_editing.unwrap(), 
+                data.reading_state.single_view.unwrap(), 
+                true
+            );
             println!("DEBUG: PRESSED NEXT END\n");
         })
         .center();
@@ -218,7 +224,13 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .on_click(|ctx, data: &mut CrabReaderState, _| {
             println!("DEBUG: PRESSED BACK START");
             let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(ctx, book, data.reading_state.is_editing.unwrap(), data.reading_state.single_view.unwrap(), false);
+            button_functions::change_page(
+                ctx, 
+                book, 
+                data.reading_state.is_editing.unwrap(), 
+                data.reading_state.single_view.unwrap(), 
+                false
+            );
 
             println!("DEBUG: PRESSED BACK END\n");
         })

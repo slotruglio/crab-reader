@@ -1,5 +1,5 @@
 use crate::{
-    components::book::{Book, BookManagement, BookReading},
+    components::book::{Book, BookManagement, BookReading, GUIBook},
     utils::saveload, ReadingState,
 };
 use druid::EventCtx;
@@ -44,9 +44,20 @@ pub fn change_page(
 
         let new_page = book.get_current_page_number() as isize + increaser;
         if new_page > book.get_last_page_number() as isize {
+            let last_page = book.get_number_of_pages() - 1;
+            println!("DEBUG: current page: {}, last page of book: {}", book.get_current_page_number(), last_page);
+            if book.get_cumulative_current_page_number() == last_page {
+                println!("DEBUG: LAST PAGE, can't go forward");
+                return;
+            }
+
             book.set_chapter_number(book.get_chapter_number() + 1, true);
             println!("DEBUG: Last page of chapter, changing chapter");
         } else if new_page < 0 {
+            if book.get_chapter_number() == 0 {
+                println!("DEBUG: FIRST PAGE, can't go back");
+                return;
+            }
             book.set_chapter_number(book.get_chapter_number() - 1, false);
             println!("DEBUG: First page of chapter, changing chapter");
         } else {
