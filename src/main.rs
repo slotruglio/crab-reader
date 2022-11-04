@@ -5,7 +5,7 @@ use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use components::reader_view::{build_single_view_edit, build_single_view, build_dual_view};
+use components::reader_view::{build_single_view_edit, build_single_view, build_dual_view, build_dual_view_edit};
 use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
@@ -32,7 +32,8 @@ static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 pub struct ReadingState {
     single_view: Option<bool>,
     is_editing: Option<bool>,
-    text: String,
+    text_0: String,
+    text_1: String,
 }
 
 impl ReadingState {
@@ -43,7 +44,8 @@ impl ReadingState {
     fn disable(&mut self){
         self.single_view = None;
         self.is_editing = None;
-        self.text = String::default();
+        self.text_0 = String::default();
+        self.text_1 = String::default();
     }
 }
 
@@ -52,7 +54,8 @@ impl Default for ReadingState {
         Self {
             single_view: None,
             is_editing: None,
-            text: String::default(),
+            text_0: String::default(),
+            text_1: String::default(),
         }
     }
 }
@@ -173,11 +176,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .center();
     
     let text = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-        build_single_view_edit(),
+        |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
         Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
-            build_single_view(),
+            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+            build_single_view_edit(),
+            build_single_view()
+        ),
+        Either::new(
+            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+            build_dual_view_edit(),
             build_dual_view()
         )
     ).fix_size(800.0, 450.0);

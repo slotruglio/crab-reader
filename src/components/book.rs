@@ -140,7 +140,7 @@ pub trait BookManagement {
     fn split_chapter_in_pages(&self) -> Vec<Rc<String>>;
 
     /// Method that edits the text of the current chapter
-    fn edit_text(&mut self, new_text: String);
+    fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S);
 
     /// Method that extracts the book's chapters in local files
     fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
@@ -345,19 +345,43 @@ impl BookManagement for Book {
         )
     }
 
-    fn edit_text(&mut self, new_text: String) {
-        // old page text
-        let old_page = self.get_page_of_chapter();
-        if old_page.to_string() == new_text.to_string() {
-            return;
-        }
+    fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S) {
+        
+        let new_chapter_text = match other_new_text.into() {
+            Some(new_text_1) => {
+                let (old_page_0, old_page_1) = self.get_dual_pages();
+                if old_page_0.to_string() == new_text && old_page_1.to_string() == new_text_1 {
+                    return;
+                }
 
-        let new_chapter_text = self.get_chapter_text().replace(
-            old_page.to_string().as_str(),
-            new_text.as_str()
-        );
+                let new_chapter_text = self.get_chapter_text()
+                .replace(
+                    old_page_0.as_str(), 
+                    new_text.as_str()
+                ).replace(
+                    old_page_1.as_str(), 
+                    new_text_1.as_str()
+                );
+                
+                new_chapter_text
+            },
+            None => {
+                // single page edit mode
+                let old_page = self.get_page_of_chapter();
+                if old_page.to_string() == new_text {
+                    return;
+                }
+
+                self.get_chapter_text()
+                .replace(
+                    old_page.as_str(),
+                    new_text.as_str()
+                )
+            }
+        };
 
         let _ = edit_chapter(self.path.as_str(), self.chapter_number, new_chapter_text);
+        // here we have to redo count of pages and split
         self.load_chapter();
         self.load_page();
     }

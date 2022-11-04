@@ -12,9 +12,15 @@ pub fn edit_button(
     reading_state: &mut ReadingState,
     book: &Book,
 ) {
-    if !reading_state.is_editing.unwrap() && reading_state.single_view.unwrap() {
+    if !reading_state.is_editing.unwrap() {
         reading_state.is_editing = Some(true);
-        reading_state.text = book.get_page_of_chapter().to_string();
+        if reading_state.single_view.unwrap() {
+            reading_state.text_0 = book.get_page_of_chapter().to_string();
+        } else {
+            let (text_0, text_1) = book.get_dual_pages();
+            reading_state.text_0 = text_0.to_string();
+            reading_state.text_1 = text_1.to_string();
+        }
     } else {
         println!("DEBUG: EDIT BUTTON DISABLED");
     }
@@ -64,13 +70,22 @@ pub fn save_button(
     reading_state: &mut ReadingState,
     book: &mut Book,
 ) {
-    if reading_state.text != book.get_page_of_chapter().to_string() {
-        book.edit_text(reading_state.text.clone());
-        reading_state.is_editing = Some(false);
-        reading_state.text = String::default();
-        ctx.request_paint();
+    if reading_state.single_view.unwrap() {
+        if reading_state.text_0 != book.get_page_of_chapter().to_string() {
+            book.edit_text(reading_state.text_0.clone(), None);
+            reading_state.is_editing = Some(false);
+            reading_state.text_0 = String::default();
+            ctx.request_paint();
+        }
     } else {
-        println!("DEBUG: NO CHANGES MADE");
+        let (text_0, text_1) = book.get_dual_pages();
+        if reading_state.text_0 != text_0.to_string() || reading_state.text_1 != text_1.to_string() {
+            book.edit_text(reading_state.text_0.clone(), Some(reading_state.text_1.clone()));
+            reading_state.is_editing = Some(false);
+            reading_state.text_0 = String::default();
+            reading_state.text_1 = String::default();
+            ctx.request_paint();
+        }
     }
 }
 
@@ -78,5 +93,6 @@ pub fn undo_button(
     reading_state: &mut ReadingState
 ) {
     reading_state.is_editing = Some(false);
-    reading_state.text = String::default();
+    reading_state.text_0 = String::default();
+    reading_state.text_1 = String::default();
 }
