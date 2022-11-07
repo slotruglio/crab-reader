@@ -426,11 +426,11 @@ impl BookManagement for Book {
         let _ = edit_chapter(self.path.as_str(), self.chapter_number, new_chapter_text);
         
 
-        let old_len = self.split_chapter_in_pages().len();
+        let old_len = self.split_chapter_in_pages(true).len();
         // check if the split's number of pages is the same as before
         self.load_chapter();
 
-        let new_len = split_chapter_in_vec(self.path.as_str(), None, self.chapter_number, NUMBER_OF_LINES, FONT_SIZE).len();
+        let new_len = split_chapter_in_vec(self.path.as_str(), None, self.chapter_number, NUMBER_OF_LINES, FONT_SIZE, 800.0, 300.0).len();
         if new_len != old_len {
             println!("DEBUG: new_len: {}, old_len: {}", new_len, old_len);
             // recalculate pages

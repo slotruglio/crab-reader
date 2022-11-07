@@ -411,14 +411,17 @@ pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>
 
     let s0: WString<BigEndian> = WString::from(text.as_str());
 
-    while first_index*2 < s0.len() {
+    //problema: spezza un sacco di parole
+    while first_index < s0.len() {        
 
-        let substring_long_wf = &s0[first_index..first_index + (2*wf)];
-        lines.push(substring_long_wf);
+        //min between s0 len and first_index + 2wf
+        let last_index = std::cmp::min(s0.len(), first_index + 2*wf);
+
+        let substring_long_wf = &s0[first_index..last_index];
+        lines.push(substring_long_wf.to_string());
         
         first_index += 2*wf;
     }
-
 
     let mut pages = vec![];
     let mut i = 0;
@@ -430,7 +433,7 @@ pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>
         //push into "page" a number of lines equal to lines_sum
         for _ in 0..hf {
             if i < lines.len() {
-                page.push_str(lines[i].to_string().as_str());
+                page.push_str(lines[i].as_str());
                 i += 1;
             }
         }
