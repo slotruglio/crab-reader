@@ -16,7 +16,7 @@ pub fn build_single_view() -> impl Widget<CrabReaderState> {
         })
         .with_line_break_mode(LineBreaking::WordWrap)
     )
-    .vertical()
+    .vertical().fix_size(800.0, 300.0)
 }
 
 // single page view for text editing
