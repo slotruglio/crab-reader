@@ -16,6 +16,7 @@ pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
+    filter_by: String,
 }
 
 impl MockupLibrary<Book> {
@@ -24,6 +25,7 @@ impl MockupLibrary<Book> {
             books: Vector::new(),
             selected_book: None,
             sorted_by: SortBy::Title,
+            filter_by: "".into(),
         };
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
@@ -174,5 +176,25 @@ impl MockupLibrary<Book> {
 
     pub fn get_sort_order(&self) -> SortBy {
         self.sorted_by.clone()
+    }
+
+    pub fn filter_out_by_string(&mut self, filter: impl Into<String>) {
+        let filter = filter.into();
+        self.books.iter_mut().for_each(|book| {
+            let title_lower = book.get_title().to_lowercase();
+            let author_lower = book.get_author().to_lowercase();
+            if !title_lower.contains(&filter) && !author_lower.contains(&filter) {
+                book.set_filtered_out(true);
+            } else {
+                book.set_filtered_out(false);
+            }
+        });
+
+        if let Some(book) = self.get_selected_book_mut() {
+            if book.is_filtered_out() {
+                book.unselect();
+                self.unselect_current_book();
+            }
+        }
     }
 }
