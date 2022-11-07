@@ -155,8 +155,11 @@ impl MockupLibrary<Book> {
                 .get_perc_read()
                 .partial_cmp(&one.get_perc_read())
                 .unwrap(),
-            _ => one.get_title().cmp(&other.get_title()),
         });
         self.sorted_by = by;
+    }
+
+    pub fn get_sort_order(&self) -> SortBy {
+        self.sorted_by.clone()
     }
 }
