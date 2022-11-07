@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 use druid::{im::Vector, Data, Lens};
 
@@ -16,7 +19,9 @@ pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
-    filter_by: String,
+    filter_text_input: String,
+    filter_by: Rc<String>,
+    visible_books: usize,
 }
 
 impl MockupLibrary<Book> {
@@ -25,7 +30,9 @@ impl MockupLibrary<Book> {
             books: Vector::new(),
             selected_book: None,
             sorted_by: SortBy::Title,
-            filter_by: "".into(),
+            filter_text_input: "".into(),
+            filter_by: "".to_string().into(),
+            visible_books: 0,
         };
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
@@ -58,6 +65,23 @@ impl MockupLibrary<Book> {
             .collect();
         Ok(vec)
     }
+
+    pub fn get_number_of_visible_books(&self) -> usize {
+        self.visible_books
+    }
+
+    pub fn get_filter_string(&self) -> Rc<String> {
+        self.filter_by.clone()
+    }
+
+    pub fn get_filter_text_input(&self) -> String {
+        self.filter_text_input.clone()
+    }
+
+    pub fn set_filter_string(&mut self, text: impl Into<String>) {
+        self.filter_by = text.into().into();
+        self.filter_out_by_string();
+    }
 }
 
 impl GUILibrary<Book> for MockupLibrary<Book> {
@@ -73,6 +97,7 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
 
         let book = Book::new(path).with_index(self.books.len());
         self.books.push_back(book);
+        self.visible_books += 1;
     }
 
     fn remove_book(&mut self, idx: usize) {
@@ -178,8 +203,9 @@ impl MockupLibrary<Book> {
         self.sorted_by.clone()
     }
 
-    pub fn filter_out_by_string(&mut self, filter: impl Into<String>) {
-        let filter = filter.into();
+    pub fn filter_out_by_string(&mut self) {
+        let filter = self.get_filter_string().to_lowercase();
+        let mut cnt = 0;
         self.books.iter_mut().for_each(|book| {
             let title_lower = book.get_title().to_lowercase();
             let author_lower = book.get_author().to_lowercase();
@@ -187,6 +213,7 @@ impl MockupLibrary<Book> {
                 book.set_filtered_out(true);
             } else {
                 book.set_filtered_out(false);
+                cnt += 1;
             }
         });
 
@@ -196,5 +223,7 @@ impl MockupLibrary<Book> {
                 self.unselect_current_book();
             }
         }
+        self.visible_books = cnt;
+        self.filter_by = filter.into();
     }
 }
