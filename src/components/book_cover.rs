@@ -181,7 +181,10 @@ impl<BookData: GUIBook + Data> Widget<BookData> for BookCover {
         }
     }
 
-    fn layout(&mut self, _: &mut LayoutCtx, _: &BoxConstraints, _: &BookData, _: &Env) -> Size {
+    fn layout(&mut self, _: &mut LayoutCtx, _: &BoxConstraints, book: &BookData, _: &Env) -> Size {
+        if book.is_filtered_out() {
+            return Size::ZERO;
+        }
         BOOK_WIDGET_SIZE
     }
 
