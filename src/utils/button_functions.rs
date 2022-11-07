@@ -8,7 +8,7 @@ use druid::EventCtx;
 /// return the new value of is_editing
 /// and the new value of attribute text
 #[allow(dead_code)]
-pub fn edit_button(
+pub fn edit_btn_fn(
     reading_state: &mut ReadingState,
     book: &Book,
 ) {
@@ -76,7 +76,7 @@ pub fn change_page(
     }
 }
 
-pub fn save_button(
+pub fn save_btn_fn(
     ctx: &mut EventCtx,
     reading_state: &mut ReadingState,
     book: &mut Book,
@@ -100,7 +100,7 @@ pub fn save_button(
     }
 }
 
-pub fn undo_button(
+pub fn undo_btn_fn(
     reading_state: &mut ReadingState
 ) {
     reading_state.is_editing = Some(false);

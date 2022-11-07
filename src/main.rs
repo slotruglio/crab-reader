@@ -5,6 +5,7 @@ use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
+use components::reader_btns::{leave_btn, views_btn, next_btn, back_btn, edit_btn, save_btn, undo_btn, pages_number_btn};
 use components::reader_view::{single_view_edit_widget, single_view_widget, dual_view_widget, dual_view_edit_widget};
 use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
@@ -12,12 +13,9 @@ use druid::{
     WidgetExt, WindowDesc, EventCtx,
 };
 use once_cell::sync::Lazy;
-use utils::button_functions; // 1.3.1
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::envmanager::MyEnv;
-
-use crate::utils::button_functions::page_number_switch_button;
 
 mod components;
 mod utils;
@@ -195,124 +193,21 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         )
     ).fix_size(800.0, 450.0);
     
-    let leave_btn = Button::new("Go back to Browsing")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading = false;
-        })
-        .fix_height(64.0)
-        .center();
+    let leave_btn = leave_btn();
     
-    // todo() switch to change single view and double view
-    // this is a mock to test layout
-    let views_btn = Button::new("Single/Double View")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
-        })
-        .fix_height(64.0)
-        .center();
+    let views_btn = views_btn();
 
-        let next_btn = Button::new("Next")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED NEXT START");
-            let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(
-                ctx, 
-                book, 
-                data.reading_state.is_editing.unwrap(), 
-                data.reading_state.single_view.unwrap(), 
-                true
-            );
-            println!("DEBUG: PRESSED NEXT END\n");
-        })
-        .center();
+    let next_btn = next_btn();
 
-    let back_btn = Button::new("Back")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED BACK START");
-            let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(
-                ctx, 
-                book, 
-                data.reading_state.is_editing.unwrap(), 
-                data.reading_state.single_view.unwrap(), 
-                false
-            );
+    let back_btn = back_btn();
 
-            println!("DEBUG: PRESSED BACK END\n");
-        })
-        .center();
+    let edit_btn = edit_btn();
 
-    let edit_btn = Button::new("Edit")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED EDIT BUTTON");
+    let save_changes_btn = save_btn();
 
-            button_functions::edit_button(
-                &mut data.reading_state, 
-                data.library.get_selected_book().unwrap()
-            );
+    let undo_changes_btn = undo_btn();
 
-        })
-        .fix_height(64.0)
-        .center();
-
-    let save_changes_btn = Button::new("Save")
-    .on_click(|ctx: &mut EventCtx, data: &mut CrabReaderState, _| {
-        println!("DEBUG: PRESSED SAVE BUTTON");
-
-        button_functions::save_button(
-            ctx,
-            &mut data.reading_state,
-            &mut data.library.get_selected_book_mut().unwrap()
-        );
-
-    })
-    .center();
-
-    let undo_changes_btn = Button::new("Undo")
-    .on_click(|_, data: &mut CrabReaderState, _| {
-
-        button_functions::undo_button(&mut data.reading_state);
-
-    })
-    .center();
-
-    let pages_number_label = Label::dynamic(
-        |data: &CrabReaderState, _env: &_| {
-            let page_number = data.library.get_selected_book().unwrap().get_cumulative_current_page_number();
-
-            match data.reading_state.pages_btn_style.unwrap() {
-                1 => {
-                    let pages_to_end = data.library.get_selected_book().unwrap().get_last_page_number() - page_number;
-                    format!("Pages to end of chatpter: {}", pages_to_end.to_string())
-                },
-                2 => {
-                    let pages_to_end = data.library.get_selected_book().unwrap().get_number_of_pages() - page_number;
-                    format!("Pages to end of book: {}", pages_to_end.to_string())
-                },
-                _ => {
-                    let odd = page_number % 2;
-                    if data.reading_state.single_view.unwrap() {
-                        format!("Page {}", page_number.to_string())
-                    } else {
-                        if odd == 0 {
-                            format!("Pages {}-{}", page_number.to_string(), (page_number + 1).to_string())
-                        } else {
-                            format!("Pages {}-{}", (page_number - 1).to_string(), page_number.to_string())
-                        }
-                    }
-                }
-
-            }
-        }
-    ).with_text_size(12.0);
-
-    let pages_number_btn = Button::from_label(pages_number_label)
-    .on_click(|_, data: &mut CrabReaderState, _| {
-
-        page_number_switch_button(&mut data.reading_state);
-
-    });
-
+    let pages_number_btn = pages_number_btn();
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
