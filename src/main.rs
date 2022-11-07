@@ -5,7 +5,7 @@ use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use components::reader_view::{build_single_view_edit, build_single_view, build_dual_view, build_dual_view_edit};
+use components::reader_view::{single_view_edit_widget, single_view_widget, dual_view_widget, dual_view_edit_widget};
 use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
@@ -16,6 +16,8 @@ use utils::button_functions; // 1.3.1
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::envmanager::MyEnv;
+
+use crate::utils::button_functions::page_number_switch_button;
 
 mod components;
 mod utils;
@@ -32,6 +34,7 @@ static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 pub struct ReadingState {
     single_view: Option<bool>,
     is_editing: Option<bool>,
+    pages_btn_style: Option<u8>,
     text_0: String,
     text_1: String,
 }
@@ -40,10 +43,12 @@ impl ReadingState {
     fn enable<S: Into<Option<Rc<String>>>>(&mut self, text: S) {
         self.single_view = Some(true);
         self.is_editing = Some(false);
+        self.pages_btn_style = Some(0);
     }
     fn disable(&mut self){
         self.single_view = None;
         self.is_editing = None;
+        self.pages_btn_style = None;
         self.text_0 = String::default();
         self.text_1 = String::default();
     }
@@ -54,6 +59,7 @@ impl Default for ReadingState {
         Self {
             single_view: None,
             is_editing: None,
+            pages_btn_style: None,
             text_0: String::default(),
             text_1: String::default(),
         }
@@ -61,7 +67,7 @@ impl Default for ReadingState {
 }
 
 #[derive(Clone, Data, Lens)]
-struct CrabReaderState {
+pub struct CrabReaderState {
     user: UserState,
     library: Library,
     display_mode: DisplayMode,
@@ -179,13 +185,13 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
         Either::new(
             |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            build_single_view_edit(),
-            build_single_view()
+            single_view_edit_widget(),
+            single_view_widget()
         ),
         Either::new(
             |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            build_dual_view_edit(),
-            build_dual_view()
+            dual_view_edit_widget(),
+            dual_view_widget()
         )
     ).fix_size(800.0, 450.0);
     
@@ -204,8 +210,8 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         })
         .fix_height(64.0)
         .center();
-    
-    let next_btn = Button::new("Next")
+
+        let next_btn = Button::new("Next")
         .on_click(|ctx, data: &mut CrabReaderState, _| {
             println!("DEBUG: PRESSED NEXT START");
             let book = data.library.get_selected_book_mut().unwrap();
@@ -270,25 +276,43 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     })
     .center();
 
-    let current_page = Label::dynamic(
+    let pages_number_label = Label::dynamic(
         |data: &CrabReaderState, _env: &_| {
             let page_number = data.library.get_selected_book().unwrap().get_cumulative_current_page_number();
-            let odd = page_number % 2;
 
-            if data.reading_state.single_view.unwrap() {
-                format!("Page {}", page_number.to_string())
-            } else {
-                if odd == 0 {
-                    format!("Page {}-{}", page_number.to_string(), (page_number + 1).to_string())
-                } else {
-                    format!("Page {}-{}", (page_number - 1).to_string(), page_number.to_string())
+            match data.reading_state.pages_btn_style.unwrap() {
+                1 => {
+                    let pages_to_end = data.library.get_selected_book().unwrap().get_last_page_number() - page_number;
+                    format!("Pages to end of chatpter: {}", pages_to_end.to_string())
+                },
+                2 => {
+                    let pages_to_end = data.library.get_selected_book().unwrap().get_number_of_pages() - page_number;
+                    format!("Pages to end of book: {}", pages_to_end.to_string())
+                },
+                _ => {
+                    let odd = page_number % 2;
+                    if data.reading_state.single_view.unwrap() {
+                        format!("Page {}", page_number.to_string())
+                    } else {
+                        if odd == 0 {
+                            format!("Pages {}-{}", page_number.to_string(), (page_number + 1).to_string())
+                        } else {
+                            format!("Pages {}-{}", (page_number - 1).to_string(), page_number.to_string())
+                        }
+                    }
                 }
+
             }
         }
-    )
-        .with_text_size(12.0)
-        .padding(10.0)
-        .center();
+    ).with_text_size(12.0);
+
+    let pages_number_btn = Button::from_label(pages_number_label)
+    .on_click(|_, data: &mut CrabReaderState, _| {
+
+        page_number_switch_button(&mut data.reading_state);
+
+    });
+
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
@@ -312,7 +336,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
         Flex::row()
         .with_child(back_btn)
-        .with_child(current_page)
+        .with_child(pages_number_btn)
         .with_child(next_btn)
         .center()
     );

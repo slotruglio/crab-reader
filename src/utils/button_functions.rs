@@ -107,3 +107,8 @@ pub fn undo_button(
     reading_state.text_0 = String::default();
     reading_state.text_1 = String::default();
 }
+
+pub fn page_number_switch_button(reading_state: &mut ReadingState) {
+    let old = reading_state.pages_btn_style.unwrap();
+    reading_state.pages_btn_style = Some((old+1)%3);
+}

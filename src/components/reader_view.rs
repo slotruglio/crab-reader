@@ -9,7 +9,7 @@ use super::library::GUILibrary;
 
 // single page view for text reader
 #[allow(dead_code)]
-pub fn build_single_view() -> impl Widget<CrabReaderState> {
+pub fn single_view_widget() -> impl Widget<CrabReaderState> {
     Scroll::new(
         Label::dynamic(|data: &CrabReaderState, _env: &_| {
             data.library.get_selected_book().unwrap().get_page_of_chapter().to_string()
@@ -21,7 +21,7 @@ pub fn build_single_view() -> impl Widget<CrabReaderState> {
 
 // single page view for text editing
 #[allow(dead_code)]
-pub fn build_single_view_edit() -> impl Widget<CrabReaderState> {
+pub fn single_view_edit_widget() -> impl Widget<CrabReaderState> {
 
     let text_box = TextBox::multiline()
         .with_placeholder("Text editing is not yet implemented")
@@ -36,7 +36,7 @@ pub fn build_single_view_edit() -> impl Widget<CrabReaderState> {
 
 // dual page view for text reader
 #[allow(dead_code)]
-pub fn build_dual_view() -> impl Widget<CrabReaderState> {
+pub fn dual_view_widget() -> impl Widget<CrabReaderState> {
     Flex::row()
         .with_child(
             Scroll::new(
@@ -63,7 +63,7 @@ pub fn build_dual_view() -> impl Widget<CrabReaderState> {
 
 // dual page view for text editing
 #[allow(dead_code)]
-pub fn build_dual_view_edit() -> impl Widget<CrabReaderState> {
+pub fn dual_view_edit_widget() -> impl Widget<CrabReaderState> {
 
     let text_box_page_0 = TextBox::multiline()
         .with_placeholder("Text editing is not yet implemented")
