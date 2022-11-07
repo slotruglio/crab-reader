@@ -108,7 +108,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
 
 fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize, chapter_pages_number: Arc<Mutex<Vec<usize>>>) -> Option<Page> {
 
-    let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 0);
+    let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 0, 800.0, 300.0);
 
     //add the number of pages of the chapter to the vector chapter_pages_number
     let mut chapter_pages_number = chapter_pages_number.lock().unwrap();
