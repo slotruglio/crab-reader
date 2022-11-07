@@ -377,7 +377,7 @@ impl BookManagement for Book {
         let _ = edit_chapter(self.path.as_str(), self.chapter_number, new_chapter_text);
         
 
-        let old_len = self.split_chapter_in_pages().len();
+        let old_len = self.get_last_page_number()+1;
         // check if the split's number of pages is the same as before
         self.load_chapter();
 

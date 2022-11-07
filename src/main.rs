@@ -6,8 +6,8 @@ use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
 use components::reader_btns::{ReaderBtn};
-use components::reader_view::{ReaderView};
-use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
+use components::reader_view::{ReaderView, current_chapter_widget, title_widget};
+use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher, LineBreaking};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
     WidgetExt, WindowDesc, EventCtx,
@@ -165,59 +165,19 @@ fn get_viewswitcher() -> impl Widget<CrabReaderState> {
 
 fn read_book_ui() -> impl Widget<CrabReaderState> {
     
-    let title = Label::dynamic(
-        |data: &CrabReaderState, _env: &_| data.library.get_selected_book().unwrap().get_title().to_string(),
-    )
-        .with_text_size(32.0)
-        .padding(10.0)
-        .center();
+    let current_chapter = current_chapter_widget();
     
-    let current_chapter = Label::dynamic(
-        |data: &CrabReaderState, _env: &_| format!("Chapter {}",data.library.get_selected_book().unwrap().get_chapter_number().to_string())
-    )
-        .with_text_size(16.0)
-        .padding(10.0)
-        .center();
-    
-    let text = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            ReaderView::SingleEdit.get_view(),
-            ReaderView::Single.get_view()
-        ),
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            ReaderView::DualEdit.get_view(),
-            ReaderView::Dual.get_view()
-        )
-    ).fix_size(800.0, 450.0);
-    
-    let leave_btn = ReaderBtn::Leave.get_btn();
-    
-    let views_btn = ReaderBtn::ViewsSwitch.get_btn();
-
-    let next_btn = ReaderBtn::NextPage.get_btn();
-
-    let back_btn = ReaderBtn::PrevPage.get_btn();
-
-    let edit_btn = ReaderBtn::Edit.get_btn();
-
-    let save_changes_btn = ReaderBtn::Save.get_btn();
-
-    let undo_changes_btn = ReaderBtn::Undo.get_btn();
-
-    let pages_number_btn = ReaderBtn::PageNumberSwitch.get_btn();
+    let text = ReaderView::dynamic_view();
 
     let header_btns = Flex::row()
-        .with_child(edit_btn)
-        .with_child(views_btn)
-        .center();
+    .with_child(ReaderBtn::Edit.button())
+    .with_child(ReaderBtn::ViewsSwitch.button())
+    .center();
 
     let header = Flex::row()
-        .with_child(leave_btn)
+        .with_child(ReaderBtn::Leave.button())
         .with_default_spacer()
-        .with_flex_child(title, 1.0)
+        .with_flex_child(title_widget(), 1.0)
         .with_default_spacer()
         .with_child(header_btns)
         .center();
@@ -225,18 +185,22 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let footer = Either::new(
         |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
         Flex::row()
-        .with_child(undo_changes_btn)
-        .with_child(save_changes_btn)
+        .with_child(ReaderBtn::Undo.button())
+        .with_child(ReaderBtn::Save.button())
         .center(),
 
         Flex::row()
-        .with_child(back_btn)
-        .with_child(pages_number_btn)
-        .with_child(next_btn)
+        .with_flex_spacer(2.0)
+        .with_child(ReaderBtn::PrevPage.button())
+        .with_flex_spacer(1.0)
+        .with_child(ReaderBtn::PageNumberSwitch.button())
+        .with_flex_spacer(1.0)
+        .with_child(ReaderBtn::NextPage.button())
+        .with_flex_spacer(2.0)
         .center()
     );
 
-    let flex = Flex::column()
+    let ui = Flex::column()
         .with_child(header)
         .with_child(current_chapter)
         .with_spacer(5.0)
@@ -245,7 +209,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(footer)
         .with_spacer(5.0);
 
-    flex
+    ui
 }
 
 struct DumbDelegate;

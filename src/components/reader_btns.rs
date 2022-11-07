@@ -1,4 +1,4 @@
-use druid::widget::{Button, Label, Align};
+use druid::widget::{Button, Label, Align, Flex};
 use druid::{
     Widget,
     WidgetExt, EventCtx,
@@ -23,7 +23,7 @@ pub enum ReaderBtn {
 
 impl ReaderBtn {
     /// Returns a button with the correct label and function
-    pub fn get_btn(&self) -> impl Widget<CrabReaderState> {
+    pub fn button(&self) -> impl Widget<CrabReaderState> {
         match self {
             ReaderBtn::Leave => leave_btn(),
             ReaderBtn::Edit => edit_btn(),
@@ -35,6 +35,7 @@ impl ReaderBtn {
             ReaderBtn::PageNumberSwitch => pages_number_btn(),
         }
     }
+
 }
 
 // button that let to go in library view
@@ -146,7 +147,15 @@ fn back_btn() -> Align<CrabReaderState> {
 
 // button that let to switch between single and double page view
 fn views_btn() -> Align<CrabReaderState> {
-    let views_btn = Button::new("Single/Double View")
+    let dynamic_label = Label::dynamic(|data: &CrabReaderState, _| {
+        if data.reading_state.single_view.unwrap() {
+            "Single View".to_string()
+        } else {
+            "Double View".to_string()
+        }
+    });
+
+    let views_btn = Button::from_label(dynamic_label)
         .on_click(|_, data: &mut CrabReaderState, _| {
             data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
         })
