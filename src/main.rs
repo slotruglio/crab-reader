@@ -8,7 +8,7 @@ use components::mockup::{MockupLibrary, SortBy};
 use components::reader_view::{
     build_dual_view, build_dual_view_edit, build_single_view, build_single_view_edit,
 };
-use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
+use druid::widget::{Button, Controller, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, EventCtx, Handled, Lens, PlatformError, Selector,
     Widget, WidgetExt, WindowDesc,
@@ -149,9 +149,34 @@ fn picker_sort_by() -> impl Widget<Library> {
         .fix_height(50.0)
 }
 
+struct FilterController;
+
+impl<W: Widget<Library>> Controller<MockupLibrary<Book>, W> for FilterController {
+    fn event(
+        &mut self,
+        child: &mut W,
+        ctx: &mut EventCtx,
+        event: &druid::Event,
+        data: &mut MockupLibrary<Book>,
+        env: &Env,
+    ) {
+        let filter = data.get_filter_text_input();
+        if filter != *data.get_filter_string() {
+            data.set_filter_string(filter);
+        }
+        child.event(ctx, event, data, env)
+    }
+}
+
 fn picker_filter_by() -> impl Widget<Library> {
+    let text_edit = druid::widget::TextBox::new()
+        .with_placeholder("Filter by")
+        .lens(Library::filter_text_input)
+        .controller(FilterController)
+        .fix_width(500.0);
     Flex::row()
         .with_child(Label::new("Filter by"))
+        .with_child(text_edit)
         .padding(5.0)
         .background(Color::GRAY)
         .rounded(5.0)
