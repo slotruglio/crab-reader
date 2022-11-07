@@ -8,8 +8,11 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufReader, Write},
     path::{Path, PathBuf},
-    rc::Rc,
+    rc::Rc, sync::Arc,
 };
+
+use utf16string::{BigEndian, BE, WString};
+
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
 /// title: title of the book
@@ -270,7 +273,9 @@ pub fn calculate_number_of_pages(path: &str, number_of_lines: usize, font_size: 
                 Option::None, 
                 i, 
                 number_of_lines, 
-                font_size);
+                font_size,
+                800.0,
+                300.0);
             println!("DEBUG: chapter {} has {} pages", i, pages.len());
             // send tuple with index of chapter and number of pages
             tx.send((i, pages.len())).unwrap();
@@ -371,20 +376,54 @@ pub fn get_cumulative_current_page_number(path: &str, chapter: usize, page: usiz
 /// You  have to provide the path. Number of lines and font size
 /// You can provide the text of the chapter as a RC String or
 /// you can provide the chapter number
-pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>(path: &str, opt_text: S, chapter_number: U, number_of_lines: usize, font_size: usize) -> Vec<Rc<String>> {
+pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>(path: &str, opt_text: S, chapter_number: U, number_of_lines: usize, font_size: usize, width: f32, height: f32) -> Vec<Rc<String>> {
     // todo(): consider also the font size
     
     let text = match opt_text.into() {
         Some(book_chapter_text) => book_chapter_text,
         None => get_chapter_text(path, chapter_number.into().unwrap_or(0)),
     };
-    let lines = text.split("\n\n").collect::<Vec<&str>>();
-    lines
-    .into_iter()
-    .enumerate()
-    .map(|(idx, line)| match idx % number_of_lines {
-        0 => Rc::new(line.to_string()),
-        _ => Rc::new(format!("{}{}", "\n\n", line)),
-    })
-    .collect()
+
+    //through font-size, we can calculate the number N of lines that fit in the page
+    //split text in paragraphs long N lines
+    let wf = (width / (12 as f32)) as usize;
+    let hf = (height / (12 as f32)) as usize;
+
+    println!("width, height: {}, {}", width, height);
+
+    //divide text in strings of wf characters
+    let mut lines = vec![];
+    let mut first_index = 0;
+
+    let s0: WString<BigEndian> = WString::from(text.as_str());
+
+    while first_index*2 < s0.len() {
+
+        let substring_long_wf = &s0[first_index..first_index + (2*wf)];
+        lines.push(substring_long_wf);
+        
+        first_index += 2*wf;
+    }
+
+
+    let mut pages = vec![];
+    let mut i = 0;
+
+    //Iterate through the lines of the entire chapter
+    while i < lines.len() {
+        let mut page = String::new();
+
+        //push into "page" a number of lines equal to lines_sum
+        for _ in 0..hf {
+            if i < lines.len() {
+                page.push_str(lines[i].to_string().as_str());
+                i += 1;
+            }
+        }
+        //push the newly created page in the pages vector
+        pages.push(Rc::new(page));
+    }
+
+    return pages;
+
 }

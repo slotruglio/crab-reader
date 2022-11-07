@@ -136,7 +136,7 @@ pub trait BookManagement {
 
     /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
     /// and returns a vector of strings. Each string is a page of the chapter
-    fn split_chapter_in_pages(&self) -> Vec<Rc<String>>;
+    fn split_chapter_in_pages(&self, is_single_view: bool) -> Vec<Rc<String>>;
 
     /// Method that edits the text of the current chapter
     /// new text is already in self.chapter_page_text
@@ -234,12 +234,12 @@ impl BookReading for Book {
         self.chapter_number = chapter;
         self.chapter_text = epub_utils::get_chapter_text(self.path.clone().as_str(), chapter);
         self.current_page = if next { 0 } else { self.get_last_page_number() };
-        self.chapter_page_text = Rc::clone(&self.split_chapter_in_pages()[self.current_page]);
+        self.chapter_page_text = Rc::clone(&self.split_chapter_in_pages(true)[self.current_page]);
         self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), chapter, self.current_page);
     }
 
     fn get_last_page_number(&self) -> usize {
-        self.split_chapter_in_pages().len() - 1 as usize
+        self.split_chapter_in_pages(true).len() - 1 as usize
     }
 
     fn get_current_page_number(&self) -> usize {
@@ -253,7 +253,7 @@ impl BookReading for Book {
     fn set_chapter_current_page_number(&mut self, page: usize) {
         self.current_page = page;
         self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), self.chapter_number, page);
-        self.chapter_page_text = Rc::clone(&self.split_chapter_in_pages()[page]);
+        self.chapter_page_text = Rc::from(self.split_chapter_in_pages(true)[page].clone());
     }
 
     fn get_chapter_text(&self) -> Rc<String> {
@@ -307,11 +307,14 @@ impl BookReading for Book {
     }
 
     fn get_page_of_chapter(&self) -> Rc<String> {
+        //possibile entry point
+        //possibile entry point
         self.chapter_page_text.clone()
     }
 
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>) {
-        let page = self.split_chapter_in_pages();
+        //possibile entry point
+        let page = self.split_chapter_in_pages(false);
 
         let odd = self.current_page % 2;
         let left_page = if odd == 0 {
@@ -335,13 +338,22 @@ impl BookManagement for Book {
         self.path.to_string()
     }
 
-    fn split_chapter_in_pages(&self) -> Vec<Rc<String>> {
+    fn split_chapter_in_pages(&self, is_single_view: bool) -> Vec<Rc<String>> {
+
+        let mut width = 800.0;
+        let height = 300.0;
+        if !is_single_view {
+            width = 400.0;
+        }
+
         epub_utils::split_chapter_in_vec(
             self.path.as_str(),
             self.get_chapter_text(),
             None,
             NUMBER_OF_LINES,
-            FONT_SIZE
+            FONT_SIZE,
+            width,
+            height
         )
     }
 
@@ -365,7 +377,7 @@ impl BookManagement for Book {
                         self.chapter_number,
                     );
                     self.chapter_page_text =
-                        self.split_chapter_in_pages()[self.current_page].clone();
+                        self.split_chapter_in_pages(true)[self.current_page].clone();
                 }
             }
         }
@@ -380,7 +392,7 @@ impl BookManagement for Book {
     }
 
     fn load_page(&mut self) {
-        self.chapter_page_text = self.split_chapter_in_pages()[self.current_page].clone();
+        self.chapter_page_text = self.split_chapter_in_pages(true)[self.current_page].clone();
     }
 }
 
