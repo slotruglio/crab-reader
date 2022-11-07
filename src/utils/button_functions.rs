@@ -1,6 +1,6 @@
 use crate::{
-    components::book::{Book, BookManagement, BookReading},
-    utils::saveload,
+    components::book::{Book, BookManagement, BookReading, GUIBook},
+    utils::saveload, ReadingState,
 };
 use druid::EventCtx;
 
@@ -9,22 +9,21 @@ use druid::EventCtx;
 /// and the new value of attribute text
 #[allow(dead_code)]
 pub fn edit_button(
-    ctx: &mut EventCtx,
-    book: &mut Book,
-    text: String,
-    is_editing: bool,
-) -> (bool, String) {
-    let state_is_editing = !is_editing;
-
-    let mut text_to_edit = text;
-
-    // text_to_edit is the "old page"
-    if state_is_editing {
-        text_to_edit = book.get_page_of_chapter().to_string();
+    reading_state: &mut ReadingState,
+    book: &Book,
+) {
+    if !reading_state.is_editing.unwrap() {
+        reading_state.is_editing = Some(true);
+        if reading_state.single_view.unwrap() {
+            reading_state.text_0 = book.get_page_of_chapter().to_string();
+        } else {
+            let (text_0, text_1) = book.get_dual_pages();
+            reading_state.text_0 = text_0.to_string();
+            reading_state.text_1 = text_1.to_string();
+        }
+    } else {
+        println!("DEBUG: EDIT BUTTON DISABLED");
     }
-
-    ctx.request_paint();
-    (state_is_editing, text_to_edit)
 }
 
 /// Go to the next or previous page of the book
@@ -45,9 +44,20 @@ pub fn change_page(
 
         let new_page = book.get_current_page_number() as isize + increaser;
         if new_page > book.get_last_page_number() as isize {
+            let last_page = book.get_number_of_pages() - 1;
+            println!("DEBUG: current page: {}, last page of book: {}", book.get_current_page_number(), last_page);
+            if book.get_cumulative_current_page_number() == last_page {
+                println!("DEBUG: LAST PAGE, can't go forward");
+                return;
+            }
+
             book.set_chapter_number(book.get_chapter_number() + 1, true);
             println!("DEBUG: Last page of chapter, changing chapter");
         } else if new_page < 0 {
+            if book.get_chapter_number() == 0 {
+                println!("DEBUG: FIRST PAGE, can't go back");
+                return;
+            }
             book.set_chapter_number(book.get_chapter_number() - 1, false);
             println!("DEBUG: First page of chapter, changing chapter");
         } else {
@@ -64,4 +74,36 @@ pub fn change_page(
         ctx.request_paint();
         println!("DEBUG: Chapter: {}", book.get_chapter_number());
     }
+}
+
+pub fn save_button(
+    ctx: &mut EventCtx,
+    reading_state: &mut ReadingState,
+    book: &mut Book,
+) {
+    if reading_state.single_view.unwrap() {
+        if reading_state.text_0 != book.get_page_of_chapter().to_string() {
+            book.edit_text(reading_state.text_0.clone(), None);
+            reading_state.is_editing = Some(false);
+            reading_state.text_0 = String::default();
+            ctx.request_paint();
+        }
+    } else {
+        let (text_0, text_1) = book.get_dual_pages();
+        if reading_state.text_0 != text_0.to_string() || reading_state.text_1 != text_1.to_string() {
+            book.edit_text(reading_state.text_0.clone(), Some(reading_state.text_1.clone()));
+            reading_state.is_editing = Some(false);
+            reading_state.text_0 = String::default();
+            reading_state.text_1 = String::default();
+            ctx.request_paint();
+        }
+    }
+}
+
+pub fn undo_button(
+    reading_state: &mut ReadingState
+) {
+    reading_state.is_editing = Some(false);
+    reading_state.text_0 = String::default();
+    reading_state.text_1 = String::default();
 }

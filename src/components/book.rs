@@ -1,3 +1,4 @@
+use crate::utils::epub_utils::{edit_chapter, split_chapter_in_vec};
 use crate::utils::{epub_utils, saveload, text_descriptor};
 use derivative::Derivative;
 use druid::image::io::Reader as ImageReader;
@@ -147,8 +148,7 @@ pub trait BookManagement {
     fn split_chapter_in_pages(&self) -> Vec<Rc<String>>;
 
     /// Method that edits the text of the current chapter
-    /// new text is already in self.chapter_page_text
-    fn edit_text(&mut self, old_text: String);
+    fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S);
 
     /// Method that extracts the book's chapters in local files
     fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
@@ -399,30 +399,52 @@ impl BookManagement for Book {
         )
     }
 
-    fn edit_text(&mut self, old_text: String) {
-        let new_text = self.chapter_page_text.clone();
-        for (old_line, new_line) in old_text.lines().zip(new_text.lines()) {
-            if old_line != new_line {
-                println!("DEBUG: old_line: {}", old_line);
-                println!("DEBUG: new_line: {}", new_line);
-                let new_chapter = self
-                    .chapter_text
-                    .replace(old_text.as_str(), new_text.as_str());
-                if let Ok(()) = epub_utils::edit_chapter(
-                    self.path.clone().as_str(),
-                    self.chapter_number,
-                    new_chapter,
-                ) {
-                    println!("DEBUG: Text edited");
-                    self.chapter_text = epub_utils::get_chapter_text(
-                        self.path.clone().as_str(),
-                        self.chapter_number,
-                    );
-                    self.chapter_page_text =
-                        self.split_chapter_in_pages()[self.current_page].clone();
-                }
+    fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S) {
+        
+        let new_chapter_text = match other_new_text.into() {
+            Some(new_text_1) => {
+                let (old_page_0, old_page_1) = self.get_dual_pages();
+
+                let new_chapter_text = self.get_chapter_text()
+                .replace(
+                    old_page_0.as_str(), 
+                    new_text.as_str()
+                ).replace(
+                    old_page_1.as_str(), 
+                    new_text_1.as_str()
+                );
+                
+                new_chapter_text
+            },
+            None => {
+                // single page edit mode
+                let old_page = self.get_page_of_chapter();
+
+                self.get_chapter_text()
+                .replace(
+                    old_page.as_str(),
+                    new_text.as_str()
+                )
             }
+        };
+
+        let _ = edit_chapter(self.path.as_str(), self.chapter_number, new_chapter_text);
+        
+
+        let old_len = self.split_chapter_in_pages().len();
+        // check if the split's number of pages is the same as before
+        self.load_chapter();
+
+        let new_len = split_chapter_in_vec(self.path.as_str(), None, self.chapter_number, NUMBER_OF_LINES, FONT_SIZE).len();
+        if new_len != old_len {
+            println!("DEBUG: new_len: {}, old_len: {}", new_len, old_len);
+            // recalculate pages
+            let (total_len, _) = epub_utils::calculate_number_of_pages(self.path.as_str(), NUMBER_OF_LINES, FONT_SIZE).unwrap();
+            self.number_of_pages = total_len;
+            self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), self.chapter_number, self.current_page);
         }
+
+        self.load_page();
     }
 
     fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>> {
