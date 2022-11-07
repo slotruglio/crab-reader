@@ -142,6 +142,12 @@ impl MockupLibrary<Book> {
             return;
         }
 
+        let old_title = self
+            .get_selected_book()
+            .map(|b| b.get_title().to_string())
+            .unwrap_or_default();
+        let mut new_idx = None;
+
         self.books.sort_by(|one, other| match by {
             SortBy::Title => one.get_title().cmp(&other.get_title()),
             SortBy::TitleRev => other.get_title().cmp(&one.get_title()),
@@ -156,6 +162,13 @@ impl MockupLibrary<Book> {
                 .partial_cmp(&one.get_perc_read())
                 .unwrap(),
         });
+        self.books.iter_mut().enumerate().for_each(|(i, book)| {
+            book.set_index(i);
+            if book.get_title() == old_title {
+                new_idx = Some(i);
+            }
+        });
+        self.selected_book = new_idx;
         self.sorted_by = by;
     }
 
