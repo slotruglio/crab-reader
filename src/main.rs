@@ -104,6 +104,34 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
         .lens(CrabReaderState::library)
 }
 
+fn picker_sort_by() -> impl Widget<()> {
+    Flex::row()
+        .with_child(Label::new("Sort by"))
+        .padding(5.0)
+        .background(Color::GRAY)
+        .rounded(5.0)
+        .padding(druid::Insets::uniform_xy(10.0, 5.0))
+        .expand_width()
+        .fix_height(50.0)
+}
+
+fn picker_filter_by() -> impl Widget<()> {
+    Flex::row()
+        .with_child(Label::new("Filter by"))
+        .padding(5.0)
+        .background(Color::GRAY)
+        .rounded(5.0)
+        .padding(druid::Insets::uniform_xy(10.0, 5.0))
+        .expand_width()
+        .fix_height(50.0)
+}
+
+fn picker_controller() -> impl Widget<()> {
+    let sort_by = picker_sort_by();
+    let filter_by = picker_filter_by();
+    Flex::column().with_child(sort_by).with_child(filter_by)
+}
+
 fn build_ui() -> impl Widget<CrabReaderState> {
     let library_cover = CoverLibrary::new().lens(CrabReaderState::library);
     let library_list = ListLibrary::new().lens(CrabReaderState::library);
@@ -117,8 +145,12 @@ fn build_ui() -> impl Widget<CrabReaderState> {
     .rounded(10.0)
     .padding(10.0);
 
-    let scroll = Scroll::new(view_either).vertical();
-    let left_panel = Flex::column().with_child(scroll);
+    let ctls = picker_controller();
+    let left_panel = Flex::column()
+        .with_child(ctls.lens(druid::lens::Unit))
+        .with_child(view_either)
+        .padding(15.0);
+    let scroll = Scroll::new(left_panel).vertical();
 
     let right_panel = Scroll::new(book_details_panel()).vertical().padding(5.0);
     let right_col = Flex::column()
@@ -131,7 +163,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_flex_child(right_panel, 1.0);
 
     let inner = Flex::row()
-        .with_flex_child(left_panel, 2.0)
+        .with_flex_child(scroll, 2.0)
         .with_flex_child(right_col, 1.0);
 
     Flex::column().with_flex_child(inner, 1.0)
