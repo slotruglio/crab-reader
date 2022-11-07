@@ -461,7 +461,6 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
         data: &mut CrabReaderState,
         _: &Env,
     ) -> Handled {
-        println!("Command: {:?}", cmd);
         match cmd {
             notif if notif.is(ENTERING_READING_MODE) => {
                 println!("Entering reading mode!");
