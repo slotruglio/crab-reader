@@ -138,6 +138,10 @@ pub enum SortBy {
 
 impl MockupLibrary<Book> {
     pub fn sort_by(&mut self, by: SortBy) {
+        if self.sorted_by == by {
+            return;
+        }
+
         self.books.sort_by(|one, other| match by {
             SortBy::Title => one.get_title().cmp(&other.get_title()),
             SortBy::TitleRev => other.get_title().cmp(&one.get_title()),
