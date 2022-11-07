@@ -4,7 +4,7 @@ use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
-use components::mockup::MockupLibrary;
+use components::mockup::{MockupLibrary, SortBy};
 use components::reader_view::{
     build_dual_view, build_dual_view_edit, build_single_view, build_single_view_edit,
 };
@@ -104,9 +104,43 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
         .lens(CrabReaderState::library)
 }
 
-fn picker_sort_by() -> impl Widget<()> {
+fn picker_sort_by() -> impl Widget<Library> {
     Flex::row()
         .with_child(Label::new("Sort by"))
+        .with_child(Button::new("Title").on_click(|ctx, data: &mut Library, _| {
+            data.sort_by(SortBy::Title);
+            ctx.request_update();
+        }))
+        .with_child(
+            Button::new("Author").on_click(|ctx, data: &mut Library, _| {
+                data.sort_by(SortBy::Author);
+                ctx.request_update();
+            }),
+        )
+        .with_child(
+            Button::new("PercRead").on_click(|ctx, data: &mut Library, _| {
+                data.sort_by(SortBy::PercRead);
+                ctx.request_update();
+            }),
+        )
+        .with_child(
+            Button::new("TitleRev").on_click(|ctx, data: &mut Library, _| {
+                data.sort_by(SortBy::TitleRev);
+                ctx.request_update();
+            }),
+        )
+        .with_child(
+            Button::new("AuthorRev").on_click(|ctx, data: &mut Library, _| {
+                data.sort_by(SortBy::AuthorRev);
+                ctx.request_update();
+            }),
+        )
+        .with_child(
+            Button::new("PercReadRev").on_click(|ctx, data: &mut Library, _| {
+                data.sort_by(SortBy::PercReadRev);
+                ctx.request_update();
+            }),
+        )
         .padding(5.0)
         .background(Color::GRAY)
         .rounded(5.0)
@@ -115,7 +149,7 @@ fn picker_sort_by() -> impl Widget<()> {
         .fix_height(50.0)
 }
 
-fn picker_filter_by() -> impl Widget<()> {
+fn picker_filter_by() -> impl Widget<Library> {
     Flex::row()
         .with_child(Label::new("Filter by"))
         .padding(5.0)
@@ -126,7 +160,7 @@ fn picker_filter_by() -> impl Widget<()> {
         .fix_height(50.0)
 }
 
-fn picker_controller() -> impl Widget<()> {
+fn picker_controller() -> impl Widget<Library> {
     let sort_by = picker_sort_by();
     let filter_by = picker_filter_by();
     Flex::column().with_child(sort_by).with_child(filter_by)
@@ -147,7 +181,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
     let ctls = picker_controller();
     let left_panel = Flex::column()
-        .with_child(ctls.lens(druid::lens::Unit))
+        .with_child(ctls.lens(CrabReaderState::library))
         .with_child(view_either)
         .padding(15.0);
     let scroll = Scroll::new(left_panel).vertical();
