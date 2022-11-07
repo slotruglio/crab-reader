@@ -70,11 +70,18 @@ impl Widget<Library> for CoverLibrary {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
+        if old_data.get_sort_order() != data.get_sort_order() {
+            self.children.clear();
+            ctx.children_changed();
+        }
+
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            if let Some(_) = old_data.get_book(idx) {
+            if let Some(old_book) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {
                     // TIL: let Some && let Some is unstable
-                    (*inner).update(ctx, book, env);
+                    if old_book != book {
+                        (*inner).update(ctx, book, env);
+                    }
                 }
             }
         }
