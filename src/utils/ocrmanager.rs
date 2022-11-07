@@ -8,7 +8,7 @@ use super::epub_utils;
 #[derive(Debug)]
 struct Page {
     //page: String, useless, since it's not accessed
-    similarity: f32,
+    high_count: i32,
     chapter_number: usize,
     chapter_page_number: usize
 }
@@ -75,13 +75,16 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
             let best_match_page = results_some.iter().max_by(|&a, &b| {
                 let a = a.as_ref().unwrap();
                 let b = b.as_ref().unwrap();
-                a.similarity.partial_cmp(&b.similarity).unwrap()
+                a.high_count.partial_cmp(&b.high_count).unwrap()
             });
+
+            println!("{:?}", best_match_page);
         
             //Calculate the global page number and return it
             let mut pages_sum = 0;
             for i in 0..best_match_page.unwrap().as_ref().unwrap().chapter_number {
                 pages_sum += chapters_pages_numbers.lock().unwrap()[i];
+                println!("{}", pages_sum);
             }
             pages_sum += best_match_page.unwrap().as_ref().unwrap().chapter_page_number;
 
@@ -106,13 +109,15 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
 }
 
 
-fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize, chapter_pages_number: Arc<Mutex<Vec<usize>>>) -> Option<Page> {
+fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize, chapters_pages_number: Arc<Mutex<Vec<usize>>>) -> Option<Page> {
 
     let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 0, 800.0, 300.0);
 
-    //add the number of pages of the chapter to the vector chapter_pages_number
-    let mut chapter_pages_number = chapter_pages_number.lock().unwrap();
-    chapter_pages_number[chapter_to_examine] = chapter_pages.len();
+    println!("len: {}", chapter_pages.len());
+
+    //add the number of pages of the chapter to the vector chapters_pages_number
+    let mut chapters_pages_number = chapters_pages_number.lock().unwrap();
+    chapters_pages_number[chapter_to_examine] = chapter_pages.len();
 
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
@@ -120,26 +125,29 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
         //replace all \n characters with spaces. the \n characters may be attached to words
         let page = &chapter_pages[i].replace("\n", " ");
 
+        println!("PAGE NUM {}", i);
+
         //if the page is empty, skip it
         if page.len() == 0 {
             continue;
         }
 
-        let mut j = 0;
         let mut similarity;
 
         //calculate the TOTAL number of words in the text and in the page
         let text_words_number = text.split_whitespace().count();
         let page_words_number = page.split_whitespace().count();
+       
+        let mut high_counter = 0;
+        let mut text_index = 0;
+        let mut page_index = 0;
 
-        //Continue while the similarity is higher than 0.7 and the we aren't left with less than 5 words in the text or in the page
         loop {
-
             println!("----------------");
 
-            let text_words: Vec<&str> = text.split_whitespace().clone().skip(j).take(10).collect();
+            let text_words: Vec<&str> = text.split_whitespace().clone().skip(text_index).take(10).collect();
             let text_substring = text_words.join(" ");
-            let page_words: Vec<&str> = page.split_whitespace().clone().skip(j).take(10).collect();
+            let page_words: Vec<&str> = page.split_whitespace().clone().skip(page_index).take(10).collect();
             let page_substring = page_words.join(" ");
 
             similarity = fuzzy_compare(text_substring.as_str(), page_substring.as_str());
@@ -147,20 +155,33 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
             //print text substring and page substring
             println!("text: {}", text_substring);
             println!("page: {}", page_substring);
-            println!("j: {}, text_words_number: {}, page_words_number: {}", j, text_words_number, page_words_number);
+            //println!("text_index: {}, page_index: {}, text_words_number: {}, page_words_number: {}", text_index,page_index, text_words_number, page_words_number);
             println!("similarity: {}", similarity);
-           
-            j += 10;
-            if !(similarity > 0.6 && text_words_number-5 > j && page_words_number-5 > j) {
+
+            if similarity > 0.5 {
+                high_counter += 1;
+                text_index += 10;
+                page_index += 10;
+            }
+            else {
+                page_index +=10;
+            }
+
+            if !(text_words_number-5 > text_index && page_words_number-5 > page_index) {
                 break;
             }
+
         }
 
-        if similarity > 0.6 {
+        println!("high_counter: {}", high_counter);
+        println!("{}", (text_words_number as f32 / 10.0));
+
+        //if the number of 10 words substring is higher than 30% of the total number of 10 words substring, return the page
+        if high_counter as f32 / (text_words_number as f32 / 10.0) > 0.3 {
             return Some(Page {
                 chapter_number: chapter_to_examine,
                 chapter_page_number: i,
-                similarity: similarity,
+                high_count: high_counter,
             });
         }
     }
