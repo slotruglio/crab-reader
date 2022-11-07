@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 use druid::{im::Vector, Data, Lens};
 
@@ -15,6 +15,7 @@ const SAVED_BOOKS_PATH: &str = "saved_books/";
 pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
+    sorted_by: SortBy,
 }
 
 impl MockupLibrary<Book> {
@@ -22,6 +23,7 @@ impl MockupLibrary<Book> {
         let mut lib = Self {
             books: Vector::new(),
             selected_book: None,
+            sorted_by: SortBy::Title,
         };
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
@@ -62,8 +64,9 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         let file_name = path.split("/").last().unwrap();
         let folder_name = file_name.split(".").next().unwrap();
         // extract metadata and chapters
-        if !Path::new(&format!("{}{}",SAVED_BOOKS_PATH, folder_name)).exists() {
-            let _res = epub_utils::extract_all(&path).expect(format!("Failed to extract {}", file_name).as_str());
+        if !Path::new(&format!("{}{}", SAVED_BOOKS_PATH, folder_name)).exists() {
+            let _res = epub_utils::extract_all(&path)
+                .expect(format!("Failed to extract {}", file_name).as_str());
         }
 
         let book = Book::new(path).with_index(self.books.len());
@@ -120,5 +123,36 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
             selected.unselect();
         }
         self.selected_book = None;
+    }
+}
+
+#[derive(Clone, PartialEq, Data)]
+pub enum SortBy {
+    Title,
+    TitleRev,
+    Author,
+    AuthorRev,
+    PercRead,
+    PercReadRev,
+}
+
+impl MockupLibrary<Book> {
+    pub fn sort_by(&mut self, by: SortBy) {
+        self.books.sort_by(|one, other| match by {
+            SortBy::Title => one.get_title().cmp(&other.get_title()),
+            SortBy::TitleRev => other.get_title().cmp(&one.get_title()),
+            SortBy::Author => one.get_author().cmp(&other.get_author()),
+            SortBy::AuthorRev => other.get_author().cmp(&one.get_author()),
+            SortBy::PercRead => one
+                .get_perc_read()
+                .partial_cmp(&other.get_perc_read())
+                .unwrap(),
+            SortBy::PercReadRev => other
+                .get_perc_read()
+                .partial_cmp(&one.get_perc_read())
+                .unwrap(),
+            _ => one.get_title().cmp(&other.get_title()),
+        });
+        self.sorted_by = by;
     }
 }
