@@ -5,8 +5,8 @@ use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::MockupLibrary;
-use components::reader_btns::{leave_btn, views_btn, next_btn, back_btn, edit_btn, save_btn, undo_btn, pages_number_btn};
-use components::reader_view::{single_view_edit_widget, single_view_widget, dual_view_widget, dual_view_edit_widget};
+use components::reader_btns::{ReaderBtn};
+use components::reader_view::{ReaderView};
 use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
@@ -183,31 +183,31 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
         Either::new(
             |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            single_view_edit_widget(),
-            single_view_widget()
+            ReaderView::SingleEdit.get_view(),
+            ReaderView::Single.get_view()
         ),
         Either::new(
             |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            dual_view_edit_widget(),
-            dual_view_widget()
+            ReaderView::DualEdit.get_view(),
+            ReaderView::Dual.get_view()
         )
     ).fix_size(800.0, 450.0);
     
-    let leave_btn = leave_btn();
+    let leave_btn = ReaderBtn::Leave.get_btn();
     
-    let views_btn = views_btn();
+    let views_btn = ReaderBtn::ViewsSwitch.get_btn();
 
-    let next_btn = next_btn();
+    let next_btn = ReaderBtn::NextPage.get_btn();
 
-    let back_btn = back_btn();
+    let back_btn = ReaderBtn::PrevPage.get_btn();
 
-    let edit_btn = edit_btn();
+    let edit_btn = ReaderBtn::Edit.get_btn();
 
-    let save_changes_btn = save_btn();
+    let save_changes_btn = ReaderBtn::Save.get_btn();
 
-    let undo_changes_btn = undo_btn();
+    let undo_changes_btn = ReaderBtn::Undo.get_btn();
 
-    let pages_number_btn = pages_number_btn();
+    let pages_number_btn = ReaderBtn::PageNumberSwitch.get_btn();
 
     let header_btns = Flex::row()
         .with_child(edit_btn)

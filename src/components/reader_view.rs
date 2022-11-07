@@ -1,4 +1,4 @@
-use druid::widget::{Flex, Label, LineBreaking, Scroll, TextBox};
+use druid::widget::{Flex, Label, LineBreaking, Scroll, TextBox, SizedBox, Align, Container};
 use druid::{Widget, WidgetExt, LensExt};
 
 
@@ -7,37 +7,58 @@ use crate::{CrabReaderState, ReadingState};
 use super::book::{BookReading};
 use super::library::GUILibrary;
 
+pub enum ReaderView {
+    Single,
+    SingleEdit,
+    Dual,
+    DualEdit,
+}
+
+impl ReaderView {
+    /// Returns a button with the correct label and function
+    pub fn get_view(&self) -> impl Widget<CrabReaderState> {
+        match self {
+            ReaderView::Single => single_view_widget(),
+            ReaderView::SingleEdit => single_view_edit_widget(),
+            ReaderView::Dual => dual_view_widget(),
+            ReaderView::DualEdit => dual_view_edit_widget(),
+        }
+    }
+}
+
 // single page view for text reader
-#[allow(dead_code)]
-pub fn single_view_widget() -> impl Widget<CrabReaderState> {
-    Scroll::new(
+fn single_view_widget() -> Container<CrabReaderState> {
+    let view = Scroll::new(
         Label::dynamic(|data: &CrabReaderState, _env: &_| {
             data.library.get_selected_book().unwrap().get_page_of_chapter().to_string()
         })
         .with_line_break_mode(LineBreaking::WordWrap)
     )
-    .vertical()
+    .vertical();
+
+    Container::new(view)
+    
 }
 
 // single page view for text editing
-#[allow(dead_code)]
-pub fn single_view_edit_widget() -> impl Widget<CrabReaderState> {
+fn single_view_edit_widget() -> Container<CrabReaderState> {
 
     let text_box = TextBox::multiline()
         .with_placeholder("Text editing is not yet implemented")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_0));
 
-    Scroll::new(
+    let view = Scroll::new(
         text_box.fix_size(500.0, 500.0)
         
     )
-    .vertical()
+    .vertical();
+
+    Container::new(view)
 }
 
 // dual page view for text reader
-#[allow(dead_code)]
-pub fn dual_view_widget() -> impl Widget<CrabReaderState> {
-    Flex::row()
+fn dual_view_widget() -> Container<CrabReaderState> {
+    let views = Flex::row()
         .with_child(
             Scroll::new(
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
@@ -58,12 +79,13 @@ pub fn dual_view_widget() -> impl Widget<CrabReaderState> {
             )
             .vertical()
             .fix_size(400.0, 300.0),
-        )
+        );
+
+    Container::new(views)
 }
 
 // dual page view for text editing
-#[allow(dead_code)]
-pub fn dual_view_edit_widget() -> impl Widget<CrabReaderState> {
+fn dual_view_edit_widget() -> Container<CrabReaderState> {
 
     let text_box_page_0 = TextBox::multiline()
         .with_placeholder("Text editing is not yet implemented")
@@ -74,7 +96,7 @@ pub fn dual_view_edit_widget() -> impl Widget<CrabReaderState> {
     .lens(CrabReaderState::reading_state.then(ReadingState::text_1));
     
 
-    Flex::row()
+    let views = Flex::row()
         .with_child(
             Scroll::new(
                 text_box_page_0.fix_size(500.0, 500.0)
@@ -87,6 +109,6 @@ pub fn dual_view_edit_widget() -> impl Widget<CrabReaderState> {
                 text_box_page_1.fix_size(500.0, 500.0)
             )
             .vertical()
-        ).center()
-        
+        );
+        Container::new(views)
 }

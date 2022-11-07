@@ -1,4 +1,4 @@
-use druid::widget::{Button, Label};
+use druid::widget::{Button, Label, Align};
 use druid::{
     Widget,
     WidgetExt, EventCtx,
@@ -10,8 +10,35 @@ use crate::CrabReaderState;
 
 use super::book::{BookReading, GUIBook};
 
+pub enum ReaderBtn {
+    Leave,
+    Edit,
+    Save,
+    Undo,
+    NextPage,
+    PrevPage,
+    ViewsSwitch,
+    PageNumberSwitch,
+}
+
+impl ReaderBtn {
+    /// Returns a button with the correct label and function
+    pub fn get_btn(&self) -> impl Widget<CrabReaderState> {
+        match self {
+            ReaderBtn::Leave => leave_btn(),
+            ReaderBtn::Edit => edit_btn(),
+            ReaderBtn::Save => save_btn(),
+            ReaderBtn::Undo => undo_btn(),
+            ReaderBtn::NextPage => next_btn(),
+            ReaderBtn::PrevPage => back_btn(),
+            ReaderBtn::ViewsSwitch => views_btn(),
+            ReaderBtn::PageNumberSwitch => pages_number_btn(),
+        }
+    }
+}
+
 // button that let to go in library view
-pub fn leave_btn() -> impl Widget<CrabReaderState> {
+fn leave_btn() -> Align<CrabReaderState> {
     let leave_btn = Button::new("Go back to Browsing")
     .on_click(|_, data: &mut CrabReaderState, _| {
         data.reading = false;
@@ -25,7 +52,7 @@ pub fn leave_btn() -> impl Widget<CrabReaderState> {
 //* EDIT SECTION START */
 
 // button that let to go to edit mode
-pub fn edit_btn() -> impl Widget<CrabReaderState> {
+fn edit_btn() -> Align<CrabReaderState> {
     let edit_btn = Button::new("Edit")
         .on_click(|_, data: &mut CrabReaderState, _| {
             println!("DEBUG: PRESSED EDIT BUTTON");
@@ -38,11 +65,12 @@ pub fn edit_btn() -> impl Widget<CrabReaderState> {
         })
         .fix_height(64.0)
         .center();
+
     edit_btn
 }
 
 // button that let to go to save edited page
-pub fn save_btn() -> impl Widget<CrabReaderState> {
+fn save_btn() -> Align<CrabReaderState> {
     let save_changes_btn = Button::new("Save")
     .on_click(|ctx: &mut EventCtx, data: &mut CrabReaderState, _| {
         println!("DEBUG: PRESSED SAVE BUTTON");
@@ -60,7 +88,7 @@ pub fn save_btn() -> impl Widget<CrabReaderState> {
 }
 
 // button that let to go to undo last edit
-pub fn undo_btn() -> impl Widget<CrabReaderState> {
+fn undo_btn() -> Align<CrabReaderState> {
     let undo_changes_btn = Button::new("Undo")
     .on_click(|_, data: &mut CrabReaderState, _| {
 
@@ -76,7 +104,7 @@ pub fn undo_btn() -> impl Widget<CrabReaderState> {
 
 
 // button that let to go to next page of book
-pub fn next_btn() -> impl Widget<CrabReaderState> {
+fn next_btn() -> Align<CrabReaderState> {
     let next_btn = Button::new("Next")
     .on_click(|ctx, data: &mut CrabReaderState, _| {
         println!("DEBUG: PRESSED NEXT START");
@@ -96,7 +124,7 @@ pub fn next_btn() -> impl Widget<CrabReaderState> {
 }
 
 // button that let to go to previous page of book
-pub fn back_btn() -> impl Widget<CrabReaderState> {
+fn back_btn() -> Align<CrabReaderState> {
     let back_btn = Button::new("Back")
         .on_click(|ctx, data: &mut CrabReaderState, _| {
             println!("DEBUG: PRESSED BACK START");
@@ -117,7 +145,7 @@ pub fn back_btn() -> impl Widget<CrabReaderState> {
 }
 
 // button that let to switch between single and double page view
-pub fn views_btn() -> impl Widget<CrabReaderState> {
+fn views_btn() -> Align<CrabReaderState> {
     let views_btn = Button::new("Single/Double View")
         .on_click(|_, data: &mut CrabReaderState, _| {
             data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
@@ -128,15 +156,15 @@ pub fn views_btn() -> impl Widget<CrabReaderState> {
 }
 
 // button that let to see page number with different views
-pub fn pages_number_btn() -> impl Widget<CrabReaderState> {
+fn pages_number_btn() -> Align<CrabReaderState> {
 
     let pages_number_label = Label::dynamic(
         |data: &CrabReaderState, _env: &_| {
             let page_number = data.library.get_selected_book().unwrap().get_cumulative_current_page_number();
-
+            let chapter_page_number = data.library.get_selected_book().unwrap().get_current_page_number();
             match data.reading_state.pages_btn_style.unwrap() {
                 1 => {
-                    let pages_to_end = data.library.get_selected_book().unwrap().get_last_page_number() - page_number;
+                    let pages_to_end = data.library.get_selected_book().unwrap().get_last_page_number() - chapter_page_number;
                     format!("Pages to end of chatpter: {}", pages_to_end.to_string())
                 },
                 2 => {
@@ -165,7 +193,7 @@ pub fn pages_number_btn() -> impl Widget<CrabReaderState> {
 
         page_number_switch_button(&mut data.reading_state);
 
-    });
+    }).center();
 
     pages_number_btn
 }
