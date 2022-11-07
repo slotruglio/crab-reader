@@ -90,6 +90,10 @@ pub trait GUIBook {
 
     /// Uh?
     fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>>;
+
+    fn is_filtered_out(&self) -> bool;
+
+    fn set_filtered_out(&mut self, filtered_out: bool);
 }
 
 use druid::text::RichText;
@@ -178,6 +182,7 @@ pub struct Book {
     description: Rc<String>,
     #[derivative(PartialEq = "ignore")]
     cover_img: Arc<RwLock<Option<Arc<Vec<u8>>>>>,
+    filtered_out: bool,
 }
 
 impl Book {
@@ -234,6 +239,7 @@ impl Book {
             chapter_text: Rc::new("".into()),
             chapter_page_text: Rc::new("".into()),
             cover_img: Arc::from(RwLock::from(None)),
+            filtered_out: false,
         };
         this.load_cover_image();
         this
@@ -590,5 +596,13 @@ impl GUIBook for Book {
 
     fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>> {
         self.cover_img.clone()
+    }
+
+    fn is_filtered_out(&self) -> bool {
+        self.filtered_out
+    }
+
+    fn set_filtered_out(&mut self, filtered_out: bool) {
+        self.filtered_out = filtered_out;
     }
 }
