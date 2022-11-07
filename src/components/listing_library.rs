@@ -4,7 +4,7 @@ use druid::{
 };
 
 use super::{
-    book::Book,
+    book::{Book, GUIBook},
     book_listing::BookListing,
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
     mockup::MockupLibrary,
@@ -22,7 +22,7 @@ impl ListLibrary {
         }
     }
 
-    pub fn add_book(&mut self, _: &Book) {
+    pub fn add_child(&mut self) {
         let child: BookListing = BookListing::new();
         let pod = WidgetPod::new(child);
         self.children.push(pod);
@@ -67,11 +67,8 @@ impl Widget<Library> for ListLibrary {
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
         while data.number_of_books() > self.children.len() {
-            let idx = self.children.len();
-            if let Some(book) = data.get_book(idx) {
-                self.add_book(book);
-                ctx.children_changed();
-            };
+            self.add_child();
+            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
@@ -82,6 +79,11 @@ impl Widget<Library> for ListLibrary {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
+        if data.get_sort_order() != data.get_sort_order() {
+            self.children.clear();
+            ctx.children_changed();
+        }
+
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 inner.update(ctx, book, env);
@@ -98,18 +100,28 @@ impl Widget<Library> for ListLibrary {
     ) -> Size {
         let w = bc.max().width;
         let mut h = 0.0;
+        let mut cnt = 0;
         let child_h = 70.0;
         let child_spacing = 10.0;
 
+        println!("\n\n");
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if book.is_filtered_out() {
+                    let bc = BoxConstraints::tight((0.0, 0.0).into());
+                    inner.layout(ctx, &bc, book, env);
+                    inner.set_origin(ctx, book, env, (0.0, 0.0).into());
+                    continue;
+                }
+
+                println!("rendering {}", book.get_title());
                 let size = (w, child_h).into();
                 let bc = BoxConstraints::tight(size);
-                inner.layout(ctx, &bc, book, env);
-
-                let y = child_spacing + (idx as f64 * (child_h + child_spacing));
-
+                let y = child_spacing + (cnt as f64 * (child_h + child_spacing));
                 let origin = Point::new(0.0, y);
+                cnt += 1;
+
+                inner.layout(ctx, &bc, book, env);
                 inner.set_origin(ctx, book, env, origin);
                 h += size.height + child_spacing;
             }
