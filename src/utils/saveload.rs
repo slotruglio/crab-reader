@@ -1,7 +1,8 @@
 use std::{
-    fs::{File, OpenOptions, create_dir_all},
-    io::{BufReader, Read},
-    sync::mpsc::channel, path::Path
+    fs::{create_dir_all, File, OpenOptions},
+    io::BufReader,
+    path::Path,
+    sync::mpsc::channel,
 };
 
 use serde_json::{json, Value};
@@ -37,7 +38,9 @@ pub fn save_page_of_chapter<T: Into<String> + Clone>(
         if let Ok(opened_file) = File::open(CONFIG_PATH) {
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
-            if let Ok(content) = serde_json::from_reader(reader) { json = content};
+            if let Ok(content) = serde_json::from_reader(reader) {
+                json = content
+            };
         } else {
             println!("DEBUG file doesn't exist");
             create_dir_all(Path::new(CONFIG_PATH).parent().unwrap()).unwrap();

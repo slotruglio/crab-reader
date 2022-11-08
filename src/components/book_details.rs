@@ -5,8 +5,8 @@ use druid::{
     WidgetPod,
 };
 
-use crate::ENTERING_READING_MODE;
 use crate::components::book::BookManagement;
+use crate::ENTERING_READING_MODE;
 
 use super::{
     book::{Book, GUIBook},
@@ -71,9 +71,7 @@ impl BookDetails {
         let completion_label = Label::dynamic(|data: &Library, _| {
             data.get_selected_book()
                 .map_or("Nessun libro selezionato".into(), |book: &Book| {
-                    let total = book.get_number_of_pages() as f64;
-                    let read = book.get_number_of_read_pages() as f64;
-                    let perc = (read / total) * 100.0;
+                    let perc = book.get_perc_read();
                     format!("Percentuale avanzamento: {:.0}%", perc)
                 })
         })

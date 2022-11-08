@@ -6,7 +6,7 @@ use druid::{
 use crate::Library;
 
 use super::{
-    book::Book,
+    book::{Book, GUIBook},
     book_cover::{BookCover, BOOK_WIDGET_SIZE},
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
 };
@@ -70,11 +70,18 @@ impl Widget<Library> for CoverLibrary {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
+        if old_data.get_sort_order() != data.get_sort_order() {
+            self.children.clear();
+            ctx.children_changed();
+        }
+
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            if let Some(_) = old_data.get_book(idx) {
+            if let Some(old_book) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {
                     // TIL: let Some && let Some is unstable
-                    (*inner).update(ctx, book, env);
+                    if old_book != book {
+                        (*inner).update(ctx, book, env);
+                    }
                 }
             }
         }
@@ -94,13 +101,14 @@ impl Widget<Library> for CoverLibrary {
 
         // To avoid many casts, one is used for floating point ops and the othe for usize ops
         let mut fbooks_per_row = (width / book_w)
-            .min(data.number_of_books() as f64)
+            .min(data.get_number_of_visible_books() as f64)
             .max(1.0)
             .floor();
         let mut ubooks_per_row = fbooks_per_row as usize;
 
         let mut leftover_space = width - (fbooks_per_row * book_w);
         let mut spacing = leftover_space / (fbooks_per_row + 1.0);
+        let mut cnt = 0;
 
         if spacing <= min_spacing {
             fbooks_per_row = (fbooks_per_row - 1.0).max(1.0);
@@ -111,8 +119,13 @@ impl Widget<Library> for CoverLibrary {
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
-                let row = idx / ubooks_per_row;
-                let col = idx % ubooks_per_row;
+                if book.is_filtered_out() {
+                    inner.layout(ctx, bc, book, env);
+                    continue;
+                }
+
+                let row = cnt / ubooks_per_row;
+                let col = cnt % ubooks_per_row;
 
                 let x = spacing + (col as f64 * (book_w + spacing));
                 let y = spacing + (row as f64 * (book_h + spacing));
@@ -121,10 +134,11 @@ impl Widget<Library> for CoverLibrary {
                 let origin = Point::new(x, y);
                 inner.layout(ctx, &BoxConstraints::tight(size), book, env);
                 inner.set_origin(ctx, book, env, origin); // TLDR: must be a WidgetPod...
+                cnt += 1;
             }
         }
 
-        let nrows = (data.number_of_books() / ubooks_per_row + 1) as f64;
+        let nrows = (data.get_number_of_visible_books() / ubooks_per_row + 1) as f64;
         let w = fbooks_per_row * book_w + (fbooks_per_row + 1.0) * spacing;
         let h = nrows * (book_h + spacing) + spacing;
         (w, h).into()
