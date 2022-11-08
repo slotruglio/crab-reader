@@ -405,8 +405,6 @@ pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>
 
     let wfhf = wf * hf;
 
-    println!("wf: {}, hf: {}, wfhf: {}", wf, hf, wfhf);
-
     //Split text by lines
     let chapter_lines = text.split('\n').collect::<Vec<&str>>();
 
