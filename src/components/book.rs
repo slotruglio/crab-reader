@@ -1,9 +1,11 @@
 use crate::utils::epub_utils::{edit_chapter, split_chapter_in_vec};
 use crate::utils::{epub_utils, saveload, text_descriptor};
+use derivative::Derivative;
 use druid::image::io::Reader as ImageReader;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
+use std::sync::{Arc, RwLock};
 
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
@@ -82,9 +84,15 @@ pub trait GUIBook {
 
     /// Set the book as unselected
     fn unselect(&mut self);
-}
-use druid::text::RichText;
 
+    /// Returns the cover of this book
+    fn get_cover_image(&self) -> Option<Arc<Vec<u8>>>;
+
+    /// Uh?
+    fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>>;
+}
+
+use druid::text::RichText;
 use druid::{Data, Lens};
 use epub::doc::EpubDoc;
 
@@ -137,7 +145,7 @@ pub trait BookManagement {
 
     /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
     /// and returns a vector of strings. Each string is a page of the chapter
-    fn split_chapter_in_pages(&self) -> Vec<Rc<String>>;
+    fn split_chapter_in_pages(&self, is_single_view: bool) -> Vec<Rc<String>>;
 
     /// Method that edits the text of the current chapter
     fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S);
@@ -152,7 +160,8 @@ pub trait BookManagement {
 
 /// Struct that models EPUB file
 /// Metadata are attributes
-#[derive(Clone, PartialEq, Data, Lens)]
+#[derive(Derivative, Clone, Data, Lens)]
+#[derivative(PartialEq)]
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
@@ -167,6 +176,8 @@ pub struct Book {
     chapter_text: Rc<String>,
     chapter_page_text: Rc<String>,
     description: Rc<String>,
+    #[derivative(PartialEq = "ignore")]
+    cover_img: Arc<RwLock<Option<Arc<Vec<u8>>>>>,
 }
 
 impl Book {
@@ -207,7 +218,7 @@ impl Book {
         let chapter_page_text = chapter_text[0..200].to_string();
         */
 
-        Book {
+        let mut this = Book {
             title: title.into(),
             author: author.into(),
             lang: lang.into(),
@@ -216,12 +227,38 @@ impl Book {
             current_page: current_page,
             cumulative_current_page: cumulative_current_page,
             number_of_pages: number_of_pages,
-            idx: 0,               // How to set early?
+            idx: 0, // How to set early?
             selected: false,
             description: desc.into(),
             chapter_text: Rc::new("".into()),
             chapter_page_text: Rc::new("".into()),
-        }
+            cover_img: Arc::from(RwLock::from(None)),
+        };
+        this.load_cover_image();
+        this
+    }
+
+    fn load_cover_image(&mut self) {
+        let path = self.get_path();
+        let arc = self.get_cover_image_setter();
+        let _title = self.get_title();
+        std::thread::spawn(move || {
+            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
+            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
+            let reader = ImageReader::new(ImageCursor::new(cover))
+                .with_guessed_format()
+                .map_err(|e| e.to_string())
+                .unwrap();
+            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
+            let thumbnail = image.thumbnail_exact(150, 250);
+            let rgb = thumbnail.to_rgb8().to_vec();
+            let mut lock = arc.write().unwrap();
+            *lock = Some(Arc::from(rgb));
+        });
+    }
+
+    pub fn get_lang(&self) -> Rc<String> {
+        self.lang.clone()
     }
 }
 
@@ -234,12 +271,12 @@ impl BookReading for Book {
         self.chapter_number = chapter;
         self.chapter_text = epub_utils::get_chapter_text(self.path.clone().as_str(), chapter);
         self.current_page = if next { 0 } else { self.get_last_page_number() };
-        self.chapter_page_text = Rc::clone(&self.split_chapter_in_pages()[self.current_page]);
+        self.chapter_page_text = Rc::clone(&self.split_chapter_in_pages(true)[self.current_page]);
         self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), chapter, self.current_page);
     }
 
     fn get_last_page_number(&self) -> usize {
-        self.split_chapter_in_pages().len() - 1 as usize
+        self.split_chapter_in_pages(true).len() - 1 as usize
     }
 
     fn get_current_page_number(&self) -> usize {
@@ -253,7 +290,7 @@ impl BookReading for Book {
     fn set_chapter_current_page_number(&mut self, page: usize) {
         self.current_page = page;
         self.cumulative_current_page = epub_utils::get_cumulative_current_page_number(self.path.as_str(), self.chapter_number, page);
-        self.chapter_page_text = Rc::clone(&self.split_chapter_in_pages()[page]);
+        self.chapter_page_text = Rc::from(self.split_chapter_in_pages(true)[page].clone());
     }
 
     fn get_chapter_text(&self) -> Rc<String> {
@@ -307,11 +344,14 @@ impl BookReading for Book {
     }
 
     fn get_page_of_chapter(&self) -> Rc<String> {
+        //possibile entry point
+        //possibile entry point
         self.chapter_page_text.clone()
     }
 
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>) {
-        let page = self.split_chapter_in_pages();
+        //possibile entry point
+        let page = self.split_chapter_in_pages(false);
 
         let odd = self.current_page % 2;
         let left_page = if odd == 0 {
@@ -335,13 +375,22 @@ impl BookManagement for Book {
         self.path.to_string()
     }
 
-    fn split_chapter_in_pages(&self) -> Vec<Rc<String>> {
+    fn split_chapter_in_pages(&self, is_single_view: bool) -> Vec<Rc<String>> {
+
+        let mut width = 800.0;
+        let height = 300.0;
+        if !is_single_view {
+            width = 400.0;
+        }
+
         epub_utils::split_chapter_in_vec(
             self.path.as_str(),
             self.get_chapter_text(),
             None,
             NUMBER_OF_LINES,
-            FONT_SIZE
+            FONT_SIZE,
+            width,
+            height
         )
     }
 
@@ -402,7 +451,7 @@ impl BookManagement for Book {
     }
 
     fn load_page(&mut self) {
-        self.chapter_page_text = self.split_chapter_in_pages()[self.current_page].clone();
+        self.chapter_page_text = self.split_chapter_in_pages(true)[self.current_page].clone();
     }
 }
 
@@ -512,5 +561,16 @@ impl GUIBook for Book {
         let thumbnail = image.thumbnail_exact(width, height);
         let rgb = thumbnail.to_rgb8().to_vec();
         Ok(rgb.into())
+    }
+
+    fn get_cover_image(&self) -> Option<Arc<Vec<u8>>> {
+        if let Ok(cover) = self.cover_img.read() {
+            return (*cover).clone();
+        }
+        None
+    }
+
+    fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>> {
+        self.cover_img.clone()
     }
 }

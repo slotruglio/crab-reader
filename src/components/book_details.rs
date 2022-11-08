@@ -59,8 +59,8 @@ impl BookDetails {
 
         let lang_label = Label::dynamic(|data: &Library, _| {
             data.get_selected_book()
-                .map_or("Nessun libro selezionato".into(), |_: &Book| {
-                    format!("Lingua: {}", String::from("//TODO: Add get_lang()"))
+                .map_or("Nessun libro selezionato".into(), |book: &Book| {
+                    format!("Lingua: {}", lang_parser(&book.get_lang()))
                 })
         })
         .with_font(info_font.clone())
@@ -70,8 +70,11 @@ impl BookDetails {
 
         let completion_label = Label::dynamic(|data: &Library, _| {
             data.get_selected_book()
-                .map_or("Nessun libro selezionato".into(), |_: &Book| {
-                    format!("Letto al {}%", String::from("//TODO: Add get_compl_perc()"))
+                .map_or("Nessun libro selezionato".into(), |book: &Book| {
+                    let total = book.get_number_of_pages() as f64;
+                    let read = book.get_number_of_read_pages() as f64;
+                    let perc = (read / total) * 100.0;
+                    format!("Percentuale avanzamento: {:.0}%", perc)
                 })
         })
         .with_font(info_font.clone())
@@ -145,5 +148,63 @@ impl Widget<Library> for BookDetails {
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
         self.inner.paint(ctx, data, env);
+    }
+}
+
+fn lang_parser(lang: &str) -> String {
+    match lang {
+        "it" => "Italiano".into(),
+        "es" => "Spagnolo".into(),
+        "en" => "Inglese".into(),
+        "fr" => "Francese".into(),
+        "de" => "Tedesco".into(),
+        "ru" => "Russo".into(),
+        "zh" => "Cinese".into(),
+        "ja" => "Giapponese".into(),
+        "ar" => "Arabo".into(),
+        "pt" => "Portoghese".into(),
+        "ko" => "Coreano".into(),
+        "hi" => "Hindi".into(),
+        "tr" => "Turco".into(),
+        "ur" => "Urdu".into(),
+        "fa" => "Persiano".into(),
+        "nl" => "Olandese".into(),
+        "pl" => "Polacco".into(),
+        "sv" => "Svedese".into(),
+        "da" => "Danese".into(),
+        "fi" => "Finlandese".into(),
+        "no" => "Norvegese".into(),
+        "cs" => "Ceco".into(),
+        "el" => "Greco".into(),
+        "he" => "Ebraico".into(),
+        "ro" => "Rumeno".into(),
+        "sk" => "Slovacco".into(),
+        "sl" => "Sloveno".into(),
+        "hu" => "Ungherese".into(),
+        "vi" => "Vietnamita".into(),
+        "th" => "Tailandese".into(),
+        "bg" => "Bulgaro".into(),
+        "uk" => "Ucraino".into(),
+        "be" => "Bielorusso".into(),
+        "ka" => "Georgiano".into(),
+        "af" => "Afrikaans".into(),
+        "sq" => "Albanese".into(),
+        "am" => "Amharico".into(),
+        "hy" => "Armeno".into(),
+        "az" => "Azero".into(),
+        "eu" => "Basco".into(),
+        "bn" => "Bengalese".into(),
+        "my" => "Birmano".into(),
+        "km" => "Cambogiano".into(),
+        "hr" => "Croato".into(),
+        "eo" => "Esperanto".into(),
+        "et" => "Estone".into(),
+        "fo" => "Faroese".into(),
+        "gl" => "Galiziano".into(),
+        "gu" => "Gujarati".into(),
+        "iw" => "Hebreo".into(),
+        "is" => "Islandese".into(),
+        _ => "Lingua non riconosciuta".into(),
+        // Grazie Copilot <3
     }
 }
