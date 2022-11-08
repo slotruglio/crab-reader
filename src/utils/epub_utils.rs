@@ -11,7 +11,7 @@ use std::{
     rc::Rc, sync::Arc,
 };
 
-use utf16string::{BigEndian, BE, WString};
+use utf16string::{BigEndian, BE, WString, LittleEndian};
 
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
@@ -403,44 +403,49 @@ pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>
     let wf = (width / (12 as f32)) as usize;
     let hf = (height / (12 as f32)) as usize;
 
-    println!("width, height: {}, {}", width, height);
+    let wfhf = wf * hf;
 
-    //divide text in strings of wf characters
-    let mut lines = vec![];
-    let mut first_index = 0;
+    println!("wf: {}, hf: {}, wfhf: {}", wf, hf, wfhf);
 
-    let s0: WString<BigEndian> = WString::from(text.as_str());
+    //Split text by lines
+    let chapter_lines = text.split('\n').collect::<Vec<&str>>();
 
-    //problema: spezza un sacco di parole
-    while first_index < s0.len() {        
-
-        //min between s0 len and first_index + 2wf
-        let last_index = std::cmp::min(s0.len(), first_index + 2*wf);
-
-        let substring_long_wf = &s0[first_index..last_index];
-        lines.push(substring_long_wf.to_string());
-        
-        first_index += 2*wf;
-    }
-
+    //Add as many lines as possible to each component of a pages vector, until we reach wfhf characters
     let mut pages = vec![];
-    let mut i = 0;
+    let mut page = String::new();
+    let mut page_length = 0;
 
-    //Iterate through the lines of the entire chapter
-    while i < lines.len() {
-        let mut page = String::new();
+    //remove all empty strings leading and trailing the vector
+    let chapter_lines = chapter_lines.into_iter().skip_while(|s| s.is_empty()).collect::<Vec<&str>>();
 
-        //push into "page" a number of lines equal to lines_sum
-        for _ in 0..hf {
-            if i < lines.len() {
-                page.push_str(lines[i].as_str());
-                i += 1;
+    for i in 0..chapter_lines.len() {
+
+        let line = chapter_lines[i];
+
+        if page_length + line.len() < wfhf && i != chapter_lines.len() - 1 {
+            
+            //if line is equal to \n
+            if line.to_string() == "" {
+                page.push_str("\n\n");
+                page_length += wf;
             }
+            else {
+                page.push_str(line);
+                page_length += line.len();
+            }
+        } else {
+
+            if i == chapter_lines.len() - 1 {
+                page.push_str(line);
+            }
+
+            pages.push(Rc::from(page));
+            page = String::new();
+            page.push_str(line);
+            page_length = line.len();
         }
-        //push the newly created page in the pages vector
-        pages.push(Rc::new(page));
     }
 
-    return pages;
+    pages
 
 }
