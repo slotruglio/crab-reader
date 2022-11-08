@@ -6,8 +6,8 @@ use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::{MockupLibrary, SortBy};
 use components::reader_btns::{ReaderBtn};
-use components::reader_view::{ReaderView, current_chapter_widget, title_widget};
-use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher, LineBreaking, Controller};
+use components::reader_view::{ReaderView, current_chapter_widget, title_widget, sidebar_widget};
+use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher, LineBreaking, Controller, Split, CrossAxisAlignment, MainAxisAlignment};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, EventCtx, Handled, Lens, PlatformError, Selector,
     Widget, WidgetExt, WindowDesc,
@@ -31,23 +31,26 @@ static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 #[derive(Clone, Data, Lens)]
 pub struct ReadingState {
-    single_view: Option<bool>,
-    is_editing: Option<bool>,
-    pages_btn_style: Option<u8>,
+    single_view: bool,
+    is_editing: bool,
+    pages_btn_style: u8,
+    sidebar_open: bool,
     text_0: String,
     text_1: String,
 }
 
 impl ReadingState {
     fn enable<S: Into<Option<Rc<String>>>>(&mut self, text: S) {
-        self.single_view = Some(true);
-        self.is_editing = Some(false);
-        self.pages_btn_style = Some(0);
+        self.single_view = true;
+        self.is_editing = false;
+        self.pages_btn_style = 0;
+        self.sidebar_open = false;
     }
     fn disable(&mut self) {
-        self.single_view = None;
-        self.is_editing = None;
-        self.pages_btn_style = None;
+        self.single_view = false;
+        self.is_editing = false;
+        self.pages_btn_style = 0;
+        self.sidebar_open = false;
         self.text_0 = String::default();
         self.text_1 = String::default();
     }
@@ -56,9 +59,10 @@ impl ReadingState {
 impl Default for ReadingState {
     fn default() -> Self {
         Self {
-            single_view: None,
-            is_editing: None,
-            pages_btn_style: None,
+            single_view: true,
+            is_editing: false,
+            pages_btn_style: 0,
+            sidebar_open: false,
             text_0: String::default(),
             text_1: String::default(),
         }
@@ -260,7 +264,14 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     
     let current_chapter = current_chapter_widget();
     
-    let text = ReaderView::dynamic_view();
+    let text = ReaderView::dynamic_view().expand_width();
+
+    //let sidebar = sidebar_widget();
+
+    let main = Flex::row()
+        //.with_child(sidebar)
+        .with_flex_spacer(1.0)
+        .with_flex_child(text, 15.0);
 
     let header_btns = Flex::row()
     .with_child(ReaderBtn::Edit.button())
@@ -276,7 +287,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .center();
 
     let footer = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+        |data: &CrabReaderState, _env| data.reading_state.is_editing,
         Flex::row()
         .with_child(ReaderBtn::Undo.button())
         .with_child(ReaderBtn::Save.button())
@@ -297,7 +308,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(header)
         .with_child(current_chapter)
         .with_spacer(5.0)
-        .with_child(text)
+        .with_child(main)
         .with_flex_spacer(5.0)
         .with_child(footer)
         .with_spacer(5.0);

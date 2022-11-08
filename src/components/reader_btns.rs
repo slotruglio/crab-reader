@@ -19,6 +19,7 @@ pub enum ReaderBtn {
     PrevPage,
     ViewsSwitch,
     PageNumberSwitch,
+    ChaptersList
 }
 
 impl ReaderBtn {
@@ -33,6 +34,7 @@ impl ReaderBtn {
             ReaderBtn::PrevPage => back_btn(),
             ReaderBtn::ViewsSwitch => views_btn(),
             ReaderBtn::PageNumberSwitch => pages_number_btn(),
+            ReaderBtn::ChaptersList => chapters_list_btn(),
         }
     }
 
@@ -113,8 +115,8 @@ fn next_btn() -> Align<CrabReaderState> {
         change_page(
             ctx, 
             book, 
-            data.reading_state.is_editing.unwrap(), 
-            data.reading_state.single_view.unwrap(), 
+            data.reading_state.is_editing, 
+            data.reading_state.single_view, 
             true
         );
         println!("DEBUG: PRESSED NEXT END\n");
@@ -133,8 +135,8 @@ fn back_btn() -> Align<CrabReaderState> {
             change_page(
                 ctx, 
                 book, 
-                data.reading_state.is_editing.unwrap(), 
-                data.reading_state.single_view.unwrap(), 
+                data.reading_state.is_editing, 
+                data.reading_state.single_view, 
                 false
             );
 
@@ -148,7 +150,7 @@ fn back_btn() -> Align<CrabReaderState> {
 // button that let to switch between single and double page view
 fn views_btn() -> Align<CrabReaderState> {
     let dynamic_label = Label::dynamic(|data: &CrabReaderState, _| {
-        if data.reading_state.single_view.unwrap() {
+        if data.reading_state.single_view {
             "Single View".to_string()
         } else {
             "Double View".to_string()
@@ -157,7 +159,7 @@ fn views_btn() -> Align<CrabReaderState> {
 
     let views_btn = Button::from_label(dynamic_label)
         .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
+            data.reading_state.single_view = !data.reading_state.single_view
         })
         .fix_height(64.0)
         .center();
@@ -171,7 +173,7 @@ fn pages_number_btn() -> Align<CrabReaderState> {
         |data: &CrabReaderState, _env: &_| {
             let page_number = data.library.get_selected_book().unwrap().get_cumulative_current_page_number();
             let chapter_page_number = data.library.get_selected_book().unwrap().get_current_page_number();
-            match data.reading_state.pages_btn_style.unwrap() {
+            match data.reading_state.pages_btn_style {
                 1 => {
                     let pages_to_end = data.library.get_selected_book().unwrap().get_last_page_number() - chapter_page_number;
                     format!("Pages to end of chatpter: {}", pages_to_end.to_string())
@@ -182,7 +184,7 @@ fn pages_number_btn() -> Align<CrabReaderState> {
                 },
                 _ => {
                     let odd = page_number % 2;
-                    if data.reading_state.single_view.unwrap() {
+                    if data.reading_state.single_view {
                         format!("Page {}", page_number.to_string())
                     } else {
                         if odd == 0 {
@@ -205,4 +207,25 @@ fn pages_number_btn() -> Align<CrabReaderState> {
     }).center();
 
     pages_number_btn
+}
+
+fn chapters_list_btn() -> Align<CrabReaderState> {
+    let chapter_list_btn = Button::new("Chapters")
+    .on_click(|_, data: &mut CrabReaderState, _| {
+        data.reading_state.sidebar_open = !data.reading_state.sidebar_open;
+    })
+    .fix_height(64.0)
+    .center();
+
+    chapter_list_btn
+}
+
+pub fn chapter_label(number: usize) -> Align<CrabReaderState> {
+    Label::new(format!("Chapter {}", number))
+    .on_click(move |ctx, data: &mut CrabReaderState, _| {
+        let book = data.library.get_selected_book_mut().unwrap();
+        book.set_chapter_number(number, true);
+    })
+    .padding(5.0)
+    .center()
 }

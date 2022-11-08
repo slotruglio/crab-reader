@@ -12,9 +12,9 @@ pub fn edit_btn_fn(
     reading_state: &mut ReadingState,
     book: &Book,
 ) {
-    if !reading_state.is_editing.unwrap() {
-        reading_state.is_editing = Some(true);
-        if reading_state.single_view.unwrap() {
+    if !reading_state.is_editing {
+        reading_state.is_editing = true;
+        if reading_state.single_view {
             reading_state.text_0 = book.get_page_of_chapter().to_string();
         } else {
             let (text_0, text_1) = book.get_dual_pages();
@@ -81,10 +81,10 @@ pub fn save_btn_fn(
     reading_state: &mut ReadingState,
     book: &mut Book,
 ) {
-    if reading_state.single_view.unwrap() {
+    if reading_state.single_view {
         if reading_state.text_0 != book.get_page_of_chapter().to_string() {
             book.edit_text(reading_state.text_0.clone(), None);
-            reading_state.is_editing = Some(false);
+            reading_state.is_editing = false;
             reading_state.text_0 = String::default();
             ctx.request_paint();
         }
@@ -92,7 +92,7 @@ pub fn save_btn_fn(
         let (text_0, text_1) = book.get_dual_pages();
         if reading_state.text_0 != text_0.to_string() || reading_state.text_1 != text_1.to_string() {
             book.edit_text(reading_state.text_0.clone(), Some(reading_state.text_1.clone()));
-            reading_state.is_editing = Some(false);
+            reading_state.is_editing = false;
             reading_state.text_0 = String::default();
             reading_state.text_1 = String::default();
             ctx.request_paint();
@@ -103,12 +103,12 @@ pub fn save_btn_fn(
 pub fn undo_btn_fn(
     reading_state: &mut ReadingState
 ) {
-    reading_state.is_editing = Some(false);
+    reading_state.is_editing = false;
     reading_state.text_0 = String::default();
     reading_state.text_1 = String::default();
 }
 
 pub fn page_number_switch_button(reading_state: &mut ReadingState) {
-    let old = reading_state.pages_btn_style.unwrap();
-    reading_state.pages_btn_style = Some((old+1)%3);
+    let old = reading_state.pages_btn_style;
+    reading_state.pages_btn_style = (old+1)%3;
 }

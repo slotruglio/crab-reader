@@ -139,6 +139,8 @@ pub trait BookReading {
 
     /// Method that returns two pages dealing with two page mode
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>);
+
+    fn get_number_of_chapters(&self) -> usize;
 }
 
 /// Trait that describes book management functions
@@ -170,6 +172,7 @@ pub struct Book {
     chapter_number: usize,
     current_page: usize,
     number_of_pages: usize,
+    number_of_chapters: usize,
     cumulative_current_page: usize,
     idx: usize,
     selected: bool,
@@ -213,6 +216,8 @@ impl Book {
             .unwrap_or(&"No description".to_string())
             .to_string();
 
+        let number_of_chapters = book_map.get("chapters").map_or(1, |x| x.parse::<usize>().unwrap_or_default());
+
         let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
 
         let number_of_pages = epub_utils::get_number_of_pages(path_str);
@@ -231,6 +236,7 @@ impl Book {
             path: path.into(),
             chapter_number: chapter_number,
             current_page: current_page,
+            number_of_chapters: number_of_chapters,
             cumulative_current_page: cumulative_current_page,
             number_of_pages: number_of_pages,
             idx: 0, // How to set early?
@@ -396,6 +402,10 @@ impl BookReading for Book {
         };
 
         (left_page, right_page)
+    }
+
+    fn get_number_of_chapters(&self) -> usize {
+        self.number_of_chapters
     }
 }
 
