@@ -167,10 +167,9 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
                 page_index +=10;
             }
 
-            if !(text_words_number-5 > text_index && page_words_number-5 > page_index) {
+            if !(text_words_number as i32 -5 > text_index as i32 && page_words_number as i32 -5 > page_index as i32) {
                 break;
             }
-
         }
 
         println!("high_counter: {}", high_counter);
