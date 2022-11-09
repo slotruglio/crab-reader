@@ -7,12 +7,9 @@ use std::{
 
 use serde_json::{json, Value};
 
-use crate::MYENV;
+use crate::{MYENV, utils::dir_manager::{get_savedata_path, get_saved_books_dir}};
 
 use super::envmanager::FontSize;
-
-const CONFIG_PATH: &str = "conf/books_saved.json";
-const SAVED_BOOKS_PATH: &str = "saved_books/";
 
 pub enum FileExtension {
     TXT,
@@ -40,8 +37,9 @@ pub fn save_data<T: Into<String> + Clone>(
     let (tx, rx) = channel();
 
     let thread = std::thread::spawn(move || {
+        let config_path = get_savedata_path();
         let mut json = json!({});
-        if let Ok(opened_file) = File::open(CONFIG_PATH) {
+        if let Ok(opened_file) = File::open(config_path.clone()) {
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
             if let Ok(content) = serde_json::from_reader(reader) {
@@ -49,7 +47,7 @@ pub fn save_data<T: Into<String> + Clone>(
             };
         } else {
             println!("DEBUG file doesn't exist");
-            create_dir_all(Path::new(CONFIG_PATH).parent().unwrap()).unwrap();
+            create_dir_all(config_path.parent().unwrap()).unwrap();
         }
         tx.send(json).unwrap();
     });
@@ -61,7 +59,7 @@ pub fn save_data<T: Into<String> + Clone>(
             .write(true)
             .create(true)
             .truncate(true)
-            .open(CONFIG_PATH)?;
+            .open(get_savedata_path())?;
 
         let mut json = rx.recv().unwrap();
 
@@ -82,7 +80,7 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(
 
     let thread = std::thread::spawn(move || {
         let mut json = json!({});
-        if let Ok(opened_file) = File::open(CONFIG_PATH) {
+        if let Ok(opened_file) = File::open(get_savedata_path()) {
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
             if let Ok(content) = serde_json::from_reader(reader) {
@@ -98,7 +96,7 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(
             let file = OpenOptions::new()
                 .write(true)
                 .truncate(true)
-                .open(CONFIG_PATH)?;
+                .open(get_savedata_path())?;
 
             json.as_object_mut().unwrap().remove(&book_path.into());
             serde_json::to_writer_pretty(file, &json)?;
@@ -111,8 +109,9 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(
 }
 
 pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
-    if std::path::Path::new(CONFIG_PATH).exists() {
-        std::fs::remove_file(CONFIG_PATH)?
+    let config_path = get_savedata_path();
+    if config_path.exists() {
+        std::fs::remove_file(config_path)?
     }
     Ok(())
 }
@@ -125,7 +124,7 @@ pub fn load_data<T: Into<String> + Clone>(
     let mut page = 0;
     let mut font_size = FontSize::MEDIUM.to_f64();
 
-    if let Ok(file) = File::open(CONFIG_PATH) {
+    if let Ok(file) = File::open(get_savedata_path()) {
         let reader = BufReader::new(file);
         let json: Value = serde_json::from_reader(reader)?;
 
@@ -178,7 +177,7 @@ pub fn get_chapter_bytes(
         FileExtension::EPUB => "epub",
     };
 
-    let filename = Path::new(SAVED_BOOKS_PATH)
+    let filename = get_saved_books_dir()
         .join(&folder_name.into())
         .join(format!("page_{}.{}", chapter, ext));
     println!("filename from where get page: {:?}", filename);
