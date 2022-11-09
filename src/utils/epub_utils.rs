@@ -428,13 +428,16 @@ pub fn split_chapter_in_vec <S: Into<Option<Rc<String>>>, U: Into<Option<usize>>
                 page_length += wf;
             }
             else {
-                page.push_str(line);
+                //add blank space at the end of line
+                let line = format!("{} ", line);
+                page.push_str(line.as_str());
                 page_length += line.len();
             }
         } else {
 
             if i == chapter_lines.len() - 1 {
-                page.push_str(line);
+                let line = format!("{} ", line);
+                page.push_str(line.as_str());
             }
 
             pages.push(Rc::from(page));
