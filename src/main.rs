@@ -5,6 +5,7 @@ use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::{MockupLibrary, SortBy};
+use components::rbtn::RoundedButton;
 use components::reader_view::{
     build_dual_view, build_dual_view_edit, build_single_view, build_single_view_edit,
 };
@@ -104,49 +105,100 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
         .lens(CrabReaderState::library)
 }
 
+fn title_sorter_btn() -> impl Widget<Library> {
+    RoundedButton::dynamic(|data: &Library, _env: &Env| {
+        let arrow = match data.get_sort_order() {
+            SortBy::Title => "v",
+            _ => "^",
+        };
+        format!("Title {}", arrow)
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(0, 0, 0))
+    .with_text_size(18.0)
+    .with_on_click(|ctx, data: &mut Library, _: &Env| {
+        let sort = data.get_sort_order();
+        if sort == SortBy::Title {
+            data.sort_by(SortBy::TitleRev);
+        } else {
+            data.sort_by(SortBy::Title);
+        }
+        ctx.request_update();
+    })
+    .padding(5.0)
+}
+
+fn author_sorter_btn() -> impl Widget<Library> {
+    RoundedButton::dynamic(|data: &Library, _env: &Env| {
+        let arrow = match data.get_sort_order() {
+            SortBy::Author => "v",
+            _ => "^",
+        };
+        format!("Author {}", arrow)
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(0, 0, 0))
+    .with_text_size(18.0)
+    .with_on_click(|ctx, data: &mut Library, _| {
+        let sort = data.get_sort_order();
+        if sort == SortBy::Author {
+            data.sort_by(SortBy::AuthorRev);
+        } else {
+            data.sort_by(SortBy::Author);
+        }
+        ctx.request_update();
+    })
+    .padding(5.0)
+}
+
+fn completion_sorter_btn() -> impl Widget<Library> {
+    RoundedButton::dynamic(|data: &Library, _env: &Env| {
+        let arrow = match data.get_sort_order() {
+            SortBy::PercRead => "v",
+            _ => "^",
+        };
+        format!("Completion {}", arrow)
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(0, 0, 0))
+    .with_text_size(18.0)
+    .with_on_click(|ctx, data: &mut Library, _| {
+        let sort = data.get_sort_order();
+        if sort == SortBy::PercRead {
+            data.sort_by(SortBy::PercReadRev);
+        } else {
+            data.sort_by(SortBy::PercRead);
+        }
+        ctx.request_update();
+    })
+    .padding(5.0)
+}
+
+// Showcase per Sam su come si usa
+pub fn disabled_btn() -> impl Widget<Library> {
+    RoundedButton::from_text("I am a disabled button")
+        .with_text_size(18.0)
+        .with_color(Color::rgb8(200, 20, 20))
+        .with_hot_color(Color::rgb8(170, 20, 20))
+        .with_on_click(|_, _, _| println!("You won't see this"))
+        .disabled()
+}
+
 fn picker_sort_by() -> impl Widget<Library> {
     Flex::row()
         .with_child(Label::new("Sort by"))
-        .with_child(Button::new("Title").on_click(|ctx, data: &mut Library, _| {
-            data.sort_by(SortBy::Title);
-            ctx.request_update();
-        }))
-        .with_child(
-            Button::new("Author").on_click(|ctx, data: &mut Library, _| {
-                data.sort_by(SortBy::Author);
-                ctx.request_update();
-            }),
-        )
-        .with_child(
-            Button::new("PercRead").on_click(|ctx, data: &mut Library, _| {
-                data.sort_by(SortBy::PercRead);
-                ctx.request_update();
-            }),
-        )
-        .with_child(
-            Button::new("TitleRev").on_click(|ctx, data: &mut Library, _| {
-                data.sort_by(SortBy::TitleRev);
-                ctx.request_update();
-            }),
-        )
-        .with_child(
-            Button::new("AuthorRev").on_click(|ctx, data: &mut Library, _| {
-                data.sort_by(SortBy::AuthorRev);
-                ctx.request_update();
-            }),
-        )
-        .with_child(
-            Button::new("PercReadRev").on_click(|ctx, data: &mut Library, _| {
-                data.sort_by(SortBy::PercReadRev);
-                ctx.request_update();
-            }),
-        )
+        .with_child(completion_sorter_btn())
+        .with_child(author_sorter_btn())
+        .with_child(title_sorter_btn())
+        .with_child(disabled_btn())
         .padding(5.0)
         .background(Color::GRAY)
         .rounded(5.0)
         .padding(druid::Insets::uniform_xy(10.0, 5.0))
         .expand_width()
-        .fix_height(50.0)
 }
 
 struct FilterController;
