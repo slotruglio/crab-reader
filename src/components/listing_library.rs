@@ -114,7 +114,6 @@ impl Widget<Library> for ListLibrary {
                     continue;
                 }
 
-                println!("rendering {}", book.get_title());
                 let size = (w, child_h).into();
                 let bc = BoxConstraints::tight(size);
                 let y = child_spacing + (cnt as f64 * (child_h + child_spacing));
