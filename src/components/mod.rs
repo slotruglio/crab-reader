@@ -7,4 +7,5 @@ pub mod display_mode_button;
 pub mod library;
 pub mod listing_library;
 pub mod mockup;
+pub mod rbtn;
 pub mod reader_view;
