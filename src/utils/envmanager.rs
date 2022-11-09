@@ -81,6 +81,18 @@ impl MyEnv {
             "font_family".to_string(),
             serde_json::Value::String(MyEnv::get_font_family_reverse(self.font.family.clone())),
         );
+        json.insert(
+            "books_path".to_string(),
+            serde_json::Value::String(self.books_path.clone()),
+        );
+        json.insert(
+            "edits_path".to_string(),
+            serde_json::Value::String(self.edits_path.clone()),
+        );
+        json.insert(
+            "bookmarks_path".to_string(),
+            serde_json::Value::String(self.bookmarks_path.clone()),
+        );
 
         //write the json object to the file
         serde_json::to_writer_pretty(file, &json).unwrap();
@@ -106,11 +118,12 @@ impl MyEnv {
     //HELPER METHODS
     fn get_color(value: String) -> druid::Color {
         //match value against every color contained in the Color struct
+
         match value.as_str() {
-            "BLACK" => druid::Color::BLACK,
-            "NAVY" => druid::Color::NAVY,
-            "WHITE" => druid::Color::WHITE,
-            "TEAL" => druid::Color::TEAL,
+            "\"BLACK\"" => druid::Color::BLACK,
+            "\"NAVY\"" => druid::Color::NAVY,
+            "\"WHITE\"" => druid::Color::WHITE,
+            "\"TEAL\"" => druid::Color::TEAL,
             _ => druid::Color::BLACK,
         }
     }
@@ -132,10 +145,10 @@ impl MyEnv {
 
     fn get_font_family(value: String) -> FontFamily {
         match value.as_str() {
-            "MONOSPACE" => FontFamily::MONOSPACE,
-            "SYSTEM_UI" => FontFamily::SYSTEM_UI,
-            "SERIF" => FontFamily::SERIF,
-            "SANS_SERIF" => FontFamily::SANS_SERIF,
+            "\"MONOSPACE\"" => FontFamily::MONOSPACE,
+            "\"SYSTEM_UI\"" => FontFamily::SYSTEM_UI,
+            "\"SERIF\"" => FontFamily::SERIF,
+            "\"SANS_SERIF\"" => FontFamily::SANS_SERIF,
             _ => FontFamily::SYSTEM_UI,
         }
     }
