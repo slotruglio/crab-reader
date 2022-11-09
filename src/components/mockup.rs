@@ -1,4 +1,7 @@
-use std::path::{PathBuf, Path};
+use std::{
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 use druid::{im::Vector, Data, Lens};
 
@@ -15,6 +18,10 @@ const SAVED_BOOKS_PATH: &str = "saved_books/";
 pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
+    sorted_by: SortBy,
+    filter_text_input: String,
+    filter_by: Rc<String>,
+    visible_books: usize,
 }
 
 impl MockupLibrary<Book> {
@@ -22,6 +29,10 @@ impl MockupLibrary<Book> {
         let mut lib = Self {
             books: Vector::new(),
             selected_book: None,
+            sorted_by: SortBy::Title,
+            filter_text_input: "".into(),
+            filter_by: "".to_string().into(),
+            visible_books: 0,
         };
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
@@ -54,6 +65,23 @@ impl MockupLibrary<Book> {
             .collect();
         Ok(vec)
     }
+
+    pub fn get_number_of_visible_books(&self) -> usize {
+        self.visible_books
+    }
+
+    pub fn get_filter_string(&self) -> Rc<String> {
+        self.filter_by.clone()
+    }
+
+    pub fn get_filter_text_input(&self) -> String {
+        self.filter_text_input.clone()
+    }
+
+    pub fn set_filter_string(&mut self, text: impl Into<String>) {
+        self.filter_by = text.into().into();
+        self.filter_out_by_string();
+    }
 }
 
 impl GUILibrary<Book> for MockupLibrary<Book> {
@@ -62,12 +90,14 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         let file_name = path.split("/").last().unwrap();
         let folder_name = file_name.split(".").next().unwrap();
         // extract metadata and chapters
-        if !Path::new(&format!("{}{}",SAVED_BOOKS_PATH, folder_name)).exists() {
-            let _res = epub_utils::extract_all(&path).expect(format!("Failed to extract {}", file_name).as_str());
+        if !Path::new(&format!("{}{}", SAVED_BOOKS_PATH, folder_name)).exists() {
+            let _res = epub_utils::extract_all(&path)
+                .expect(format!("Failed to extract {}", file_name).as_str());
         }
 
         let book = Book::new(path).with_index(self.books.len());
         self.books.push_back(book);
+        self.visible_books += 1;
     }
 
     fn remove_book(&mut self, idx: usize) {
@@ -120,5 +150,80 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
             selected.unselect();
         }
         self.selected_book = None;
+    }
+}
+
+#[derive(Clone, PartialEq, Data)]
+pub enum SortBy {
+    Title,
+    TitleRev,
+    Author,
+    AuthorRev,
+    PercRead,
+    PercReadRev,
+}
+
+impl MockupLibrary<Book> {
+    pub fn sort_by(&mut self, by: SortBy) {
+        if self.sorted_by == by {
+            return;
+        }
+
+        let old_title = self
+            .get_selected_book()
+            .map(|b| b.get_title().to_string())
+            .unwrap_or_default();
+        let mut new_idx = None;
+
+        self.books.sort_by(|one, other| match by {
+            SortBy::Title => one.get_title().cmp(&other.get_title()),
+            SortBy::TitleRev => other.get_title().cmp(&one.get_title()),
+            SortBy::Author => one.get_author().cmp(&other.get_author()),
+            SortBy::AuthorRev => other.get_author().cmp(&one.get_author()),
+            SortBy::PercRead => one
+                .get_perc_read()
+                .partial_cmp(&other.get_perc_read())
+                .unwrap(),
+            SortBy::PercReadRev => other
+                .get_perc_read()
+                .partial_cmp(&one.get_perc_read())
+                .unwrap(),
+        });
+        self.books.iter_mut().enumerate().for_each(|(i, book)| {
+            book.set_index(i);
+            if book.get_title() == old_title {
+                new_idx = Some(i);
+            }
+        });
+        self.selected_book = new_idx;
+        self.sorted_by = by;
+    }
+
+    pub fn get_sort_order(&self) -> SortBy {
+        self.sorted_by.clone()
+    }
+
+    pub fn filter_out_by_string(&mut self) {
+        let filter = self.get_filter_string().to_lowercase();
+        let mut cnt = 0;
+        self.books.iter_mut().for_each(|book| {
+            let title_lower = book.get_title().to_lowercase();
+            let author_lower = book.get_author().to_lowercase();
+            if !title_lower.contains(&filter) && !author_lower.contains(&filter) {
+                book.set_filtered_out(true);
+            } else {
+                book.set_filtered_out(false);
+                cnt += 1;
+            }
+        });
+
+        if let Some(book) = self.get_selected_book_mut() {
+            if book.is_filtered_out() {
+                book.unselect();
+                self.unselect_current_book();
+            }
+        }
+        self.visible_books = cnt;
+        self.filter_by = filter.into();
     }
 }

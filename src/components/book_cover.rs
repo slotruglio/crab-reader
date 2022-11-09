@@ -24,25 +24,6 @@ impl BookCover {
         Self { is_hot: false }
     }
 
-    // pub fn with_cover_image(self, path: impl Into<String>) -> Self {
-    // let path: String = path.into();
-    // let arc = self.cover_img.clone();
-    // std::thread::spawn(move || {
-    // let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
-    // let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
-    // let reader = ImageReader::new(ImageCursor::new(cover))
-    // .with_guessed_format()
-    // .map_err(|e| e.to_string())
-    // .unwrap();
-    // let image = reader.decode().map_err(|e| e.to_string()).unwrap();
-    // let thumbnail = image.thumbnail_exact(150, 250);
-    // let rgb = thumbnail.to_rgb8().to_vec();
-    // let mut lock = arc.write().unwrap();
-    // *lock = Some(rgb.into_boxed_slice());
-    // });
-    // self
-    // }
-
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
         let blur_radius = 20.0;
         let size = ctx.size();
@@ -82,12 +63,6 @@ impl BookCover {
 
         self.paint_default_cover(ctx, data);
         self.paint_book_title(ctx, env, data);
-        return;
-        //}
-
-        //});
-        //});
-        //}
     }
 
     fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook) {
@@ -181,7 +156,10 @@ impl<BookData: GUIBook + Data> Widget<BookData> for BookCover {
         }
     }
 
-    fn layout(&mut self, _: &mut LayoutCtx, _: &BoxConstraints, _: &BookData, _: &Env) -> Size {
+    fn layout(&mut self, _: &mut LayoutCtx, _: &BoxConstraints, book: &BookData, _: &Env) -> Size {
+        if book.is_filtered_out() {
+            return Size::ZERO;
+        }
         BOOK_WIDGET_SIZE
     }
 
