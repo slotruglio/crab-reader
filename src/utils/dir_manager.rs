@@ -16,7 +16,7 @@ fn get_app_dir() -> PathBuf {
 }
 
 fn get_fake_app_dir() -> PathBuf {
-    PathBuf::new()
+    std::env::current_dir().unwrap()
 }
 
 fn get_config_dir() -> PathBuf {
