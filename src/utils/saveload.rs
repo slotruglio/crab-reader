@@ -24,53 +24,62 @@ pub fn save_data<T: Into<String> + Clone>(
     book_path: T,
     chapter: usize,
     page: usize,
-    font_size: FontSize
+    content: T,
+    font_size: FontSize,
+    edited: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
-        "DEBUG saving data: {} {} {} {}",
+        "DEBUG saving data: {} {} {} {} {}",
         chapter,
         page,
         book_path.clone().into(),
-        font_size.to_string()
+        font_size.to_string(),
+        edited
     );
-    let (tx, rx) = channel();
 
-    let thread = std::thread::spawn(move || {
-        let config_path = get_savedata_path();
-        let mut json = json!({});
-        if let Ok(opened_file) = File::open(config_path.clone()) {
-            println!("DEBUG file exists");
-            let reader = BufReader::new(opened_file);
-            if let Ok(content) = serde_json::from_reader(reader) {
-                json = content
-            };
-        } else {
-            println!("DEBUG file doesn't exist");
-            create_dir_all(config_path.parent().unwrap()).unwrap();
-        }
-        tx.send(json).unwrap();
-    });
-
-    let value = json!({"chapter":chapter, "page":page, "font_size":font_size.to_string()});
-
-    if let Ok(()) = thread.join() {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(get_savedata_path())?;
-
-        let mut json = rx.recv().unwrap();
-
-        json[book_path.into()] = value;
-
-        serde_json::to_writer_pretty(file, &json)?;
-        drop(rx);
-        Ok(())
+    // check if exists a savedata file
+    let savedata_path = get_savedata_path();
+    let mut json = json!({});
+    if let Ok(opened_file) = File::open(savedata_path.clone()) {
+        println!("DEBUG file exists");
+        let reader = BufReader::new(opened_file);
+        if let Ok(content) = serde_json::from_reader(reader) {
+            json = content
+        };
     } else {
-        Err("Error while saving data".into())
+        println!("DEBUG file doesn't exist");
+        create_dir_all(savedata_path.parent().unwrap()).unwrap();
     }
+
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_savedata_path())?;
+
+    let mut set = json[book_path.clone().into()]["edited_chapters"].as_array().unwrap_or(&vec![]).iter().map(|x| x.as_u64().unwrap() as usize).collect::<Vec<usize>>();
+    println!("DEBUG set before push: {:?}", set);
+    if edited {
+        if !set.contains(&chapter) {
+            set.push(chapter);
+            println!("DEBUG set after push: {:?}", set);
+        }
+    }
+    let value = json!(
+        {
+            "chapter":chapter,
+            "page":page,
+            "font_size":font_size.to_string(),
+            "edited_chapters": set,
+            "content":content.into()
+        }
+    );
+
+    json[book_path.into()] = value;
+    serde_json::to_writer_pretty(file, &json)?;
+
+    Ok(())
 }
 
 pub fn remove_savedata_of_book<T: Into<String> + Clone>(
