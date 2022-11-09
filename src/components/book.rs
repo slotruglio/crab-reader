@@ -1,7 +1,10 @@
-use crate::utils::epub_utils::{edit_chapter, split_chapter_in_vec};
+use crate::MYENV;
+use crate::utils::epub_utils::{edit_chapter, split_chapter_in_vec, calculate_number_of_pages};
+use crate::utils::saveload::load_data;
 use crate::utils::{epub_utils, saveload, text_descriptor};
 use derivative::Derivative;
 use druid::image::io::Reader as ImageReader;
+use std::cmp::min;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
@@ -218,9 +221,10 @@ impl Book {
 
         let number_of_chapters = book_map.get("chapters").map_or(1, |x| x.parse::<usize>().unwrap_or_default());
 
-        let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
+        let (chapter_number, current_page, _font_size) = load_data(path_str).unwrap();
 
         let number_of_pages = epub_utils::get_number_of_pages(path_str);
+        
         let cumulative_current_page =
             epub_utils::get_cumulative_current_page_number(path_str, chapter_number, current_page);
         /*
@@ -426,7 +430,7 @@ impl BookManagement for Book {
             self.get_chapter_text(),
             None,
             NUMBER_OF_LINES,
-            FONT_SIZE,
+            MYENV.lock().unwrap().font.size,
             width,
             height,
         )
@@ -464,7 +468,7 @@ impl BookManagement for Book {
             None,
             self.chapter_number,
             NUMBER_OF_LINES,
-            FONT_SIZE,
+            MYENV.lock().unwrap().font.size,
             800.0,
             300.0,
         )
@@ -472,10 +476,10 @@ impl BookManagement for Book {
         if new_len != old_len {
             println!("DEBUG: new_len: {}, old_len: {}", new_len, old_len);
             // recalculate pages
-            let (total_len, _) = epub_utils::calculate_number_of_pages(
+            let (total_len, _) = calculate_number_of_pages(
                 self.path.as_str(),
                 NUMBER_OF_LINES,
-                FONT_SIZE,
+                MYENV.lock().unwrap().font.size,
             )
             .unwrap();
             self.number_of_pages = total_len;
@@ -498,7 +502,8 @@ impl BookManagement for Book {
     }
 
     fn load_page(&mut self) {
-        self.chapter_page_text = self.split_chapter_in_pages(true)[self.current_page].clone();
+        let split = self.split_chapter_in_pages(true);
+        self.chapter_page_text = split[min(self.current_page, split.len()-1)].clone();
     }
 }
 

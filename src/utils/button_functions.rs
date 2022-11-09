@@ -1,8 +1,10 @@
 use crate::{
     components::book::{Book, BookManagement, BookReading, GUIBook},
-    utils::saveload, ReadingState,
+    utils::{saveload::{save_data}, envmanager::FontSize}, ReadingState,
 };
 use druid::EventCtx;
+
+use crate::MYENV;
 
 /// Activate or deactivate editing mode
 /// return the new value of is_editing
@@ -65,10 +67,11 @@ pub fn change_page(
             println!("DEBUG: Changing page of chapter");
         }
         // function to save the page that the user is reading
-        saveload::save_page_of_chapter(
+        save_data(
             book.get_path().to_string(),
             book.get_chapter_number(),
             book.get_current_page_number(),
+            FontSize::from_f64(MYENV.lock().unwrap().font.size),
         )
         .unwrap();
         ctx.request_paint();

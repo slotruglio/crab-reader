@@ -1,3 +1,5 @@
+use crate::{MYENV, utils::envmanager::FontSize};
+
 use super::saveload::{get_chapter_bytes, FileExtension};
 use epub::doc::EpubDoc;
 use html2text::from_read;
@@ -273,7 +275,7 @@ pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
 pub fn calculate_number_of_pages(
     path: &str,
     number_of_lines: usize,
-    font_size: usize,
+    font_size: f64,
 ) -> Result<(usize, Vec<(usize, usize)>), Box<dyn error::Error>> {
     let mut metadata = get_metadata_of_book(path);
     let number_of_chapters = metadata["chapters"].parse::<usize>().unwrap_or_default();
@@ -325,7 +327,7 @@ pub fn calculate_number_of_pages(
 
     // save number of pages per chapter in metadata
     metadata.insert(
-        "pages_per_chapter".into(),
+        format!("pages_per_chapter_{}", FontSize::from_f64(font_size).to_string()),
         format!(
             "[{}]",
             pages_per_chapter_start_end
@@ -365,7 +367,7 @@ pub fn get_number_of_pages(path: &str) -> usize {
     if let Some(number_of_pages) = result {
         number_of_pages.parse::<usize>().unwrap_or_default()
     } else {
-        calculate_number_of_pages(path, 8, 12).unwrap_or_default().0
+        calculate_number_of_pages(path, 8, MYENV.lock().unwrap().font.size).unwrap_or_default().0
     }
 }
 
@@ -374,7 +376,7 @@ pub fn get_number_of_pages(path: &str) -> usize {
 pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
     let metadata = get_metadata_of_book(path);
 
-    let result = metadata.get("pages_per_chapter");
+    let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from_f64(MYENV.lock().unwrap().font.size).to_string()).as_str());
     if let Some(pages_per_chapter) = result {
         let vec_as_str = pages_per_chapter.to_string();
         vec_as_str
@@ -390,7 +392,7 @@ pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
             })
             .collect()
     } else {
-        calculate_number_of_pages(path, 8, 12).unwrap_or_default().1
+        calculate_number_of_pages(path, 8, MYENV.lock().unwrap().font.size).unwrap_or_default().1
     }
 }
 
@@ -415,7 +417,7 @@ pub fn split_chapter_in_vec<S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>
     opt_text: S,
     chapter_number: U,
     number_of_lines: usize,
-    font_size: usize,
+    font_size: f64,
     width: f32,
     height: f32,
 ) -> Vec<Rc<String>> {
@@ -428,8 +430,8 @@ pub fn split_chapter_in_vec<S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>
 
     //through font-size, we can calculate the number N of lines that fit in the page
     //split text in paragraphs long N lines
-    let wf = (width / (12 as f32)) as usize;
-    let hf = (height / (12 as f32)) as usize;
+    let wf = (width / (font_size as f32)) as usize;
+    let hf = (height / (font_size as f32)) as usize;
 
     println!("width, height: {}, {}", width, height);
 

@@ -171,3 +171,47 @@ impl MyEnv {
         }
     }
 }
+
+pub enum FontSize {
+    SMALL,
+    MEDIUM,
+    LARGE,
+}
+impl FontSize {
+    pub fn to_f64(&self) -> f64 {
+        match self {
+            FontSize::SMALL => 12.0,
+            FontSize::MEDIUM => 16.0,
+            FontSize::LARGE => 20.0,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            FontSize::SMALL => "small".to_string(),
+            FontSize::MEDIUM => "medium".to_string(),
+            FontSize::LARGE => "large".to_string(),
+        }
+    }
+
+    pub fn from_string(value: String) -> FontSize {
+        match value.as_str() {
+            "small" => FontSize::SMALL,
+            "medium" => FontSize::MEDIUM,
+            "large" => FontSize::LARGE,
+            _ => FontSize::MEDIUM,
+        }
+    }
+
+    pub fn from_f64(value: f64) -> FontSize {
+        if value == 12.0 {
+            return FontSize::SMALL;
+        } else if value == 16.0 {
+            return FontSize::MEDIUM;
+        } else if value == 20.0 {
+            return FontSize::LARGE;
+        } else {
+            return FontSize::MEDIUM;
+        }
+    }
+}

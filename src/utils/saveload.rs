@@ -7,6 +7,10 @@ use std::{
 
 use serde_json::{json, Value};
 
+use crate::MYENV;
+
+use super::envmanager::FontSize;
+
 const CONFIG_PATH: &str = "conf/books_saved.json";
 const SAVED_BOOKS_PATH: &str = "saved_books/";
 
@@ -16,20 +20,22 @@ pub enum FileExtension {
     EPUB,
 }
 
-// todo: add path as parameter
 // waiting for implementation of this env var
 
 /// function to save page of chapter of currently opened book
-pub fn save_page_of_chapter<T: Into<String> + Clone>(
+pub fn save_data<T: Into<String> + Clone>(
     book_path: T,
     chapter: usize,
     page: usize,
+    font_size: FontSize
 ) -> Result<(), Box<dyn std::error::Error>> {
+
     println!(
-        "DEBUG saving data: {} {} {}",
+        "DEBUG saving data: {} {} {} {}",
         chapter,
         page,
-        book_path.clone().into()
+        book_path.clone().into(),
+        font_size.to_string()
     );
     let (tx, rx) = channel();
 
@@ -48,7 +54,7 @@ pub fn save_page_of_chapter<T: Into<String> + Clone>(
         tx.send(json).unwrap();
     });
 
-    let value = json!({"chapter":chapter, "page":page});
+    let value = json!({"chapter":chapter, "page":page, "font_size":font_size.to_string()});
 
     if let Ok(()) = thread.join() {
         let file = OpenOptions::new()
@@ -112,36 +118,44 @@ pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// function to load the last read page of a chapter given the path of the book
-pub fn get_page_of_chapter<T: Into<String> + Clone>(
+pub fn load_data<T: Into<String> + Clone>(
     book_path: T,
-) -> Result<(usize, usize), Box<dyn std::error::Error>> {
+) -> Result<(usize, usize, f64), Box<dyn std::error::Error>> {
     let mut chapter = 1;
     let mut page = 0;
+    let mut font_size = FontSize::MEDIUM.to_f64();
 
     if let Ok(file) = File::open(CONFIG_PATH) {
         let reader = BufReader::new(file);
         let json: Value = serde_json::from_reader(reader)?;
 
         if let Some(value) = json.get(book_path.clone().into()) {
-            let chapter_value = value.get("chapter").and_then(|v| v.as_u64());
-            let page_value = value.get("page").and_then(|v| v.as_u64());
+            let saved_chapter_value = value
+                .get("chapter").and_then(|v| v.as_u64());
+            let saved_page_value = value
+                .get("page").and_then(|v| v.as_u64());
+            let saved_font_size = value
+                .get("font_size").and_then(|v| v.as_str());
 
-            if chapter_value.is_some() && page_value.is_some() {
-                chapter = chapter_value.unwrap() as usize;
-                page = page_value.unwrap() as usize;
+            if saved_chapter_value.is_some() && saved_page_value.is_some() && saved_font_size.is_some() {
+                chapter = saved_chapter_value.unwrap() as usize;
+                page = saved_page_value.unwrap() as usize;
+                font_size = FontSize::from_string(saved_font_size.unwrap().to_string()).to_f64();
             } else {
                 chapter = 1;
                 page = 0;
+                font_size = FontSize::MEDIUM.to_f64();
             }
         };
     }
     println!(
-        "DEBUG reading data: {} {} {}",
+        "DEBUG reading data: {} {} {} {}",
         &chapter,
         &page,
-        book_path.into()
+        book_path.into(),
+        font_size
     );
-    Ok((chapter, page))
+    Ok((chapter, page, font_size))
 }
 
 pub fn get_chapter(
@@ -172,6 +186,7 @@ pub fn get_chapter_bytes(
     std::fs::read(filename).map_err(|e| e.to_string())
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -598,3 +613,5 @@ mod tests {
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), false);
     }
 }
+
+*/
