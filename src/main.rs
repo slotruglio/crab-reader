@@ -248,7 +248,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_child(view_either)
         .padding(15.0);
     let scroll = Scroll::new(left_panel).vertical();
-    let right_panel = Scroll::new(book_details_panel()).vertical().padding(5.0);
+    let right_panel = Scroll::new(book_details_panel()).vertical();
     let right_col = Flex::column()
         .with_child(
             RoundedButton::dynamic(
@@ -271,7 +271,8 @@ fn build_ui() -> impl Widget<CrabReaderState> {
             })
             .padding((0.0, 20.0)),
         )
-        .with_flex_child(right_panel, 1.0);
+        .with_flex_child(right_panel, 1.0)
+        .padding(10.0);
 
     let inner = Flex::row()
         .with_flex_child(scroll, 2.0)
