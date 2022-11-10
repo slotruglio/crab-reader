@@ -17,7 +17,7 @@ use druid::{
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::button_functions; // 1.3.1
+use utils::button_functions::{self, undo_button}; // 1.3.1
 use utils::envmanager::MyEnv;
 
 mod components;
@@ -347,25 +347,37 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     )
     .fix_size(800.0, 450.0);
 
-    let leave_btn = Button::new("Go back to Browsing")
-        .on_click(|_, data: &mut CrabReaderState, _| {
+    let leave_btn = RoundedButton::from_text("Go back to browsing")
+        .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
-        .fix_height(64.0)
-        .center();
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(24.0)
+        .padding(10.0);
 
     // todo() switch to change single view and double view
     // this is a mock to test layout
-    let views_btn = Button::new("Single/Double View")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
-        })
-        .fix_height(64.0)
-        .center();
+    let views_btn = RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
+        if data.reading_state.single_view.unwrap() {
+            "Attiva doppia pagina".into()
+        } else {
+            "Attiva singola pagina".into()
+        }
+    })
+    .with_on_click(|_, data: &mut CrabReaderState, _| {
+        data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap());
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(20, 20, 20))
+    .with_text_color(Color::WHITE)
+    .with_text_size(24.0);
 
-    let next_btn = Button::new("Next")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED NEXT START");
+    let next_btn = RoundedButton::from_text("Next")
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book_mut().unwrap();
             button_functions::change_page(
                 ctx,
@@ -374,13 +386,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
                 data.reading_state.single_view.unwrap(),
                 true,
             );
-            println!("DEBUG: PRESSED NEXT END\n");
         })
-        .center();
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0);
 
-    let back_btn = Button::new("Back")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED BACK START");
+    let back_btn = RoundedButton::from_text("Back")
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book_mut().unwrap();
             button_functions::change_page(
                 ctx,
@@ -389,40 +403,62 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
                 data.reading_state.single_view.unwrap(),
                 false,
             );
-
-            println!("DEBUG: PRESSED BACK END\n");
         })
-        .center();
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0);
 
-    let edit_btn = Button::new("Edit")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED EDIT BUTTON");
-
+    let edit_btn = RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
+        if data.reading_state.is_editing.unwrap() {
+            "Termina modifica".into()
+        } else {
+            "Modifica testo".into()
+        }
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(20, 20, 20))
+    .with_text_color(Color::WHITE)
+    .with_text_size(24.0)
+    .with_on_click(|_, data: &mut CrabReaderState, _| {
+        if data.reading_state.is_editing.unwrap() {
+            data.reading_state.is_editing = Some(false);
+            button_functions::undo_button(&mut data.reading_state)
+        } else {
+            data.reading_state.single_view = Some(true);
             button_functions::edit_button(
                 &mut data.reading_state,
                 data.library.get_selected_book().unwrap(),
             );
-        })
-        .fix_height(64.0)
-        .center();
+        }
+    });
 
-    let save_changes_btn = Button::new("Save")
-        .on_click(|ctx: &mut EventCtx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED SAVE BUTTON");
-
+    let save_changes_btn = RoundedButton::from_text("Salva modifiche")
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0)
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             button_functions::save_button(
                 ctx,
                 &mut data.reading_state,
                 &mut data.library.get_selected_book_mut().unwrap(),
             );
-        })
-        .center();
+        });
 
-    let undo_changes_btn = Button::new("Undo")
-        .on_click(|_, data: &mut CrabReaderState, _| {
+    let undo_changes_btn = RoundedButton::from_text("Annulla modifiche")
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0)
+        .with_on_click(|_, data: &mut CrabReaderState, _| {
             button_functions::undo_button(&mut data.reading_state);
         })
-        .center();
+        .padding(5.0);
 
     let current_page = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         let page_number = data
@@ -456,6 +492,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
+        .with_spacer(10.0)
         .with_child(views_btn)
         .center();
 
