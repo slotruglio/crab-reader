@@ -1,7 +1,6 @@
 use components::book::{Book, BookReading, GUIBook};
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
-use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
@@ -62,6 +61,12 @@ impl Default for ReadingState {
             text_1: String::default(),
         }
     }
+}
+
+#[derive(Clone, PartialEq, Data)]
+pub enum DisplayMode {
+    Cover,
+    List,
 }
 
 #[derive(Clone, Data, Lens)]
@@ -243,14 +248,28 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_child(view_either)
         .padding(15.0);
     let scroll = Scroll::new(left_panel).vertical();
-
     let right_panel = Scroll::new(book_details_panel()).vertical().padding(5.0);
     let right_col = Flex::column()
         .with_child(
-            DisplayModeButton
-                .padding(10.0)
-                .expand_width()
-                .lens(CrabReaderState::display_mode),
+            RoundedButton::dynamic(
+                |data: &CrabReaderState, _env: &Env| match data.display_mode {
+                    DisplayMode::List => "Passa a visualizzazione a lista".into(),
+                    DisplayMode::Cover => "Passa a visualiazione a copertine".into(),
+                },
+            )
+            .with_color(Color::rgb8(70, 70, 70))
+            .with_hot_color(Color::rgb8(50, 50, 50))
+            .with_active_color(Color::rgb8(20, 20, 20))
+            .with_text_size(24.0)
+            .with_text_color(Color::WHITE)
+            .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+                data.display_mode = match data.display_mode {
+                    DisplayMode::List => DisplayMode::Cover,
+                    DisplayMode::Cover => DisplayMode::List,
+                };
+                ctx.request_update();
+            })
+            .padding((0.0, 20.0)),
         )
         .with_flex_child(right_panel, 1.0);
 
