@@ -325,7 +325,6 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         )
     })
     .with_text_size(16.0)
-    .padding(10.0)
     .center();
 
     let text = Either::new(
@@ -351,8 +350,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_hot_color(Color::rgb8(50, 50, 50))
         .with_active_color(Color::rgb8(20, 20, 20))
         .with_text_color(Color::WHITE)
-        .with_text_size(24.0)
-        .padding(10.0);
+        .with_text_size(24.0);
     let leave_btn = Flex::row().with_child(leave_btn).align_left();
 
     // todo() switch to change single view and double view
@@ -455,8 +453,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_text_size(18.0)
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             button_functions::undo_button(&mut data.reading_state);
-        })
-        .padding(5.0);
+        });
 
     let current_page = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         let page_number = data
@@ -484,9 +481,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             }
         }
     })
-    .with_text_size(12.0)
-    .padding(10.0)
-    .center();
+    .with_text_size(12.0);
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
@@ -502,24 +497,25 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
         Flex::row()
             .with_child(undo_changes_btn)
-            .with_child(save_changes_btn)
-            .center(),
+            .with_child(save_changes_btn),
         Flex::row()
             .with_child(back_btn)
+            .with_spacer(10.0)
             .with_child(current_page)
-            .with_child(next_btn)
-            .center(),
-    );
+            .with_spacer(10.0)
+            .with_child(next_btn),
+    )
+    .center();
 
     let flex = Flex::column()
         .with_child(header)
         .with_child(title)
         .with_child(current_chapter)
-        .with_spacer(5.0)
+        .with_spacer(20.0)
         .with_child(text)
         .with_flex_spacer(5.0)
         .with_child(footer)
-        .with_spacer(5.0);
+        .padding(15.0);
 
     flex
 }
