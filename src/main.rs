@@ -310,13 +310,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let title = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         data.library
             .get_selected_book()
-            .unwrap()
-            .get_title()
-            .to_string()
+            .map_or("Titolo libro non trovato".into(), |book| book.get_title())
     })
-    .with_text_size(32.0)
-    .padding(10.0)
-    .center();
+    .with_text_size(24.0);
 
     let current_chapter = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         format!(
@@ -347,7 +343,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     )
     .fix_size(800.0, 450.0);
 
-    let leave_btn = RoundedButton::from_text("Go back to browsing")
+    let leave_btn = RoundedButton::from_text("Torna a selezione libro")
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
@@ -357,6 +353,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_text_color(Color::WHITE)
         .with_text_size(24.0)
         .padding(10.0);
+    let leave_btn = Flex::row().with_child(leave_btn).align_left();
 
     // todo() switch to change single view and double view
     // this is a mock to test layout
@@ -376,7 +373,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     .with_text_color(Color::WHITE)
     .with_text_size(24.0);
 
-    let next_btn = RoundedButton::from_text("Next")
+    let next_btn = RoundedButton::from_text("Prossima pagina")
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book_mut().unwrap();
             button_functions::change_page(
@@ -393,7 +390,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_text_color(Color::WHITE)
         .with_text_size(18.0);
 
-    let back_btn = RoundedButton::from_text("Back")
+    let back_btn = RoundedButton::from_text("Pagina precedente")
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book_mut().unwrap();
             button_functions::change_page(
@@ -433,7 +430,8 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
                 data.library.get_selected_book().unwrap(),
             );
         }
-    });
+    })
+    .align_right();
 
     let save_changes_btn = RoundedButton::from_text("Salva modifiche")
         .with_color(Color::rgb8(70, 70, 70))
@@ -494,15 +492,11 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(edit_btn)
         .with_spacer(10.0)
         .with_child(views_btn)
-        .center();
+        .align_right();
 
     let header = Flex::row()
-        .with_child(leave_btn)
-        .with_default_spacer()
-        .with_flex_child(title, 1.0)
-        .with_default_spacer()
-        .with_child(header_btns)
-        .center();
+        .with_flex_child(leave_btn, 1.0)
+        .with_flex_child(header_btns, 1.0);
 
     let footer = Either::new(
         |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
@@ -519,6 +513,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let flex = Flex::column()
         .with_child(header)
+        .with_child(title)
         .with_child(current_chapter)
         .with_spacer(5.0)
         .with_child(text)
