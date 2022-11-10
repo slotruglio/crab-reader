@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
-pub trait GUIBook {
+pub trait GUIBook: PartialEq + Data {
     /// Returns the title
     fn get_title(&self) -> String;
 
