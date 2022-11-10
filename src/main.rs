@@ -520,20 +520,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     flex
 }
 
-struct DumbDelegate;
+struct ReadModeDelegate;
 
-impl AppDelegate<CrabReaderState> for DumbDelegate {
-    fn event(
-        &mut self,
-        _: &mut druid::DelegateCtx,
-        _: druid::WindowId,
-        event: druid::Event,
-        _: &mut CrabReaderState,
-        _: &Env,
-    ) -> Option<druid::Event> {
-        Some(event)
-    }
-
+impl AppDelegate<CrabReaderState> for ReadModeDelegate {
     fn command(
         &mut self,
         _: &mut druid::DelegateCtx,
@@ -544,7 +533,6 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
     ) -> Handled {
         match cmd {
             notif if notif.is(ENTERING_READING_MODE) => {
-                println!("Entering reading mode!");
                 data.reading = true;
                 data.reading_state.enable(
                     data.library
@@ -552,36 +540,15 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
                         .unwrap()
                         .get_page_of_chapter(),
                 );
-
                 Handled::Yes
             }
             notif if notif.is(LEAVING_READING_MODE) => {
-                println!("Leaving reading mode!");
                 data.reading = false;
                 data.reading_state.disable();
-
                 Handled::Yes
             }
             _ => Handled::No,
         }
-    }
-
-    fn window_added(
-        &mut self,
-        _: druid::WindowId,
-        _: &mut CrabReaderState,
-        _: &Env,
-        _: &mut druid::DelegateCtx,
-    ) {
-    }
-
-    fn window_removed(
-        &mut self,
-        _: druid::WindowId,
-        _: &mut CrabReaderState,
-        _: &Env,
-        _: &mut druid::DelegateCtx,
-    ) {
     }
 }
 
@@ -592,7 +559,7 @@ fn main() -> Result<(), PlatformError> {
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
-    .delegate(DumbDelegate)
+    .delegate(ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }
