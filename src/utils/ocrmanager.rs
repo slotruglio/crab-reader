@@ -19,6 +19,9 @@ struct Page {
 //function that, given a pic of a physical book page, gives the corresponding page in the ebook
 pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize> {
 
+    //start timer
+    let start = std::time::Instant::now();
+
     //OCR PHASE: Load the LEPTESS model, set the image to the leptess model, get the text
     let mut lt = leptess::LepTess::new(None, "eng").unwrap();
     lt.set_image(physical_page).unwrap();
@@ -53,66 +56,66 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
         //..create a thread that will calculate the similarity between the physical page and the chapter pages
         //NOTE: the thread pool will aggregate these functions in 4 threads (see pool initialization)
         pool.execute(move || {
-            let result = compute_similarity(book_path_clone, text_clone, i, chapters_pages_numbers_clone);
-            tx.send(result).expect("Error in unwrapping");
+            let result = compute_similarity(book_path_clone, text_clone, i, chapters_pages_numbers_clone.clone());
+            if result.is_some() {
+                tx.send(result.unwrap()).expect("Error in sending msg");
+            }
         });
     }
 
     //Clone the pair, to pass it to the thread
     let pair_clone = pair.clone();
 
-    //This thread receives all the results of the previous threads, finding the best page
+    //This thread receives the found page and calculates the global page number
     //After this, it will wake up the main thread (see below)
     std::thread::spawn(move || {
-        //Get all the results from the channel, and filter the ones that are not None
-        let results: Vec<Option<Page>> = rx.iter().take(chapters_number).collect();
-
-        let results_some = results.iter().filter(|x| x.is_some()).collect::<Vec<_>>();
 
         let mut to_return = None;
 
-        //If there are some.. (pun)
-        if results_some.len() > 0 {
-            //.. get the one with the highest similarity
-            let best_match_page = results_some.iter().max_by(|&a, &b| {
-                let a = a.as_ref().unwrap();
-                let b = b.as_ref().unwrap();
-                a.high_count.partial_cmp(&b.high_count).unwrap()
-            });
+        //create a duration: 2 seconds for each chapter
+        let duration = std::time::Duration::from_secs(2 * chapters_number as u64);
+        println!("Waiting for {} seconds", duration.as_secs());
 
-            println!("{:?}", best_match_page);
-        
-            //Calculate the global page number and return it
+        //If a found page is found in "duration" seconds..
+        if let Ok(found_page) = rx.recv_timeout(duration) {
+            //Calculate the global page number
             let mut pages_sum = 0;
-            for i in 0..best_match_page.unwrap().as_ref().unwrap().chapter_number {
+            for i in 0..found_page.chapter_number {
                 pages_sum += chapters_pages_numbers.lock().unwrap()[i];
             }
-            pages_sum += best_match_page.unwrap().as_ref().unwrap().chapter_page_number;
-
-            //set the data inside the condition variable to pages_sum
+            pages_sum += found_page.chapter_page_number;
             to_return = Some(pages_sum);
         }
 
+        //Notify the main thread, wheter we had a match or not
         let (lock, cvar) = &*pair_clone;
         let mut data = lock.lock().unwrap();
         *data = to_return;
         cvar.notify_one();
     });
 
-    //Go to sleep until the thread sends a notification
+    //Go to sleep until the receiver thread sends a notification
     let (lock, cvar) = &*pair;
     let mut page_number = lock.lock().unwrap();
     while *page_number == Some(0) {
         page_number = cvar.wait(page_number).unwrap();
     }
 
+    //Stop timer
+    let duration = start.elapsed();
+    println!("Time elapsed in get_ebook_page() is: {:?}", duration);
+
     return *page_number;
 }
 
 
+//This function, given a chapter, gets its pages and iterates through them.
+//For each page, it computes the similarity with the given text: if it's higher than 0.85, the page is returned
 fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize, chapters_pages_number: Arc<Mutex<Vec<usize>>>) -> Option<Page> {
 
     let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, 800.0, 300.0);
+
+    println!("CHAPTER NUMBER {} PAGES NUMBER: {}", chapter_to_examine, chapter_pages.len());
 
     //add the number of pages of the chapter to the vector chapters_pages_number
     let mut chapters_pages_number = chapters_pages_number.lock().unwrap();
@@ -120,6 +123,7 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
+
 
         //replace all \n characters with spaces. the \n characters may be attached to words
         let page = &chapter_pages[i].replace("\n", " ");
@@ -129,55 +133,27 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
             continue;
         }
 
-        let mut similarity;
-
-        //calculate the TOTAL number of words in the text and in the page
-        let text_words_number = text.split_whitespace().count();
-        let page_words_number = page.split_whitespace().count();
-       
-        let mut high_counter = 0;
-        let mut text_index = 0;
-        let mut page_index = 0;
-
-        loop {
-            println!("----------------");
-
-            let text_words: Vec<&str> = text.split_whitespace().clone().skip(text_index).take(10).collect();
-            let text_substring = text_words.join(" ");
-            let page_words: Vec<&str> = page.split_whitespace().clone().skip(page_index).take(10).collect();
-            let page_substring = page_words.join(" ");
-
-            similarity = fuzzy_compare(text_substring.as_str(), page_substring.as_str());
-
-            //print text substring and page substring
-            println!("text: {}", text_substring);
-            println!("page: {}", page_substring);
-            println!("similarity: {}", similarity);
-
-            if similarity > 0.5 {
-                high_counter += 1;
-                text_index += 10;
-                page_index += 10;
-            }
-            else {
-                page_index +=10;
-            }
-
-            if !(text_words_number as i32 -5 > text_index as i32 && page_words_number as i32 -5 > page_index as i32) {
-                break;
-            }
+        let similarity;
+        //check which one is longer: PAGE OR TEXT
+        if page.len() > text.len() {
+            similarity = fuzzy_compare(&text, page);
+        }
+        else {
+            similarity = fuzzy_compare(page, &text);
         }
 
-        if high_counter > 3 {
+        //println!("similarity: {}", similarity);
+
+        if similarity > 0.85 {
             return Some(Page {
+                high_count: 11, //useless atm
                 chapter_number: chapter_to_examine,
-                chapter_page_number: i,
-                high_count: high_counter,
+                chapter_page_number: i
             });
         }
     }
 
-    //No page had a similarity higher than 0.8, return None
+    //No page had a similarity higher than 0.85, return None
     return None;
 }
 

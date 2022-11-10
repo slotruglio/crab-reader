@@ -4,7 +4,7 @@ use components::cover_library::CoverLibrary;
 use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
-use components::mockup::{MockupLibrary, SortBy};
+use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::{ReaderBtn};
 use components::reader_view::{ReaderView, current_chapter_widget, title_widget, sidebar_widget};
@@ -208,30 +208,10 @@ fn picker_sort_by() -> impl Widget<Library> {
         .expand_width()
 }
 
-struct FilterController;
-
-impl<W: Widget<Library>> Controller<MockupLibrary<Book>, W> for FilterController {
-    fn event(
-        &mut self,
-        child: &mut W,
-        ctx: &mut EventCtx,
-        event: &druid::Event,
-        data: &mut MockupLibrary<Book>,
-        env: &Env,
-    ) {
-        let filter = data.get_filter_text_input();
-        if filter != *data.get_filter_string() {
-            data.set_filter_string(filter);
-        }
-        child.event(ctx, event, data, env)
-    }
-}
-
 fn picker_filter_by() -> impl Widget<Library> {
     let text_edit = druid::widget::TextBox::new()
         .with_placeholder("Filter by")
-        .lens(Library::filter_text_input)
-        .controller(FilterController)
+        .lens(LibraryFilterLens)
         .fix_width(500.0);
     Flex::row()
         .with_child(Label::new("Filter by"))

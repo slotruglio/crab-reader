@@ -104,7 +104,6 @@ impl Widget<Library> for ListLibrary {
         let child_h = 70.0;
         let child_spacing = 10.0;
 
-        println!("\n\n");
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 if book.is_filtered_out() {
