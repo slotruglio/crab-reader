@@ -14,12 +14,27 @@ use super::{
 
 const SAVED_BOOKS_PATH: &str = "saved_books/";
 
+pub struct LibraryFilterLens;
+
+impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
+    fn with<V, F: FnOnce(&String) -> V>(&self, data: &MockupLibrary<Book>, f: F) -> V {
+        f(&data.filter_by)
+    }
+
+    fn with_mut<V, F: FnOnce(&mut String) -> V>(&self, data: &mut MockupLibrary<Book>, f: F) -> V {
+        let mut filter = data.filter_by.to_string();
+        let res = f(&mut filter);
+        data.filter_by = filter.into();
+        data.filter_out_by_string();
+        res
+    }
+}
+
 #[derive(Clone, Lens, PartialEq, Data)]
 pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
-    filter_text_input: String,
     filter_by: Rc<String>,
     visible_books: usize,
 }
@@ -30,8 +45,7 @@ impl MockupLibrary<Book> {
             books: Vector::new(),
             selected_book: None,
             sorted_by: SortBy::Title,
-            filter_text_input: "".into(),
-            filter_by: "".to_string().into(),
+            filter_by: String::default().into(),
             visible_books: 0,
         };
         if let Ok(paths) = lib.epub_paths() {
@@ -70,17 +84,8 @@ impl MockupLibrary<Book> {
         self.visible_books
     }
 
-    pub fn get_filter_string(&self) -> Rc<String> {
+    pub fn get_filter_by(&self) -> Rc<String> {
         self.filter_by.clone()
-    }
-
-    pub fn get_filter_text_input(&self) -> String {
-        self.filter_text_input.clone()
-    }
-
-    pub fn set_filter_string(&mut self, text: impl Into<String>) {
-        self.filter_by = text.into().into();
-        self.filter_out_by_string();
     }
 }
 
@@ -204,12 +209,23 @@ impl MockupLibrary<Book> {
     }
 
     pub fn filter_out_by_string(&mut self) {
-        let filter = self.get_filter_string().to_lowercase();
+        let filter = self.get_filter_by();
         let mut cnt = 0;
         self.books.iter_mut().for_each(|book| {
-            let title_lower = book.get_title().to_lowercase();
-            let author_lower = book.get_author().to_lowercase();
-            if !title_lower.contains(&filter) && !author_lower.contains(&filter) {
+            let auth = book.get_author().to_lowercase();
+            let title = book.get_title().to_lowercase();
+            let auth_sim = rust_fuzzy_search::fuzzy_compare(filter.as_str(), &auth.as_str());
+            let title_sim = rust_fuzzy_search::fuzzy_compare(filter.as_str(), &title.as_str());
+            let basic_sim = if auth.contains(&*filter) || title.contains(&*filter) {
+                1.0
+            } else {
+                0.0
+            };
+
+            let sim = auth_sim.max(title_sim).max(basic_sim);
+
+            // what is a good number for this threshold??
+            if sim < 0.3 {
                 book.set_filtered_out(true);
             } else {
                 book.set_filtered_out(false);
@@ -224,6 +240,5 @@ impl MockupLibrary<Book> {
             }
         }
         self.visible_books = cnt;
-        self.filter_by = filter.into();
     }
 }
