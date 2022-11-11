@@ -1,7 +1,6 @@
 use components::book::{Book, BookReading, GUIBook};
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
-use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
@@ -18,7 +17,7 @@ use druid::{
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::button_functions; // 1.3.1
+use utils::button_functions::{self, undo_button}; // 1.3.1
 use utils::envmanager::MyEnv;
 
 mod components;
@@ -62,6 +61,12 @@ impl Default for ReadingState {
             text_1: String::default(),
         }
     }
+}
+
+#[derive(Clone, PartialEq, Data)]
+pub enum DisplayMode {
+    Cover,
+    List,
 }
 
 #[derive(Clone, Data, Lens)]
@@ -243,16 +248,31 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_child(view_either)
         .padding(15.0);
     let scroll = Scroll::new(left_panel).vertical();
-
-    let right_panel = Scroll::new(book_details_panel()).vertical().padding(5.0);
+    let right_panel = Scroll::new(book_details_panel()).vertical();
     let right_col = Flex::column()
         .with_child(
-            DisplayModeButton
-                .padding(10.0)
-                .expand_width()
-                .lens(CrabReaderState::display_mode),
+            RoundedButton::dynamic(
+                |data: &CrabReaderState, _env: &Env| match data.display_mode {
+                    DisplayMode::List => "Passa a visualizzazione a lista".into(),
+                    DisplayMode::Cover => "Passa a visualiazione a copertine".into(),
+                },
+            )
+            .with_color(Color::rgb8(70, 70, 70))
+            .with_hot_color(Color::rgb8(50, 50, 50))
+            .with_active_color(Color::rgb8(20, 20, 20))
+            .with_text_size(24.0)
+            .with_text_color(Color::WHITE)
+            .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+                data.display_mode = match data.display_mode {
+                    DisplayMode::List => DisplayMode::Cover,
+                    DisplayMode::Cover => DisplayMode::List,
+                };
+                ctx.request_update();
+            })
+            .padding((0.0, 20.0)),
         )
-        .with_flex_child(right_panel, 1.0);
+        .with_flex_child(right_panel, 1.0)
+        .padding(10.0);
 
     let inner = Flex::row()
         .with_flex_child(scroll, 2.0)
@@ -290,13 +310,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let title = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         data.library
             .get_selected_book()
-            .unwrap()
-            .get_title()
-            .to_string()
+            .map_or("Titolo libro non trovato".into(), |book| book.get_title())
     })
-    .with_text_size(32.0)
-    .padding(10.0)
-    .center();
+    .with_text_size(24.0);
 
     let current_chapter = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         format!(
@@ -309,7 +325,6 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         )
     })
     .with_text_size(16.0)
-    .padding(10.0)
     .center();
 
     let text = Either::new(
@@ -327,25 +342,37 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     )
     .fix_size(800.0, 450.0);
 
-    let leave_btn = Button::new("Go back to Browsing")
-        .on_click(|_, data: &mut CrabReaderState, _| {
+    let leave_btn = RoundedButton::from_text("Torna a selezione libro")
+        .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
-        .fix_height(64.0)
-        .center();
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(24.0);
+    let leave_btn = Flex::row().with_child(leave_btn).align_left();
 
     // todo() switch to change single view and double view
     // this is a mock to test layout
-    let views_btn = Button::new("Single/Double View")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
-        })
-        .fix_height(64.0)
-        .center();
+    let views_btn = RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
+        if data.reading_state.single_view.unwrap() {
+            "Attiva doppia pagina".into()
+        } else {
+            "Attiva singola pagina".into()
+        }
+    })
+    .with_on_click(|_, data: &mut CrabReaderState, _| {
+        data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap());
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(20, 20, 20))
+    .with_text_color(Color::WHITE)
+    .with_text_size(24.0);
 
-    let next_btn = Button::new("Next")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED NEXT START");
+    let next_btn = RoundedButton::from_text("Prossima pagina")
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book_mut().unwrap();
             button_functions::change_page(
                 ctx,
@@ -354,13 +381,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
                 data.reading_state.single_view.unwrap(),
                 true,
             );
-            println!("DEBUG: PRESSED NEXT END\n");
         })
-        .center();
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0);
 
-    let back_btn = Button::new("Back")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED BACK START");
+    let back_btn = RoundedButton::from_text("Pagina precedente")
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book_mut().unwrap();
             button_functions::change_page(
                 ctx,
@@ -369,40 +398,62 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
                 data.reading_state.single_view.unwrap(),
                 false,
             );
-
-            println!("DEBUG: PRESSED BACK END\n");
         })
-        .center();
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0);
 
-    let edit_btn = Button::new("Edit")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED EDIT BUTTON");
-
+    let edit_btn = RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
+        if data.reading_state.is_editing.unwrap() {
+            "Termina modifica".into()
+        } else {
+            "Modifica testo".into()
+        }
+    })
+    .with_color(Color::rgb8(70, 70, 70))
+    .with_hot_color(Color::rgb8(50, 50, 50))
+    .with_active_color(Color::rgb8(20, 20, 20))
+    .with_text_color(Color::WHITE)
+    .with_text_size(24.0)
+    .with_on_click(|_, data: &mut CrabReaderState, _| {
+        if data.reading_state.is_editing.unwrap() {
+            data.reading_state.is_editing = Some(false);
+            button_functions::undo_button(&mut data.reading_state)
+        } else {
+            data.reading_state.single_view = Some(true);
             button_functions::edit_button(
                 &mut data.reading_state,
                 data.library.get_selected_book().unwrap(),
             );
-        })
-        .fix_height(64.0)
-        .center();
+        }
+    })
+    .align_right();
 
-    let save_changes_btn = Button::new("Save")
-        .on_click(|ctx: &mut EventCtx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED SAVE BUTTON");
-
+    let save_changes_btn = RoundedButton::from_text("Salva modifiche")
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0)
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             button_functions::save_button(
                 ctx,
                 &mut data.reading_state,
                 &mut data.library.get_selected_book_mut().unwrap(),
             );
-        })
-        .center();
+        });
 
-    let undo_changes_btn = Button::new("Undo")
-        .on_click(|_, data: &mut CrabReaderState, _| {
+    let undo_changes_btn = RoundedButton::from_text("Annulla modifiche")
+        .with_color(Color::rgb8(70, 70, 70))
+        .with_hot_color(Color::rgb8(50, 50, 50))
+        .with_active_color(Color::rgb8(20, 20, 20))
+        .with_text_color(Color::WHITE)
+        .with_text_size(18.0)
+        .with_on_click(|_, data: &mut CrabReaderState, _| {
             button_functions::undo_button(&mut data.reading_state);
-        })
-        .center();
+        });
 
     let current_page = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         let page_number = data
@@ -430,62 +481,48 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             }
         }
     })
-    .with_text_size(12.0)
-    .padding(10.0)
-    .center();
+    .with_text_size(12.0);
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
+        .with_spacer(10.0)
         .with_child(views_btn)
-        .center();
+        .align_right();
 
     let header = Flex::row()
-        .with_child(leave_btn)
-        .with_default_spacer()
-        .with_flex_child(title, 1.0)
-        .with_default_spacer()
-        .with_child(header_btns)
-        .center();
+        .with_flex_child(leave_btn, 1.0)
+        .with_flex_child(header_btns, 1.0);
 
     let footer = Either::new(
         |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
         Flex::row()
             .with_child(undo_changes_btn)
-            .with_child(save_changes_btn)
-            .center(),
+            .with_child(save_changes_btn),
         Flex::row()
             .with_child(back_btn)
+            .with_spacer(10.0)
             .with_child(current_page)
-            .with_child(next_btn)
-            .center(),
-    );
+            .with_spacer(10.0)
+            .with_child(next_btn),
+    )
+    .center();
 
     let flex = Flex::column()
         .with_child(header)
+        .with_child(title)
         .with_child(current_chapter)
-        .with_spacer(5.0)
+        .with_spacer(20.0)
         .with_child(text)
         .with_flex_spacer(5.0)
         .with_child(footer)
-        .with_spacer(5.0);
+        .padding(15.0);
 
     flex
 }
 
-struct DumbDelegate;
+struct ReadModeDelegate;
 
-impl AppDelegate<CrabReaderState> for DumbDelegate {
-    fn event(
-        &mut self,
-        _: &mut druid::DelegateCtx,
-        _: druid::WindowId,
-        event: druid::Event,
-        _: &mut CrabReaderState,
-        _: &Env,
-    ) -> Option<druid::Event> {
-        Some(event)
-    }
-
+impl AppDelegate<CrabReaderState> for ReadModeDelegate {
     fn command(
         &mut self,
         _: &mut druid::DelegateCtx,
@@ -496,7 +533,6 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
     ) -> Handled {
         match cmd {
             notif if notif.is(ENTERING_READING_MODE) => {
-                println!("Entering reading mode!");
                 data.reading = true;
                 data.reading_state.enable(
                     data.library
@@ -504,36 +540,15 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
                         .unwrap()
                         .get_page_of_chapter(),
                 );
-
                 Handled::Yes
             }
             notif if notif.is(LEAVING_READING_MODE) => {
-                println!("Leaving reading mode!");
                 data.reading = false;
                 data.reading_state.disable();
-
                 Handled::Yes
             }
             _ => Handled::No,
         }
-    }
-
-    fn window_added(
-        &mut self,
-        _: druid::WindowId,
-        _: &mut CrabReaderState,
-        _: &Env,
-        _: &mut druid::DelegateCtx,
-    ) {
-    }
-
-    fn window_removed(
-        &mut self,
-        _: druid::WindowId,
-        _: &mut CrabReaderState,
-        _: &Env,
-        _: &mut druid::DelegateCtx,
-    ) {
     }
 }
 
@@ -544,7 +559,7 @@ fn main() -> Result<(), PlatformError> {
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
-    .delegate(DumbDelegate)
+    .delegate(ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }

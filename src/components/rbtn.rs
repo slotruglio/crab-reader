@@ -81,6 +81,11 @@ impl<T: Data> RoundedButton<T> {
         self.on_click = Box::new(on_click);
         self
     }
+
+    pub fn with_text_color(mut self, color: impl Into<Color>) -> Self {
+        self.label.set_text_color(color.into());
+        self
+    }
 }
 
 impl<T: Data> Widget<T> for RoundedButton<T> {
