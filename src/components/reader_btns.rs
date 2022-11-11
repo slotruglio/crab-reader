@@ -70,10 +70,8 @@ fn edit_btn() -> RoundedButton<CrabReaderState> {
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         if data.reading_state.is_editing {
             data.reading_state.is_editing = false;
-            edit_btn_fn(
-                &mut data.reading_state,
-                data.library.get_selected_book().unwrap(),
-            );
+            // Chiedeere a sam se sta cosa è ok
+            undo_btn_fn(&mut data.reading_state);
         } else {
             data.reading_state.single_view = true;
             edit_btn_fn(
