@@ -1,7 +1,11 @@
-use crate::utils::epub_utils::{edit_chapter, split_chapter_in_vec};
-use crate::utils::{epub_utils, saveload, text_descriptor};
+use crate::utils::envmanager::FontSize;
+use crate::utils::epub_utils::{calculate_number_of_pages, edit_chapter, split_chapter_in_vec};
+use crate::utils::saveload::load_data;
+use crate::utils::{epub_utils, text_descriptor};
+use crate::MYENV;
 use derivative::Derivative;
 use druid::image::io::Reader as ImageReader;
+use std::cmp::min;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
@@ -139,6 +143,8 @@ pub trait BookReading {
 
     /// Method that returns two pages dealing with two page mode
     fn get_dual_pages(&self) -> (Rc<String>, Rc<String>);
+
+    fn get_number_of_chapters(&self) -> usize;
 }
 
 /// Trait that describes book management functions
@@ -170,6 +176,7 @@ pub struct Book {
     chapter_number: usize,
     current_page: usize,
     number_of_pages: usize,
+    number_of_chapters: usize,
     cumulative_current_page: usize,
     idx: usize,
     selected: bool,
@@ -213,9 +220,15 @@ impl Book {
             .unwrap_or(&"No description".to_string())
             .to_string();
 
-        let (chapter_number, current_page) = saveload::get_page_of_chapter(path_str).unwrap();
+        let number_of_chapters = book_map
+            .get("chapters")
+            .map_or(1, |x| x.parse::<usize>().unwrap_or_default());
+
+        let (chapter_number, current_page, _font_size) =
+            load_data(path_str).unwrap_or((1, 0, FontSize::MEDIUM.to_f64()));
 
         let number_of_pages = epub_utils::get_number_of_pages(path_str);
+
         let cumulative_current_page =
             epub_utils::get_cumulative_current_page_number(path_str, chapter_number, current_page);
         /*
@@ -231,6 +244,7 @@ impl Book {
             path: path.into(),
             chapter_number: chapter_number,
             current_page: current_page,
+            number_of_chapters: number_of_chapters,
             cumulative_current_page: cumulative_current_page,
             number_of_pages: number_of_pages,
             idx: 0, // How to set early?
@@ -397,6 +411,10 @@ impl BookReading for Book {
 
         (left_page, right_page)
     }
+
+    fn get_number_of_chapters(&self) -> usize {
+        self.number_of_chapters
+    }
 }
 
 impl BookManagement for Book {
@@ -416,7 +434,7 @@ impl BookManagement for Book {
             self.get_chapter_text(),
             None,
             NUMBER_OF_LINES,
-            FONT_SIZE,
+            MYENV.lock().unwrap().font.size,
             width,
             height,
         )
@@ -444,8 +462,7 @@ impl BookManagement for Book {
         };
 
         let _ = edit_chapter(self.path.as_str(), self.chapter_number, new_chapter_text);
-
-        let old_len = self.split_chapter_in_pages(true).len();
+        let old_len = self.get_last_page_number() + 1;
         // check if the split's number of pages is the same as before
         self.load_chapter();
 
@@ -454,7 +471,7 @@ impl BookManagement for Book {
             None,
             self.chapter_number,
             NUMBER_OF_LINES,
-            FONT_SIZE,
+            MYENV.lock().unwrap().font.size,
             800.0,
             300.0,
         )
@@ -462,10 +479,10 @@ impl BookManagement for Book {
         if new_len != old_len {
             println!("DEBUG: new_len: {}, old_len: {}", new_len, old_len);
             // recalculate pages
-            let (total_len, _) = epub_utils::calculate_number_of_pages(
+            let (total_len, _) = calculate_number_of_pages(
                 self.path.as_str(),
                 NUMBER_OF_LINES,
-                FONT_SIZE,
+                MYENV.lock().unwrap().font.size,
             )
             .unwrap();
             self.number_of_pages = total_len;
@@ -488,7 +505,8 @@ impl BookManagement for Book {
     }
 
     fn load_page(&mut self) {
-        self.chapter_page_text = self.split_chapter_in_pages(true)[self.current_page].clone();
+        let split = self.split_chapter_in_pages(true);
+        self.chapter_page_text = split[min(self.current_page, split.len() - 1)].clone();
     }
 }
 

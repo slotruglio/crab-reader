@@ -5,14 +5,13 @@ use std::{
 
 use druid::{im::Vector, Data, Lens};
 
-use crate::utils::epub_utils;
+use crate::utils::{epub_utils, dir_manager::{get_epub_dir, get_saved_books_dir}};
 
 use super::{
     book::{Book, GUIBook},
     library::GUILibrary,
 };
 
-const SAVED_BOOKS_PATH: &str = "saved_books/";
 
 pub struct LibraryFilterLens;
 
@@ -58,10 +57,7 @@ impl MockupLibrary<Book> {
     }
 
     pub fn epub_dir(&self) -> Result<PathBuf, String> {
-        let path = std::env::current_dir()
-            .map_err(|e| e.to_string())?
-            .join("src")
-            .join("epubs");
+        let path = get_epub_dir();
         return if path.is_dir() {
             Ok(path)
         } else {
@@ -95,7 +91,7 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         let file_name = path.split("/").last().unwrap();
         let folder_name = file_name.split(".").next().unwrap();
         // extract metadata and chapters
-        if !Path::new(&format!("{}{}", SAVED_BOOKS_PATH, folder_name)).exists() {
+        if !get_saved_books_dir().join(folder_name).exists() {
             let _res = epub_utils::extract_all(&path)
                 .expect(format!("Failed to extract {}", file_name).as_str());
         }

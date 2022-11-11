@@ -1,4 +1,4 @@
-use druid::widget::{Button, Flex, Label, LineBreaking};
+use druid::widget::{Flex, Label, LineBreaking};
 use druid::{
     BoxConstraints, Color, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
     LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt,

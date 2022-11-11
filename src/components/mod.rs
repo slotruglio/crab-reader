@@ -8,3 +8,4 @@ pub mod listing_library;
 pub mod mockup;
 pub mod rbtn;
 pub mod reader_view;
+pub mod reader_btns;

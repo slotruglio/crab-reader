@@ -5,19 +5,16 @@ use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
-use components::reader_view::{
-    build_dual_view, build_dual_view_edit, build_single_view, build_single_view_edit,
-};
-
-use druid::widget::{Button, Either, Flex, Label, Scroll, ViewSwitcher};
+use components::reader_btns::ReaderBtn;
+use components::reader_view::ReaderView;
+use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, EventCtx, Handled, Lens, PlatformError, Selector,
-    Widget, WidgetExt, WindowDesc,
+    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
+    WidgetExt, WindowDesc,
 };
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::button_functions::{self, undo_button}; // 1.3.1
 use utils::envmanager::MyEnv;
 
 mod components;
@@ -33,20 +30,26 @@ static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 #[derive(Clone, Data, Lens)]
 pub struct ReadingState {
-    single_view: Option<bool>,
-    is_editing: Option<bool>,
+    single_view: bool,
+    is_editing: bool,
+    pages_btn_style: u8,
+    sidebar_open: bool,
     text_0: String,
     text_1: String,
 }
 
 impl ReadingState {
-    fn enable<S: Into<Option<Rc<String>>>>(&mut self, text: S) {
-        self.single_view = Some(true);
-        self.is_editing = Some(false);
+    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S) {
+        self.single_view = true;
+        self.is_editing = false;
+        self.pages_btn_style = 0;
+        self.sidebar_open = false;
     }
     fn disable(&mut self) {
-        self.single_view = None;
-        self.is_editing = None;
+        self.single_view = false;
+        self.is_editing = false;
+        self.pages_btn_style = 0;
+        self.sidebar_open = false;
         self.text_0 = String::default();
         self.text_1 = String::default();
     }
@@ -55,8 +58,10 @@ impl ReadingState {
 impl Default for ReadingState {
     fn default() -> Self {
         Self {
-            single_view: None,
-            is_editing: None,
+            single_view: true,
+            is_editing: false,
+            pages_btn_style: 0,
+            sidebar_open: false,
             text_0: String::default(),
             text_1: String::default(),
         }
@@ -70,7 +75,7 @@ pub enum DisplayMode {
 }
 
 #[derive(Clone, Data, Lens)]
-struct CrabReaderState {
+pub struct CrabReaderState {
     user: UserState,
     library: Library,
     display_mode: DisplayMode,
@@ -327,133 +332,21 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     .with_text_size(16.0)
     .center();
 
-    let text = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            build_single_view_edit(),
-            build_single_view(),
-        ),
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            build_dual_view_edit(),
-            build_dual_view(),
-        ),
-    )
-    .fix_size(800.0, 450.0);
+    let text = ReaderView::dynamic_view();
 
-    let leave_btn = RoundedButton::from_text("Torna a selezione libro")
-        .with_on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading = false;
-        })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(24.0);
-    let leave_btn = Flex::row().with_child(leave_btn).align_left();
+    let leave_btn = Flex::row()
+        .with_child(ReaderBtn::Leave.button())
+        .align_left();
 
     // todo() switch to change single view and double view
     // this is a mock to test layout
-    let views_btn = RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
-        if data.reading_state.single_view.unwrap() {
-            "Attiva doppia pagina".into()
-        } else {
-            "Attiva singola pagina".into()
-        }
-    })
-    .with_on_click(|_, data: &mut CrabReaderState, _| {
-        data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap());
-    })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
-    .with_text_size(24.0);
 
-    let next_btn = RoundedButton::from_text("Prossima pagina")
-        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(
-                ctx,
-                book,
-                data.reading_state.is_editing.unwrap(),
-                data.reading_state.single_view.unwrap(),
-                true,
-            );
-        })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(18.0);
-
-    let back_btn = RoundedButton::from_text("Pagina precedente")
-        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(
-                ctx,
-                book,
-                data.reading_state.is_editing.unwrap(),
-                data.reading_state.single_view.unwrap(),
-                false,
-            );
-        })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(18.0);
-
-    let edit_btn = RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
-        if data.reading_state.is_editing.unwrap() {
-            "Termina modifica".into()
-        } else {
-            "Modifica testo".into()
-        }
-    })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
-    .with_text_size(24.0)
-    .with_on_click(|_, data: &mut CrabReaderState, _| {
-        if data.reading_state.is_editing.unwrap() {
-            data.reading_state.is_editing = Some(false);
-            button_functions::undo_button(&mut data.reading_state)
-        } else {
-            data.reading_state.single_view = Some(true);
-            button_functions::edit_button(
-                &mut data.reading_state,
-                data.library.get_selected_book().unwrap(),
-            );
-        }
-    })
-    .align_right();
-
-    let save_changes_btn = RoundedButton::from_text("Salva modifiche")
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(18.0)
-        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            button_functions::save_button(
-                ctx,
-                &mut data.reading_state,
-                &mut data.library.get_selected_book_mut().unwrap(),
-            );
-        });
-
-    let undo_changes_btn = RoundedButton::from_text("Annulla modifiche")
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(18.0)
-        .with_on_click(|_, data: &mut CrabReaderState, _| {
-            button_functions::undo_button(&mut data.reading_state);
-        });
+    let views_btn = ReaderBtn::ViewsSwitch.button();
+    let next_btn = ReaderBtn::NextPage.button();
+    let back_btn = ReaderBtn::PrevPage.button();
+    let edit_btn = ReaderBtn::Edit.button().align_right();
+    let undo_changes_btn = ReaderBtn::Undo.button();
+    let save_changes_btn = ReaderBtn::Save.button();
 
     let current_page = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         let page_number = data
@@ -463,7 +356,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             .get_cumulative_current_page_number();
         let odd = page_number % 2;
 
-        if data.reading_state.single_view.unwrap() {
+        if data.reading_state.single_view {
             format!("Page {}", page_number.to_string())
         } else {
             if odd == 0 {
@@ -494,9 +387,10 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_flex_child(header_btns, 1.0);
 
     let footer = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+        |data: &CrabReaderState, _env| data.reading_state.is_editing,
         Flex::row()
             .with_child(undo_changes_btn)
+            .with_default_spacer()
             .with_child(save_changes_btn),
         Flex::row()
             .with_child(back_btn)
@@ -507,7 +401,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     )
     .center();
 
-    let flex = Flex::column()
+    let ui = Flex::column()
         .with_child(header)
         .with_child(title)
         .with_child(current_chapter)
@@ -517,7 +411,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(footer)
         .padding(15.0);
 
-    flex
+    ui
 }
 
 struct ReadModeDelegate;
