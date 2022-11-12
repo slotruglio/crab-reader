@@ -9,10 +9,7 @@ use std::{
     io::{BufReader, Cursor, Write},
     path::{Path, PathBuf},
     rc::Rc,
-    sync::Arc,
 };
-
-use utf16string::{BigEndian, BE, WString, LittleEndian};
 
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
