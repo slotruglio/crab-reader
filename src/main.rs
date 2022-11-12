@@ -12,13 +12,20 @@ use components::reader_view::{
 use druid::widget::{Button, Controller, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, EventCtx, Handled, Lens, PlatformError, Selector,
-    Widget, WidgetExt, WindowDesc,
+    Widget, WidgetExt, WindowDesc, FileSpec, Command, Target
 };
+
+use druid::FileDialogOptions;
+
+use druid::commands::{SHOW_OPEN_PANEL, OPEN_FILE};
+
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::button_functions; // 1.3.1
+use utils::{button_functions, ocrmanager}; // 1.3.1
 use utils::envmanager::MyEnv;
+
+use crate::components::book::BookManagement;
 
 mod components;
 mod utils;
@@ -362,6 +369,22 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .fix_height(64.0)
         .center();
 
+    let ocr_btn = Button::new("OCR")
+        .on_click(|event_ctx, _: &mut CrabReaderState, _| {
+
+            //Trigger a FILE PICKER
+            let cmd = Command::new(
+                SHOW_OPEN_PANEL,
+                FileDialogOptions::new().allowed_types(vec![FileSpec::JPG, FileSpec::PNG]),
+                Target::Auto,
+            );
+
+            event_ctx.submit_command(cmd);
+
+        })
+        .fix_height(64.0)
+        .center();
+
     let next_btn = Button::new("Next")
         .on_click(|ctx, data: &mut CrabReaderState, _| {
             println!("DEBUG: PRESSED NEXT START");
@@ -454,6 +477,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     .center();
 
     let header_btns = Flex::row()
+        .with_child(ocr_btn)
         .with_child(edit_btn)
         .with_child(views_btn)
         .center();
@@ -533,6 +557,36 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
 
                 Handled::Yes
             }
+            notif if notif.is(OPEN_FILE) => {
+                println!("Opening file!");
+                let file = cmd.get_unchecked(OPEN_FILE);
+
+                //get file path
+                let path = file.path();
+
+                let selected_book_path = data.library.get_selected_book().unwrap().get_path();
+                
+                //split by slash, get last element, split by dot, get first element
+                let folder_name = selected_book_path.split("/").last().unwrap().split(".").next().unwrap();
+
+                //call ocr on the img path
+                let ocr_result = ocrmanager::get_ebook_page(folder_name.to_string(), path.to_str().unwrap().to_string());
+
+                match ocr_result {
+                    Some(ocr_result) => {
+                        //move to the found page
+                        data.library.get_selected_book_mut().unwrap().set_chapter_number(ocr_result.0, true);
+                        data.library.get_selected_book_mut().unwrap().set_chapter_current_page_number(ocr_result.1);
+                    }
+                    None => {
+                        println!("ERROR: OCR page not found");
+                    }
+                }
+
+                
+
+                Handled::Yes
+            }
             _ => Handled::No,
         }
     }
@@ -557,6 +611,7 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
 }
 
 fn main() -> Result<(), PlatformError> {
+
     let crab_state = CrabReaderState::default();
     AppLauncher::with_window(
         WindowDesc::new(get_viewswitcher)
