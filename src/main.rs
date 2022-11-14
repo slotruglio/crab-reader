@@ -6,11 +6,11 @@ use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
-use components::reader_view::ReaderView;
+use components::reader_view::{sidebar_widget, ReaderView};
 use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
-    WidgetExt, WindowDesc,
+    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, UnitPoint,
+    Widget, WidgetExt, WindowDesc,
 };
 use once_cell::sync::Lazy;
 use std::rc::Rc;
@@ -112,7 +112,6 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
     BookDetails::new()
         .background(Color::GRAY)
         .rounded(10.0)
-        .expand_width()
         .lens(CrabReaderState::library)
 }
 
@@ -332,7 +331,10 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     .with_text_size(16.0)
     .center();
 
-    let text = ReaderView::dynamic_view();
+    let sidebar = sidebar_widget();
+    let text = Flex::row()
+        .with_flex_child(sidebar, 1.0)
+        .with_flex_child(ReaderView::dynamic_view(), 4.0);
 
     let leave_btn = Flex::row()
         .with_child(ReaderBtn::Leave.button())
