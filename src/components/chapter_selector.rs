@@ -2,7 +2,7 @@ use druid::{
     widget::Label, Affine, Color, MouseEvent, RenderContext, Size, Widget, WidgetExt, WidgetPod,
 };
 
-use crate::Library;
+use crate::{Library, utils::button_functions::change_chapter};
 
 use super::{book::BookReading, colors, library::GUILibrary};
 
@@ -145,9 +145,10 @@ impl Widget<Library> for ChapterSelectorItem {
             druid::Event::MouseDown(_) => {
                 if self.hot {
                     println!("Current index: {}", self.idx);
-                    data.get_selected_book_mut()
-                        .unwrap()
-                        .set_chapter_number(self.idx, true);
+                    change_chapter(
+                        data.get_selected_book_mut().unwrap(),
+                        self.idx,
+                    );
                     ctx.request_paint();
                 }
             }

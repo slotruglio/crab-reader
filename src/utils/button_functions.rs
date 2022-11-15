@@ -123,3 +123,18 @@ pub fn page_number_switch_button(reading_state: &mut ReadingState) {
     let old = reading_state.pages_btn_style;
     reading_state.pages_btn_style = (old+1)%3;
 }
+
+pub fn change_chapter(book: &mut Book, chapter_number: usize) {
+    // change chapter number in book
+    book.set_chapter_number(chapter_number, true);
+    // save the new reading position
+    save_data(
+        book.get_path().to_string(),
+        book.get_chapter_number(),
+        book.get_current_page_number(),
+        book.get_page_of_chapter(),
+        FontSize::from_f64(MYENV.lock().unwrap().font.size),
+        false,
+    )
+    .unwrap();
+}
