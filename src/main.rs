@@ -77,7 +77,6 @@ pub enum DisplayMode {
 
 #[derive(Clone, Data, Lens)]
 pub struct CrabReaderState {
-    user: UserState,
     library: Library,
     display_mode: DisplayMode,
     reading: bool,
@@ -87,24 +86,10 @@ pub struct CrabReaderState {
 impl Default for CrabReaderState {
     fn default() -> Self {
         Self {
-            user: UserState::new(),
             library: Library::new(),
             display_mode: DisplayMode::Cover,
             reading: false,
             reading_state: ReadingState::default(),
-        }
-    }
-}
-
-#[derive(Clone, Data)]
-struct UserState {
-    username: Rc<String>,
-}
-
-impl UserState {
-    pub fn new() -> Self {
-        Self {
-            username: Rc::from("Username".to_string()),
         }
     }
 }
@@ -179,23 +164,12 @@ fn completion_sorter_btn() -> impl Widget<Library> {
     .padding(5.0)
 }
 
-// Showcase per Sam su come si usa
-pub fn disabled_btn() -> impl Widget<Library> {
-    RoundedButton::from_text("I am a disabled button")
-        .with_text_size(18.0)
-        .with_color(Color::rgb8(200, 20, 20))
-        .with_hot_color(Color::rgb8(170, 20, 20))
-        .with_on_click(|_, _, _| println!("You won't see this"))
-        .disabled()
-}
-
 fn picker_sort_by() -> impl Widget<Library> {
     Flex::row()
         .with_child(Label::new("Sort by"))
         .with_child(completion_sorter_btn())
         .with_child(author_sorter_btn())
         .with_child(title_sorter_btn())
-        .with_child(disabled_btn())
         .padding(5.0)
         .background(colors::ACCENT_GRAY)
         .rounded(5.0)
@@ -346,20 +320,12 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         let odd = page_number % 2;
 
         if data.reading_state.single_view {
-            format!("Page {}", page_number.to_string())
+            format!("Page {}", page_number)
         } else {
             if odd == 0 {
-                format!(
-                    "Page {}-{}",
-                    page_number.to_string(),
-                    (page_number + 1).to_string()
-                )
+                format!("Page {}-{}", page_number, page_number + 1)
             } else {
-                format!(
-                    "Page {}-{}",
-                    (page_number - 1).to_string(),
-                    page_number.to_string()
-                )
+                format!("Page {}-{}", page_number - 1, page_number)
             }
         }
     })
