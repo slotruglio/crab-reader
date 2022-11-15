@@ -273,8 +273,8 @@ pub fn calculate_number_of_pages(
     let mut metadata = get_metadata_of_book(path);
     let number_of_chapters = metadata["chapters"].parse::<usize>().unwrap_or_default();
 
-    let n_workers = 4;
-    let pool = threadpool::ThreadPool::new(n_workers);
+    let pool = threadpool::Builder::new().build();
+
 
     let (tx, rx) = std::sync::mpsc::channel();
     for i in 0..number_of_chapters {

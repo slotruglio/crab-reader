@@ -1,6 +1,5 @@
 use rust_fuzzy_search::fuzzy_compare;
 
-use threadpool::ThreadPool;
 use std::sync::{mpsc::channel, Arc, Mutex, Condvar};
 
 use crate::components::book::book_derived_lenses::chapter_number;
@@ -36,7 +35,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     let chapters_number = book_metadata["chapters"].parse::<usize>().unwrap();
 
     //THREAD PHASE: Create a thread pool and a channel
-    let pool = ThreadPool::new(4);
+    let pool = threadpool::Builder::new().build();
     let (tx, rx) = channel();
 
     //Setup condition variable holding a usize: this will allow us to save the page number of the best match
