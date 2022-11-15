@@ -426,22 +426,29 @@ impl BookManagement for Book {
     }
 
     fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S) {
-        todo!("edit pages");
+        let mut split = self.chapter_text_split.clone();
         
         if let Some(other_new_text) = other_new_text.into() {
             // two pages
             let odd = self.current_page % 2;
             if odd == 0 {
                 // left = x, right = x+1
+                split[self.current_page] = new_text;
+                split[self.current_page + 1] = other_new_text;
             } else {
                 // left = x-1, right = x
+                split[self.current_page - 1] = new_text;
+                split[self.current_page] = other_new_text;
             }
 
         } else {
             // one page
-            
+            split[self.current_page] = new_text;
         }
-        let _ = edit_chapter(self.path.as_str(), self.chapter_number, String::default());
+
+        let joined_text = split.into_iter().collect::<String>();
+
+        let _ = edit_chapter(self.path.as_str(), self.chapter_number, joined_text);
         let old_len = self.get_last_page_number() + 1;
         // check if the split's number of pages is the same as before
         self.load_chapter();
