@@ -8,7 +8,7 @@ use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
 use components::reader_view::{sidebar_widget, ReaderView};
-use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
+use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
     WidgetExt, WindowDesc,
@@ -107,7 +107,7 @@ fn title_sorter_btn() -> impl Widget<Library> {
             SortBy::Title => "v",
             _ => "^",
         };
-        format!("Title {}", arrow)
+        format!("Titolo {}", arrow)
     })
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _: &Env| {
@@ -128,7 +128,7 @@ fn author_sorter_btn() -> impl Widget<Library> {
             SortBy::Author => "v",
             _ => "^",
         };
-        format!("Author {}", arrow)
+        format!("Autore {}", arrow)
     })
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
@@ -149,7 +149,7 @@ fn completion_sorter_btn() -> impl Widget<Library> {
             SortBy::PercRead => "v",
             _ => "^",
         };
-        format!("Completion {}", arrow)
+        format!("Progresso {}", arrow)
     })
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
@@ -165,38 +165,43 @@ fn completion_sorter_btn() -> impl Widget<Library> {
 }
 
 fn picker_sort_by() -> impl Widget<Library> {
-    Flex::row()
-        .with_child(Label::new("Sort by"))
-        .with_child(completion_sorter_btn())
-        .with_child(author_sorter_btn())
-        .with_child(title_sorter_btn())
-        .padding(5.0)
+    let inner = Flex::row()
+        .with_flex_child(Label::new("Ordina").center().expand_width(), 1.0)
+        .with_flex_child(completion_sorter_btn(), 1.0)
+        .with_flex_child(author_sorter_btn(), 1.0)
+        .with_flex_child(title_sorter_btn(), 1.0)
+        .padding(druid::Insets::uniform_xy(15.0, 5.0))
         .background(colors::ACCENT_GRAY)
         .rounded(5.0)
-        .padding(druid::Insets::uniform_xy(10.0, 5.0))
-        .expand_width()
+        .padding(druid::Insets::uniform_xy(10.0, 5.0));
+    Container::new(inner).expand_width()
 }
 
 fn picker_filter_by() -> impl Widget<Library> {
     let text_edit = druid::widget::TextBox::new()
-        .with_placeholder("Filter by")
-        .lens(LibraryFilterLens)
-        .fix_width(500.0);
-    Flex::row()
-        .with_child(Label::new("Filter by"))
-        .with_child(text_edit)
-        .padding(5.0)
+        .with_text_size(18.0)
+        .with_placeholder("Titolo, autore, genere...")
+        .lens(LibraryFilterLens);
+
+    let inner = Flex::row()
+        .with_flex_child(Label::new("Cerca libro").center().expand_width(), 1.0)
+        .with_flex_child(text_edit.expand_width(), 3.0)
+        .padding(druid::Insets::uniform_xy(15.0, 10.0))
         .background(colors::ACCENT_GRAY)
         .rounded(5.0)
         .padding(druid::Insets::uniform_xy(10.0, 5.0))
-        .expand_width()
-        .fix_height(50.0)
+        .expand_width();
+
+    Container::new(inner).expand_width()
 }
 
 fn picker_controller() -> impl Widget<Library> {
     let sort_by = picker_sort_by();
     let filter_by = picker_filter_by();
-    Flex::column().with_child(sort_by).with_child(filter_by)
+    Flex::column()
+        .with_child(sort_by)
+        .with_default_spacer()
+        .with_child(filter_by)
 }
 
 fn build_ui() -> impl Widget<CrabReaderState> {
@@ -223,8 +228,8 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_child(
             RoundedButton::dynamic(
                 |data: &CrabReaderState, _env: &Env| match data.display_mode {
-                    DisplayMode::List => "Passa a visualizzazione a lista".into(),
-                    DisplayMode::Cover => "Passa a visualiazione a copertine".into(),
+                    DisplayMode::List => "Passa a visualizzazione a copertine".into(),
+                    DisplayMode::Cover => "Passa a visualiazione a liste".into(),
                 },
             )
             .with_on_click(|ctx, data: &mut CrabReaderState, _| {
