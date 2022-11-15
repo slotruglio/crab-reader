@@ -26,7 +26,7 @@ enum ButtonStatus {
 impl<T: Data> RoundedButton<T> {
     fn new(label: Label<T>) -> Self {
         Self {
-            label,
+            label: label.with_line_break_mode(druid::widget::LineBreaking::WordWrap),
             label_size: Size::ZERO,
             color: colors::NORMAL_GRAY,
             hot_color: colors::HOT_GRAY,

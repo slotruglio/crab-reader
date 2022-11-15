@@ -91,7 +91,7 @@ impl BookListing {
 
     fn get_bg_color(&self, data: &impl GUIBook) -> Color {
         if data.is_selected() {
-            colors::ACTIVE_GRAY
+            colors::BG_GRAY
         } else if self.is_hot {
             colors::HOT_GRAY
         } else {

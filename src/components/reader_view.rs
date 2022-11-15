@@ -204,7 +204,7 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
         ctx.request_layout();
     })
     .with_text_size(18.0)
-    .align_vertical(UnitPoint::CENTER)
+    .align_horizontal(UnitPoint::CENTER)
     .lens(CrabReaderState::reading_state);
 
     let sidebar_closed = Flex::column();
@@ -214,12 +214,12 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
 
     let sidebar = Either::new(
         |data: &CrabReaderState, _env| data.reading_state.sidebar_open,
-        Scroll::new(sidebar_open).vertical().fix_height(500.0),
+        Scroll::new(sidebar_open).vertical(),
         sidebar_closed,
     );
 
     Flex::column()
         .with_child(btn)
         .with_default_spacer()
-        .with_child(sidebar)
+        .with_flex_child(sidebar, 1.0)
 }
