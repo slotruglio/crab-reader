@@ -105,7 +105,6 @@ use druid::{Data, Lens};
 use epub::doc::EpubDoc;
 
 const NUMBER_OF_LINES: usize = 8;
-const FONT_SIZE: usize = 12;
 
 /// trait that describes the book reading functions
 pub trait BookReading {

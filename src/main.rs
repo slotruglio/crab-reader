@@ -1,5 +1,6 @@
 use components::book::{Book, BookReading, GUIBook};
 use components::book_details::BookDetails;
+use components::colors;
 use components::cover_library::CoverLibrary;
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
@@ -9,8 +10,8 @@ use components::reader_btns::ReaderBtn;
 use components::reader_view::{sidebar_widget, ReaderView};
 use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, UnitPoint,
-    Widget, WidgetExt, WindowDesc,
+    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
+    WidgetExt, WindowDesc,
 };
 use once_cell::sync::Lazy;
 use std::rc::Rc;
@@ -110,7 +111,7 @@ impl UserState {
 
 fn book_details_panel() -> impl Widget<CrabReaderState> {
     BookDetails::new()
-        .background(Color::GRAY)
+        .background(colors::ACCENT_GRAY)
         .rounded(10.0)
         .lens(CrabReaderState::library)
 }
@@ -123,9 +124,6 @@ fn title_sorter_btn() -> impl Widget<Library> {
         };
         format!("Title {}", arrow)
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(0, 0, 0))
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _: &Env| {
         let sort = data.get_sort_order();
@@ -147,9 +145,6 @@ fn author_sorter_btn() -> impl Widget<Library> {
         };
         format!("Author {}", arrow)
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(0, 0, 0))
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
         let sort = data.get_sort_order();
@@ -171,9 +166,6 @@ fn completion_sorter_btn() -> impl Widget<Library> {
         };
         format!("Completion {}", arrow)
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(0, 0, 0))
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
         let sort = data.get_sort_order();
@@ -205,7 +197,7 @@ fn picker_sort_by() -> impl Widget<Library> {
         .with_child(title_sorter_btn())
         .with_child(disabled_btn())
         .padding(5.0)
-        .background(Color::GRAY)
+        .background(colors::ACCENT_GRAY)
         .rounded(5.0)
         .padding(druid::Insets::uniform_xy(10.0, 5.0))
         .expand_width()
@@ -220,7 +212,7 @@ fn picker_filter_by() -> impl Widget<Library> {
         .with_child(Label::new("Filter by"))
         .with_child(text_edit)
         .padding(5.0)
-        .background(Color::GRAY)
+        .background(colors::ACCENT_GRAY)
         .rounded(5.0)
         .padding(druid::Insets::uniform_xy(10.0, 5.0))
         .expand_width()
@@ -242,7 +234,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         library_list.padding(5.0),
         library_cover,
     )
-    .background(Color::GRAY)
+    .background(colors::ACCENT_GRAY)
     .rounded(10.0)
     .padding(10.0);
 
@@ -261,11 +253,6 @@ fn build_ui() -> impl Widget<CrabReaderState> {
                     DisplayMode::Cover => "Passa a visualiazione a copertine".into(),
                 },
             )
-            .with_color(Color::rgb8(70, 70, 70))
-            .with_hot_color(Color::rgb8(50, 50, 50))
-            .with_active_color(Color::rgb8(20, 20, 20))
-            .with_text_size(24.0)
-            .with_text_color(Color::WHITE)
             .with_on_click(|ctx, data: &mut CrabReaderState, _| {
                 data.display_mode = match data.display_mode {
                     DisplayMode::List => DisplayMode::Cover,

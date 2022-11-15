@@ -1,16 +1,12 @@
-use druid::widget::{
-    Button, Container, CrossAxisAlignment, Either, Flex, Label, LineBreaking, List, ListIter,
-    MainAxisAlignment, RawLabel, Scroll, TextBox,
-};
-use druid::{Color, EventCtx, LensExt, TextAlignment, UnitPoint, Widget, WidgetExt, WidgetPod};
+use druid::widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox};
+use druid::{LensExt, TextAlignment, UnitPoint, Widget, WidgetExt};
 
-use crate::{CrabReaderState, Library, ReadingState};
+use crate::{CrabReaderState, ReadingState};
 
 use super::book::{BookReading, GUIBook};
 use super::chapter_selector::ChapterSelector;
 use super::library::GUILibrary;
 use super::rbtn::RoundedButton;
-use super::reader_btns::{chapter_label, ReaderBtn};
 
 use crate::MYENV;
 
@@ -211,10 +207,6 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
         data.sidebar_open = !data.sidebar_open;
         ctx.request_layout();
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
     .with_text_size(18.0)
     .align_vertical(UnitPoint::CENTER)
     .lens(CrabReaderState::reading_state);

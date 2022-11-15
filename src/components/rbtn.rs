@@ -3,6 +3,8 @@ use druid::{
     LifeCycle::HotChanged, RenderContext, Size, Widget,
 };
 
+use super::colors;
+
 pub struct RoundedButton<T> {
     label: Label<T>,
     label_size: Size,
@@ -26,12 +28,13 @@ impl<T: Data> RoundedButton<T> {
         Self {
             label,
             label_size: Size::ZERO,
-            color: Color::GRAY,
-            hot_color: Color::RED,
-            active_color: Color::GREEN,
+            color: colors::NORMAL_GRAY,
+            hot_color: colors::HOT_GRAY,
+            active_color: colors::ACTIVE_GRAY,
             status: ButtonStatus::Normal,
             on_click: Box::new(|_, _, _| {}),
         }
+        .with_text_color(colors::TEXT_WHITE)
     }
 
     pub fn dynamic(closure: impl Fn(&T, &Env) -> String + 'static) -> Self {

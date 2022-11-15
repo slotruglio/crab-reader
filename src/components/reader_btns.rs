@@ -4,7 +4,7 @@ use crate::utils::button_functions::{
 };
 use crate::CrabReaderState;
 use druid::widget::{Align, Label};
-use druid::{Color, WidgetExt};
+use druid::WidgetExt;
 
 use super::book::{BookReading, GUIBook};
 use super::rbtn::RoundedButton;
@@ -45,10 +45,6 @@ fn leave_btn() -> RoundedButton<CrabReaderState> {
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(24.0)
 }
 
@@ -62,10 +58,6 @@ fn edit_btn() -> RoundedButton<CrabReaderState> {
             "Modifica testo".into()
         }
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
     .with_text_size(24.0)
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         if data.reading_state.is_editing {
@@ -85,10 +77,6 @@ fn edit_btn() -> RoundedButton<CrabReaderState> {
 // button that let to go to save edited page
 fn save_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Salva modifiche")
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(18.0)
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             save_btn_fn(
@@ -102,10 +90,6 @@ fn save_btn() -> RoundedButton<CrabReaderState> {
 // button that let to go to undo last edit
 fn undo_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Annulla modifiche")
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(18.0)
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             undo_btn_fn(&mut data.reading_state);
@@ -126,10 +110,6 @@ fn next_btn() -> RoundedButton<CrabReaderState> {
                 true,
             );
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(18.0)
 }
 
@@ -146,10 +126,6 @@ fn back_btn() -> RoundedButton<CrabReaderState> {
                 false,
             );
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(18.0)
 }
 
@@ -165,10 +141,6 @@ fn views_btn() -> RoundedButton<CrabReaderState> {
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         data.reading_state.single_view = !data.reading_state.single_view;
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
     .with_text_size(24.0)
 }
 
@@ -237,10 +209,6 @@ fn chapters_list_btn() -> RoundedButton<CrabReaderState> {
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading_state.sidebar_open = !data.reading_state.sidebar_open;
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(18.0)
 }
 

@@ -1,17 +1,16 @@
-use std::{
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::{path::PathBuf, rc::Rc};
 
 use druid::{im::Vector, Data, Lens};
 
-use crate::utils::{epub_utils, dir_manager::{get_epub_dir, get_saved_books_dir}};
+use crate::utils::{
+    dir_manager::{get_epub_dir, get_saved_books_dir},
+    epub_utils,
+};
 
 use super::{
     book::{Book, GUIBook},
     library::GUILibrary,
 };
-
 
 pub struct LibraryFilterLens;
 

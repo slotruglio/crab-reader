@@ -1,8 +1,8 @@
-use druid::{widget::Label, Color, LifeCycleCtx, RenderContext, Widget, WidgetExt, WidgetPod};
+use druid::{widget::Label, Color, RenderContext, Widget, WidgetExt, WidgetPod};
 
 use crate::Library;
 
-use super::{book::BookReading, library::GUILibrary};
+use super::{book::BookReading, colors, library::GUILibrary};
 
 pub struct ChapterSelector {
     children: Vec<ChapterSelectorItem>,
@@ -28,7 +28,7 @@ impl ChapterSelector {
 impl ChapterSelectorItem {
     pub fn new(idx: usize) -> Self {
         let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1))
-            .with_text_color(Color::rgb8(255, 255, 255));
+            .with_text_color(colors::TEXT_WHITE);
         let clickable = label.on_click(move |ctx, data: &mut Library, _env| {
             data.get_selected_book_mut()
                 .unwrap()

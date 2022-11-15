@@ -4,11 +4,7 @@ use druid::{
     Target, TextLayout, UpdateCtx, Widget,
 };
 
-use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
-
-const SELECTED_BG_COLOR: Color = Color::rgb8(20, 20, 20);
-const HOT_BG_COLOR: Color = Color::rgb8(70, 70, 70);
-const NORMAL_BG_COLOR: Color = Color::rgb8(40, 40, 40);
+use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
 
 #[derive(Clone)]
 pub struct BookListing {
@@ -46,7 +42,7 @@ impl BookListing {
             data.get_number_of_pages()
         ));
 
-        layout.set_text_color(Color::WHITE);
+        layout.set_text_color(colors::TEXT_WHITE);
         layout.set_font(font);
         layout.set_wrap_width(ctx.size().width / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
@@ -75,7 +71,7 @@ impl BookListing {
 
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
-        layout.set_text_color(Color::WHITE);
+        layout.set_text_color(colors::TEXT_WHITE);
         layout.set_font(font.clone());
         layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
@@ -95,11 +91,11 @@ impl BookListing {
 
     fn get_bg_color(&self, data: &impl GUIBook) -> Color {
         if data.is_selected() {
-            SELECTED_BG_COLOR
+            colors::ACTIVE_GRAY
         } else if self.is_hot {
-            HOT_BG_COLOR
+            colors::HOT_GRAY
         } else {
-            NORMAL_BG_COLOR
+            colors::NORMAL_GRAY
         }
     }
 }

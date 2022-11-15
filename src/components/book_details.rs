@@ -1,6 +1,6 @@
 use druid::widget::{Flex, Label, LineBreaking};
 use druid::{
-    BoxConstraints, Color, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
+    BoxConstraints, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
     LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt,
     WidgetPod,
 };
@@ -8,6 +8,7 @@ use druid::{
 use crate::components::book::BookManagement;
 use crate::ENTERING_READING_MODE;
 
+use super::colors;
 use super::rbtn::RoundedButton;
 use super::{
     book::{Book, GUIBook},
@@ -31,7 +32,7 @@ impl BookDetails {
             .with_size(14.0);
 
         let mut header_label = Label::new("Dettagli del libro")
-            .with_text_color(Color::rgb8(0, 0, 0))
+            .with_text_color(colors::TEXT_BLACK)
             .with_font(header_font)
             .with_text_alignment(druid::TextAlignment::Start);
         header_label.set_line_break_mode(LineBreaking::WordWrap);
@@ -42,7 +43,7 @@ impl BookDetails {
                     format!("Titolo: {}", book.get_title().to_string())
                 })
         })
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .with_font(info_font.clone())
         .align_left()
         .padding(5.0);
@@ -53,7 +54,7 @@ impl BookDetails {
                     format!("Autore: {}", book.get_author().to_string())
                 })
         })
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .with_font(info_font.clone())
         .align_left()
         .padding(5.0);
@@ -65,7 +66,7 @@ impl BookDetails {
                 })
         })
         .with_font(info_font.clone())
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .align_left()
         .padding(5.0);
 
@@ -77,7 +78,7 @@ impl BookDetails {
                 })
         })
         .with_font(info_font.clone())
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .align_left()
         .padding(5.0);
 
@@ -89,20 +90,12 @@ impl BookDetails {
                 let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
                 ctx.submit_command(cmd.clone());
             })
-            .with_color(Color::rgb8(70, 70, 70))
-            .with_hot_color(Color::rgb8(50, 50, 50))
-            .with_active_color(Color::rgb8(20, 20, 20))
-            .with_text_color(Color::rgb8(220, 220, 220))
             .with_text_size(14.0);
 
         let add_fav_btn = RoundedButton::from_text("Aggiungi ai Preferiti")
             .with_on_click(|_: &mut EventCtx, _: &mut Library, _: &Env| {
                 println!("TODO: Implement me!!!")
             })
-            .with_color(Color::rgb8(70, 70, 70))
-            .with_hot_color(Color::rgb8(50, 50, 50))
-            .with_active_color(Color::rgb8(20, 20, 20))
-            .with_text_color(Color::rgb8(220, 220, 220))
             .with_text_size(14.0)
             .disabled();
 

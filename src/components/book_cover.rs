@@ -6,11 +6,8 @@ use druid::{
     LifeCycleCtx, PaintCtx, Rect, RenderContext, Size, Target, TextLayout, UpdateCtx, Widget,
 };
 
-use super::{book::GUIBook, library::SELECTED_BOOK_SELECTOR};
+use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
 
-const SELECTED_BG_COLOR: Color = Color::rgb8(20, 20, 20);
-const HOT_BG_COLOR: Color = Color::rgb8(70, 70, 70);
-const NORMAL_BG_COLOR: Color = Color::rgb8(40, 40, 40);
 pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
@@ -87,7 +84,7 @@ impl BookCover {
 
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
-        layout.set_text_color(Color::WHITE);
+        layout.set_text_color(colors::TEXT_WHITE);
         layout.set_font(font);
         layout.set_wrap_width(ctx.size().width - 2.5);
         layout.rebuild_if_needed(ctx.text(), env);
@@ -107,11 +104,11 @@ impl BookCover {
 
     fn get_bg_color(&self, data: &impl GUIBook) -> Color {
         if data.is_selected() {
-            SELECTED_BG_COLOR
+            colors::ACTIVE_GRAY
         } else if self.is_hot {
-            HOT_BG_COLOR
+            colors::BG_GRAY
         } else {
-            NORMAL_BG_COLOR
+            colors::NORMAL_GRAY
         }
     }
 }
