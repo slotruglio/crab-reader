@@ -17,11 +17,11 @@ pub fn edit_btn_fn(
     if !reading_state.is_editing {
         reading_state.is_editing = true;
         if reading_state.single_view {
-            reading_state.text_0 = book.get_page_of_chapter().to_string();
+            reading_state.text_0 = book.get_page_of_chapter();
         } else {
             let (text_0, text_1) = book.get_dual_pages();
-            reading_state.text_0 = text_0.to_string();
-            reading_state.text_1 = text_1.to_string();
+            reading_state.text_0 = text_0;
+            reading_state.text_1 = text_1;
         }
     } else {
         println!("DEBUG: EDIT BUTTON DISABLED");
@@ -71,7 +71,7 @@ pub fn change_page(
             book.get_path().to_string(),
             book.get_chapter_number(),
             book.get_current_page_number(),
-            book.get_page_of_chapter().to_string(),
+            book.get_page_of_chapter(),
             FontSize::from_f64(MYENV.lock().unwrap().font.size),
             false,
         )
@@ -87,7 +87,7 @@ pub fn save_btn_fn(
     book: &mut Book,
 ) {
     if reading_state.single_view {
-        if reading_state.text_0 != book.get_page_of_chapter().to_string() {
+        if reading_state.text_0 != book.get_page_of_chapter() {
             book.edit_text(reading_state.text_0.clone(), None);
         }
     } else {
@@ -100,7 +100,7 @@ pub fn save_btn_fn(
         book.get_path(), 
         book.get_chapter_number(), 
         book.get_current_page_number(), 
-        book.get_page_of_chapter().to_string(), 
+        book.get_page_of_chapter(), 
         FontSize::from_f64(MYENV.lock().unwrap().font.size), 
         true
     );

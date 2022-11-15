@@ -86,7 +86,6 @@ impl BookDetails {
             .with_on_click(|ctx, library: &mut Library, _: &Env| {
                 let current_book = library.get_selected_book_mut().unwrap();
                 current_book.load_chapter();
-                current_book.load_page();
                 let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
                 ctx.submit_command(cmd.clone());
             })

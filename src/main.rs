@@ -7,7 +7,7 @@ use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
-use components::reader_view::{sidebar_widget, ReaderView};
+use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget};
 use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
@@ -305,16 +305,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     })
     .with_text_size(24.0);
 
-    let current_chapter = Label::dynamic(|data: &CrabReaderState, _env: &_| {
-        format!(
-            "Chapter {}",
-            data.library
-                .get_selected_book()
-                .unwrap()
-                .get_chapter_number()
-                .to_string()
-        )
-    })
+    let current_chapter = current_chapter_widget()
     .with_text_size(16.0)
     .center();
 
@@ -418,10 +409,12 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             notif if notif.is(ENTERING_READING_MODE) => {
                 data.reading = true;
                 data.reading_state.enable(
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_page_of_chapter(),
+                    Rc::new(
+                        data.library
+                            .get_selected_book()
+                            .unwrap()
+                            .get_page_of_chapter()
+                    ),
                 );
                 Handled::Yes
             }

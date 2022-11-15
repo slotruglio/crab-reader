@@ -61,7 +61,6 @@ fn single_view_widget() -> Container<CrabReaderState> {
                 .get_selected_book()
                 .unwrap()
                 .get_page_of_chapter()
-                .to_string()
         })
         .with_text_color(font_color)
         .with_font(font)
@@ -105,7 +104,6 @@ fn dual_view_widget() -> Container<CrabReaderState> {
                         .unwrap()
                         .get_dual_pages()
                         .0
-                        .to_string()
                 })
                 .with_text_color(font_color.clone())
                 .with_font(font.clone())
@@ -125,7 +123,6 @@ fn dual_view_widget() -> Container<CrabReaderState> {
                         .unwrap()
                         .get_dual_pages()
                         .1
-                        .to_string()
                 })
                 .with_text_color(font_color)
                 .with_font(font)
@@ -179,20 +176,19 @@ pub fn title_widget() -> impl Widget<CrabReaderState> {
     .center()
 }
 
-pub fn current_chapter_widget() -> impl Widget<CrabReaderState> {
+pub fn current_chapter_widget() -> Label<CrabReaderState> {
     Label::dynamic(|data: &CrabReaderState, _env: &_| {
+        // + 1
+        let display_number = data.library
+            .get_selected_book()
+            .unwrap()
+            .get_chapter_number() + 1;
+            
         format!(
             "Chapter {}",
-            data.library
-                .get_selected_book()
-                .unwrap()
-                .get_chapter_number()
-                .to_string()
+            display_number
         )
     })
-    .with_text_size(16.0)
-    .padding(10.0)
-    .center()
 }
 
 pub fn sidebar_widget() -> impl Widget<CrabReaderState> {

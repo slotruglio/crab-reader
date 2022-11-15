@@ -144,9 +144,10 @@ impl Widget<Library> for ChapterSelectorItem {
             }
             druid::Event::MouseDown(_) => {
                 if self.hot {
+                    println!("Current index: {}", self.idx);
                     data.get_selected_book_mut()
                         .unwrap()
-                        .set_chapter_number(self.idx, false);
+                        .set_chapter_number(self.idx, true);
                     ctx.request_paint();
                 }
             }
