@@ -366,8 +366,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(title)
         .with_child(current_chapter)
         .with_spacer(20.0)
-        .with_child(text)
-        .with_flex_spacer(5.0)
+        .with_flex_child(text, 1.0)
         .with_child(footer)
         .padding(15.0);
 
