@@ -3,6 +3,7 @@ use crate::utils::button_functions::{
     change_page, edit_btn_fn, page_number_switch_button, save_btn_fn, undo_btn_fn,
 };
 use crate::CrabReaderState;
+use crate::utils::envmanager::FontSize;
 use druid::widget::{Align, Label};
 use druid::WidgetExt;
 
@@ -198,7 +199,7 @@ fn pages_number_btn() -> RoundedButton<CrabReaderState> {
             }
         }
     })
-    .with_text_size(12.0)
+    .with_text_size(FontSize::SMALL.to_f64())
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         page_number_switch_button(&mut data.reading_state);
     })

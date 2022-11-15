@@ -33,14 +33,8 @@ impl MyEnv {
 
         //SET font_size, font_family
         let font_size_string = json.get("font_size").unwrap().as_str().unwrap();
-        let font_size_numeric: f64;
-
-        match font_size_string {
-            "small" => font_size_numeric = 12.0,
-            "medium" => font_size_numeric = 16.0,
-            "large" => font_size_numeric = 20.0,
-            _ => font_size_numeric = 16.0,
-        }
+        
+        let font_size_numeric: f64 = FontSize::from(font_size_string).to_f64();
 
         new_env.font = FontDescriptor::new(MyEnv::get_font_family(
             json.get("font_family").unwrap().to_string(),
@@ -178,24 +172,11 @@ impl MyEnv {
     }
 
     fn get_font_size(value: String) -> f64 {
-        match value.as_str() {
-            "small" => 12.0,
-            "medium" => 16.0,
-            "large" => 20.0,
-            _ => 16.0,
-        }
+        FontSize::from(value).to_f64()
     }
 
     fn get_font_size_reverse(value: f64) -> String {
-        if value == 12.0 {
-            return "small".to_string();
-        } else if value == 16.0 {
-            return "medium".to_string();
-        } else if value == 20.0 {
-            return "large".to_string();
-        } else {
-            return "medium".to_string();
-        }
+        FontSize::from(value).to_string()
     }
 }
 
@@ -213,15 +194,28 @@ impl FontSize {
         }
     }
 
-    pub fn to_string(&self) -> String {
-        match self {
-            FontSize::SMALL => "small".to_string(),
-            FontSize::MEDIUM => "medium".to_string(),
-            FontSize::LARGE => "large".to_string(),
-        }
-    }
+}
 
-    pub fn from_string(value: String) -> FontSize {
+impl PartialEq for FontSize {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_f64() == other.to_f64()
+    }
+}
+
+impl From<f64> for FontSize {
+    fn from(value: f64) -> Self {
+        if value == 12.0 {
+            return FontSize::SMALL;
+        } else if value == 16.0 {
+            return FontSize::MEDIUM;
+        } else if value == 20.0 {
+            return FontSize::LARGE;
+        }
+        FontSize::MEDIUM
+    }
+}
+impl From<String> for FontSize {
+    fn from(value: String) -> Self {
         match value.as_str() {
             "small" => FontSize::SMALL,
             "medium" => FontSize::MEDIUM,
@@ -229,16 +223,23 @@ impl FontSize {
             _ => FontSize::MEDIUM,
         }
     }
-
-    pub fn from_f64(value: f64) -> FontSize {
-        if value == 12.0 {
-            return FontSize::SMALL;
-        } else if value == 16.0 {
-            return FontSize::MEDIUM;
-        } else if value == 20.0 {
-            return FontSize::LARGE;
-        } else {
-            return FontSize::MEDIUM;
+}
+impl From<&str> for FontSize {
+    fn from(value: &str) -> Self {
+        match value {
+            "small" => FontSize::SMALL,
+            "medium" => FontSize::MEDIUM,
+            "large" => FontSize::LARGE,
+            _ => FontSize::MEDIUM,
+        }
+    }
+}
+impl ToString for FontSize {
+    fn to_string(&self) -> String {
+        match self {
+            FontSize::SMALL => "small".to_string(),
+            FontSize::MEDIUM => "medium".to_string(),
+            FontSize::LARGE => "large".to_string(),
         }
     }
 }

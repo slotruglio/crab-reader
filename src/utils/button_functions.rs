@@ -72,7 +72,7 @@ pub fn change_page(
             book.get_chapter_number(),
             book.get_current_page_number(),
             book.get_page_of_chapter(),
-            FontSize::from_f64(MYENV.lock().unwrap().font.size),
+            FontSize::from(MYENV.lock().unwrap().font.size),
             false,
         )
         .unwrap();
@@ -101,7 +101,7 @@ pub fn save_btn_fn(
         book.get_chapter_number(), 
         book.get_current_page_number(), 
         book.get_page_of_chapter(), 
-        FontSize::from_f64(MYENV.lock().unwrap().font.size), 
+        FontSize::from(MYENV.lock().unwrap().font.size), 
         true
     );
     println!("DEBUG: SAVED");
@@ -133,7 +133,7 @@ pub fn change_chapter(book: &mut Book, chapter_number: usize) {
         book.get_chapter_number(),
         book.get_current_page_number(),
         book.get_page_of_chapter(),
-        FontSize::from_f64(MYENV.lock().unwrap().font.size),
+        FontSize::from(MYENV.lock().unwrap().font.size),
         false,
     )
     .unwrap();

@@ -16,7 +16,7 @@ use druid::{
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::envmanager::MyEnv;
+use utils::envmanager::{MyEnv, FontSize};
 
 mod components;
 mod utils;
@@ -354,7 +354,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             }
         }
     })
-    .with_text_size(12.0);
+    .with_text_size(FontSize::SMALL.to_f64());
 
     let header_btns = Flex::row()
         .with_child(edit_btn)

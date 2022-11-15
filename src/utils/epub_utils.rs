@@ -320,7 +320,7 @@ pub fn calculate_number_of_pages(
 
     // save number of pages per chapter in metadata
     metadata.insert(
-        format!("pages_per_chapter_{}", FontSize::from_f64(font_size).to_string()),
+        format!("pages_per_chapter_{}", FontSize::from(font_size).to_string()),
         format!(
             "[{}]",
             pages_per_chapter_start_end
@@ -369,7 +369,7 @@ pub fn get_number_of_pages(path: &str) -> usize {
 pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
     let metadata = get_metadata_of_book(path);
 
-    let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from_f64(MYENV.lock().unwrap().font.size).to_string()).as_str());
+    let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from(MYENV.lock().unwrap().font.size).to_string()).as_str());
     if let Some(pages_per_chapter) = result {
         let vec_as_str = pages_per_chapter.to_string();
         vec_as_str
