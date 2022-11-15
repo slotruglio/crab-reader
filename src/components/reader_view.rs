@@ -7,6 +7,7 @@ use druid::{Color, EventCtx, LensExt, TextAlignment, UnitPoint, Widget, WidgetEx
 use crate::{CrabReaderState, Library, ReadingState};
 
 use super::book::{BookReading, GUIBook};
+use super::chapter_selector::ChapterSelector;
 use super::library::GUILibrary;
 use super::rbtn::RoundedButton;
 use super::reader_btns::{chapter_label, ReaderBtn};
@@ -219,11 +220,9 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
     .lens(CrabReaderState::reading_state);
 
     let sidebar_closed = Flex::column();
-    let chapters_list = ChaptersList { children: vec![] };
 
-    let sidebar_open = Flex::column()
-        .with_child(chapters_list)
-        .lens(CrabReaderState::library);
+    let cs = ChapterSelector::new().lens(CrabReaderState::library);
+    let sidebar_open = Flex::column().with_child(cs);
 
     let sidebar = Either::new(
         |data: &CrabReaderState, _env| data.reading_state.sidebar_open,
@@ -232,88 +231,4 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
     );
 
     Flex::column().with_child(btn).with_child(sidebar)
-}
-
-struct ChaptersList {
-    children: Vec<WidgetPod<Library, Box<dyn Widget<Library>>>>,
-}
-
-impl Widget<Library> for ChaptersList {
-    fn event(
-        &mut self,
-        ctx: &mut EventCtx,
-        event: &druid::Event,
-        data: &mut Library,
-        env: &druid::Env,
-    ) {
-        for pod in self.children.iter_mut() {
-            pod.event(ctx, event, data, env);
-        }
-    }
-
-    fn lifecycle(
-        &mut self,
-        ctx: &mut druid::LifeCycleCtx,
-        event: &druid::LifeCycle,
-        data: &Library,
-        env: &druid::Env,
-    ) {
-        while data.get_selected_book().unwrap().get_number_of_chapters() > self.children.len() {
-            let idx = self.children.len();
-            self.children.push(WidgetPod::new(Box::new(
-                Label::dynamic(move |_: &Library, _env: &_| format!("Captiolo {}", idx + 1))
-                    .on_click(move |ctx, data: &mut Library, _env| {
-                        data.get_selected_book_mut()
-                            .unwrap()
-                            .set_chapter_number(idx, false);
-                        ctx.request_layout();
-                    }),
-            )));
-        }
-
-        for pod in self.children.iter_mut() {
-            pod.lifecycle(ctx, event, data, env);
-        }
-    }
-
-    fn update(
-        &mut self,
-        ctx: &mut druid::UpdateCtx,
-        _: &Library,
-        data: &Library,
-        env: &druid::Env,
-    ) {
-        for pod in self.children.iter_mut() {
-            pod.update(ctx, data, env);
-        }
-    }
-
-    fn layout(
-        &mut self,
-        ctx: &mut druid::LayoutCtx,
-        bc: &druid::BoxConstraints,
-        data: &Library,
-        env: &druid::Env,
-    ) -> druid::Size {
-        let mut h = 0.0;
-        for pod in self.children.iter_mut() {
-            let size = pod.layout(ctx, bc, data, env);
-            pod.set_origin(ctx, data, env, (0.0, h).into());
-            h += size.height;
-        }
-
-        let w = if bc.is_width_bounded() {
-            bc.max().width
-        } else {
-            400.0
-        };
-
-        (w, h).into()
-    }
-
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
-        for pod in self.children.iter_mut() {
-            pod.paint(ctx, data, env);
-        }
-    }
 }
