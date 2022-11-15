@@ -222,5 +222,8 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
         sidebar_closed,
     );
 
-    Flex::column().with_child(btn).with_child(sidebar)
+    Flex::column()
+        .with_child(btn)
+        .with_default_spacer()
+        .with_child(sidebar)
 }
