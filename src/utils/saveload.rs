@@ -1,13 +1,13 @@
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::BufReader,
-    path::Path,
     sync::mpsc::channel,
 };
 
+use rust_fuzzy_search::fuzzy_compare;
 use serde_json::{json, Value};
 
-use crate::{MYENV, utils::dir_manager::{get_savedata_path, get_saved_books_dir}};
+use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
 
 use super::envmanager::FontSize;
 
@@ -51,13 +51,7 @@ pub fn save_data<T: Into<String> + Clone>(
         println!("DEBUG file doesn't exist");
         create_dir_all(savedata_path.parent().unwrap()).unwrap();
     }
-
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(get_savedata_path())?;
-
+    // create a vec of edited chapters
     let mut set = json[book_path.clone().into()]["edited_chapters"].as_array().unwrap_or(&vec![]).iter().map(|x| x.as_u64().unwrap() as usize).collect::<Vec<usize>>();
     println!("DEBUG set before push: {:?}", set);
     if edited {
@@ -66,6 +60,7 @@ pub fn save_data<T: Into<String> + Clone>(
             println!("DEBUG set after push: {:?}", set);
         }
     }
+    // json value for the book
     let value = json!(
         {
             "chapter":chapter,
@@ -77,6 +72,14 @@ pub fn save_data<T: Into<String> + Clone>(
     );
 
     json[book_path.into()] = value;
+
+    // open file to write
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_savedata_path())?;
+
     serde_json::to_writer_pretty(file, &json)?;
 
     Ok(())
@@ -125,13 +128,25 @@ pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn evaluate_numeric_options(chapter: Option<u64>, page: Option<u64>) -> Option<(usize, usize)> {
+    let chapter = chapter?;
+    let page = page?;
+    Some((chapter as usize, page as usize))
+}
+fn evaluate_str_options<'a>(font_size: Option<&str>, saved_content: Option<&'a str>) -> Option<(FontSize, &'a str)> {
+    let font_size = font_size?;
+    let saved_content = saved_content?;
+    Some((FontSize::from(font_size.to_string()), saved_content))
+}
+
 /// function to load the last read page of a chapter given the path of the book
 pub fn load_data<T: Into<String> + Clone>(
     book_path: T,
 ) -> Result<(usize, usize, f64), Box<dyn std::error::Error>> {
     let mut chapter = 1;
     let mut page = 0;
-    let mut font_size = FontSize::MEDIUM.to_f64();
+    let mut font_size = FontSize::MEDIUM;
+    let mut content = "";
 
     if let Ok(file) = File::open(get_savedata_path()) {
         let reader = BufReader::new(file);
@@ -144,15 +159,46 @@ pub fn load_data<T: Into<String> + Clone>(
                 .get("page").and_then(|v| v.as_u64());
             let saved_font_size = value
                 .get("font_size").and_then(|v| v.as_str());
+            let saved_content = value
+                .get("content").and_then(|v| v.as_str());
 
-            if saved_chapter_value.is_some() && saved_page_value.is_some() && saved_font_size.is_some() {
-                chapter = saved_chapter_value.unwrap() as usize;
-                page = saved_page_value.unwrap() as usize;
-                font_size = FontSize::from_string(saved_font_size.unwrap().to_string()).to_f64();
-            } else {
-                chapter = 1;
-                page = 0;
-                font_size = FontSize::MEDIUM.to_f64();
+            // assign values considering the same font size
+            if let Some((c, s)) = evaluate_numeric_options(saved_chapter_value, saved_page_value) {
+                chapter = c;
+                page = s;
+            }
+            if let Some((f, c)) = evaluate_str_options(saved_font_size, saved_content){
+                font_size = f;
+                content = c;
+            }
+
+            let app_font_size = FontSize::from(MYENV.lock().unwrap().font.size);
+            // check if the application font size (env) is different from the saved one
+            if app_font_size != font_size {
+                println!("DEBUG font size is different");
+                // changed number of pages, need to "find" the last read page
+                let pages = split_chapter_in_vec(
+                    book_path.clone().into().as_str(),
+                    Option::None,
+                    chapter,
+                    8,
+                    app_font_size.to_f64(),
+                    800.0,
+                    300.0,
+                );
+
+                let mut best_page = (0, 0.0);
+                for (i, page) in pages.iter().enumerate() {
+                    let result = fuzzy_compare(
+                        content,
+                        page.as_str(),
+                    );
+                    if result > best_page.1 {
+                        best_page = (i, result);
+                    }
+                }
+
+                page = best_page.0;
             }
         };
     }
@@ -161,9 +207,9 @@ pub fn load_data<T: Into<String> + Clone>(
         &chapter,
         &page,
         book_path.into(),
-        font_size
+        font_size.to_f64()
     );
-    Ok((chapter, page, font_size))
+    Ok((chapter, page, font_size.to_f64()))
 }
 
 pub fn get_chapter(
