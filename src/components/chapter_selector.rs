@@ -115,6 +115,8 @@ impl Widget<Library> for ChapterSelector {
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
+        let rect = ctx.size().to_rect();
+        ctx.fill(rect, &colors::BG_GRAY);
         for child in self.children.iter_mut() {
             child.paint(ctx, data, env);
         }
@@ -177,16 +179,16 @@ impl Widget<Library> for ChapterSelectorItem {
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
         // todo: chiedre a Sam un metodo per avere il chapter attualmete in lettura
         // ( è possibile solo tramite library )
-        let opacity = if self.idx == 0 {
-            200
+        let color = if self.idx == data.get_selected_book().unwrap().get_chapter_number() {
+            colors::ACTIVE_GRAY
         } else if ctx.is_hot() {
-            100
+            colors::HOT_GRAY
         } else {
-            10
+            colors::NORMAL_GRAY
         };
 
-        let rect = self.pod_size.to_rect();
-        ctx.fill(rect, &Color::rgba8(0, 0, 0, opacity));
+        // let rect = ctx.size().to_rect();
+        // ctx.fill(rect, &color);
         self.inner.paint(ctx, data, env);
     }
 }
