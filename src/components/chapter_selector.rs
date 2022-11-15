@@ -1,4 +1,6 @@
-use druid::{widget::Label, Color, RenderContext, Widget, WidgetExt, WidgetPod};
+use druid::{
+    widget::Label, Affine, Color, MouseEvent, RenderContext, Size, Widget, WidgetExt, WidgetPod,
+};
 
 use crate::Library;
 
@@ -11,7 +13,8 @@ pub struct ChapterSelector {
 struct ChapterSelectorItem {
     idx: usize,
     inner: WidgetPod<Library, Box<dyn Widget<Library>>>,
-    pod_size: druid::Size,
+    pod_size: Size,
+    hot: bool,
 }
 
 impl ChapterSelector {
@@ -29,18 +32,13 @@ impl ChapterSelectorItem {
     pub fn new(idx: usize) -> Self {
         let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1))
             .with_text_color(colors::TEXT_WHITE);
-        let clickable = label.on_click(move |ctx, data: &mut Library, _env| {
-            data.get_selected_book_mut()
-                .unwrap()
-                .set_chapter_number(idx, false);
-            ctx.request_layout();
-        });
-        let boxed = Box::new(clickable);
+        let boxed = Box::new(label);
 
         Self {
             idx,
             inner: WidgetPod::new(boxed),
-            pod_size: druid::Size::ZERO,
+            pod_size: Size::ZERO,
+            hot: false,
         }
     }
 }
@@ -56,6 +54,7 @@ impl Widget<Library> for ChapterSelector {
         for child in self.children.iter_mut() {
             child.event(ctx, event, data, env);
         }
+        ctx.request_paint();
     }
 
     fn lifecycle(
@@ -99,10 +98,15 @@ impl Widget<Library> for ChapterSelector {
         let mut h = 0.0;
         for child in self.children.iter_mut() {
             let pos = druid::Point::new(0.0, h);
-            let size = child.layout(ctx, bc, data, env);
-            h += size.height;
+            let pod_h = child.layout(ctx, bc, data, env).height;
+            let pod_w = if bc.is_width_bounded() {
+                bc.max().width
+            } else {
+                400.0
+            };
+            h += pod_h;
             child.inner.set_origin(ctx, data, env, pos);
-            child.pod_size = size;
+            child.pod_size = (pod_w, pod_h).into();
         }
 
         let w = if bc.is_width_bounded() {
@@ -115,8 +119,6 @@ impl Widget<Library> for ChapterSelector {
     }
 
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
-        let rect = ctx.size().to_rect();
-        ctx.fill(rect, &colors::BG_GRAY);
         for child in self.children.iter_mut() {
             child.paint(ctx, data, env);
         }
@@ -132,6 +134,24 @@ impl Widget<Library> for ChapterSelectorItem {
         env: &druid::Env,
     ) {
         self.inner.event(ctx, event, data, env);
+        match event {
+            druid::Event::MouseMove(mouse) => {
+                let pos = mouse.pos;
+                let y = pos.y;
+                let h0 = self.pod_size.height * self.idx as f64;
+                let h1 = h0 + self.pod_size.height;
+                self.hot = y >= h0 && y <= h1;
+            }
+            druid::Event::MouseDown(_) => {
+                if self.hot {
+                    data.get_selected_book_mut()
+                        .unwrap()
+                        .set_chapter_number(self.idx, false);
+                    ctx.request_paint();
+                }
+            }
+            _ => {}
+        }
     }
 
     fn lifecycle(
@@ -141,12 +161,6 @@ impl Widget<Library> for ChapterSelectorItem {
         data: &Library,
         env: &druid::Env,
     ) {
-        match event {
-            druid::LifeCycle::HotChanged(_) => {
-                ctx.request_paint();
-            }
-            _ => {}
-        }
         self.inner.lifecycle(ctx, event, data, env);
     }
 
@@ -179,16 +193,22 @@ impl Widget<Library> for ChapterSelectorItem {
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
         // todo: chiedre a Sam un metodo per avere il chapter attualmete in lettura
         // ( è possibile solo tramite library )
+        let rect = self.pod_size.to_rect();
+        let h = rect.height();
+        let dh = self.idx as f64 * h;
+
         let color = if self.idx == data.get_selected_book().unwrap().get_chapter_number() {
             colors::ACTIVE_GRAY
-        } else if ctx.is_hot() {
+        } else if self.hot {
             colors::HOT_GRAY
         } else {
-            colors::NORMAL_GRAY
+            colors::BG_GRAY
         };
 
-        // let rect = ctx.size().to_rect();
-        // ctx.fill(rect, &color);
+        ctx.with_save(|ctx| {
+            ctx.transform(Affine::translate((0.0, dh)));
+            ctx.fill(rect, &color);
+        });
         self.inner.paint(ctx, data, env);
     }
 }
