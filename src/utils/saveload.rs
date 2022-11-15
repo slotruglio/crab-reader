@@ -7,7 +7,7 @@ use std::{
 use rust_fuzzy_search::fuzzy_compare;
 use serde_json::{json, Value};
 
-use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
+use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
 
 use super::envmanager::FontSize;
 
@@ -226,13 +226,13 @@ pub fn get_chapter_bytes(
     chapter: usize,
     extension: FileExtension,
 ) -> Result<Vec<u8>, String> {
-    let ext = match extension {
-        FileExtension::TXT => "txt",
-        FileExtension::HTML => "html",
-        FileExtension::EPUB => "epub",
+    let (path, ext) = match extension {
+        FileExtension::TXT => (get_edited_books_dir(),"txt"),
+        FileExtension::HTML => (get_saved_books_dir(),"html"),
+        FileExtension::EPUB => (get_epub_dir(),"epub"),
     };
 
-    let filename = get_saved_books_dir()
+    let filename = path
         .join(&folder_name.into())
         .join(format!("page_{}.{}", chapter, ext));
     println!("filename from where get page: {:?}", filename);

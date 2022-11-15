@@ -32,6 +32,13 @@ pub fn get_saved_books_dir() -> PathBuf {
     data_dir
 }
 
+/// Get the path to the directory where the user's edited books are stored.
+pub fn get_edited_books_dir() -> PathBuf {
+    let mut data_dir = get_app_dir();
+    data_dir.push("edited_books");
+    data_dir
+}
+
 /// Get the path to the directory where the user's EPUB are stored.
 pub fn get_epub_dir() -> PathBuf {
     let mut data_dir = get_app_dir();

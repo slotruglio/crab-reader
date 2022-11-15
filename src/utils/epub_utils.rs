@@ -1,4 +1,4 @@
-use crate::{MYENV, utils::envmanager::FontSize};
+use crate::{MYENV, utils::{envmanager::FontSize, dir_manager::get_edited_books_dir}};
 
 use super::{saveload::{get_chapter_bytes, FileExtension}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
 use epub::doc::EpubDoc;
@@ -107,7 +107,7 @@ pub fn edit_chapter(
     text: impl Into<String>,
 ) -> Result<(), Box<dyn error::Error>> {
     let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
+    let mut path_name: PathBuf = get_edited_books_dir().join(folder_name);
     println!("DEBUG: Folder path: {:?}", path_name);
     std::fs::create_dir_all(&path_name)?;
     path_name = path_name.join(format!("page_{}.txt", chapter_number));
