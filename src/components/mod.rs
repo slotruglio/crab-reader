@@ -3,6 +3,7 @@ pub mod book_cover;
 pub mod book_details;
 pub mod book_listing;
 pub mod chapter_selector;
+pub mod colors;
 pub mod cover_library;
 pub mod library;
 pub mod listing_library;
