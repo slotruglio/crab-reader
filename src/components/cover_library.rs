@@ -97,25 +97,20 @@ impl Widget<Library> for CoverLibrary {
         let book_w = BOOK_WIDGET_SIZE.width;
         let book_h = BOOK_WIDGET_SIZE.height;
         let width = bc.max().width;
-        let min_spacing = 20.0;
-
-        // To avoid many casts, one is used for floating point ops and the othe for usize ops
-        let mut fbooks_per_row = (width / book_w)
-            .min(data.get_number_of_visible_books() as f64)
-            .max(1.0)
-            .floor();
-        let mut ubooks_per_row = fbooks_per_row as usize;
-
-        let mut leftover_space = width - (fbooks_per_row * book_w);
-        let mut spacing = leftover_space / (fbooks_per_row + 1.0);
+        dbg!(data.get_number_of_visible_books(), width);
+        let min_spacing = 30.0;
         let mut cnt = 0;
 
-        if spacing <= min_spacing {
-            fbooks_per_row = (fbooks_per_row - 1.0).max(1.0);
-            ubooks_per_row = fbooks_per_row as usize;
-            leftover_space = bc.max().width - (fbooks_per_row * book_w);
-            spacing = leftover_space / (fbooks_per_row + 1.0);
-        }
+        let books_per_row = ((width - min_spacing) / (book_w + min_spacing)).floor() as usize;
+        let rows =
+            (data.get_number_of_visible_books() as f64 / books_per_row as f64).ceil() as usize;
+        dbg!((width - (books_per_row as f64 * book_w)) / (books_per_row as f64 + 1.0));
+        let spacing = (width - (books_per_row as f64 * book_w)) / (books_per_row as f64 + 1.0);
+        let xspacing = ((width - (data.get_number_of_visible_books() as f64 * book_w))
+            / (data.get_number_of_visible_books() as f64 + 1.0))
+            .max(spacing);
+
+        dbg!(spacing, xspacing);
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
@@ -124,10 +119,10 @@ impl Widget<Library> for CoverLibrary {
                     continue;
                 }
 
-                let row = cnt / ubooks_per_row;
-                let col = cnt % ubooks_per_row;
+                let row = cnt / books_per_row;
+                let col = cnt % books_per_row;
 
-                let x = spacing + (col as f64 * (book_w + spacing));
+                let x = xspacing + (col as f64 * (book_w + xspacing));
                 let y = spacing + (row as f64 * (book_h + spacing));
 
                 let size = Size::new(book_w, book_h);
@@ -138,9 +133,8 @@ impl Widget<Library> for CoverLibrary {
             }
         }
 
-        let nrows = (data.get_number_of_visible_books() / ubooks_per_row + 1) as f64;
-        let w = fbooks_per_row * book_w + (fbooks_per_row + 1.0) * spacing;
-        let h = nrows * (book_h + spacing) + spacing;
+        let w = books_per_row as f64 * book_w + (books_per_row as f64 + 1.0) * spacing;
+        let h = rows as f64 * (book_h + spacing) + spacing;
         (w, h).into()
     }
 
