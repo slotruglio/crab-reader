@@ -111,6 +111,12 @@ fn next_btn() -> RoundedButton<CrabReaderState> {
                 true,
             );
         })
+        .disabled_if(|data: &CrabReaderState, _env: &_| {
+            let book = data.library.get_selected_book().unwrap();
+            let last_page = book.get_number_of_pages() - 1;
+            // if last page -> disable button
+            book.get_cumulative_current_page_number() == last_page
+        })
         .with_text_size(18.0)
 }
 
@@ -126,6 +132,11 @@ fn back_btn() -> RoundedButton<CrabReaderState> {
                 data.reading_state.single_view,
                 false,
             );
+        })
+        .disabled_if(|data: &CrabReaderState, _env: &_|{
+            let book = data.library.get_selected_book().unwrap();
+            // if first page -> disable button
+            book.get_cumulative_current_page_number() == 0
         })
         .with_text_size(18.0)
 }
