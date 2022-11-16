@@ -1,7 +1,7 @@
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::BufReader,
-    sync::mpsc::channel,
+    sync::mpsc::channel, path::Path,
 };
 
 use rust_fuzzy_search::fuzzy_compare;
@@ -128,6 +128,44 @@ pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn remove_edited_chapter<T: Into<String>+Clone>(book_path: T, chapter_number: usize) {
+    let savedata_path = get_savedata_path();
+    let mut json = json!({});
+    if let Ok(opened_file) = File::open(savedata_path.clone()) {
+        println!("DEBUG file exists");
+        let reader = BufReader::new(opened_file);
+        if let Ok(content) = serde_json::from_reader(reader) {
+            json = content
+        };
+    }
+
+    let mut set = json[book_path.clone().into()]["edited_chapters"]
+        .as_array().unwrap_or(&vec![])
+        .iter().map(|x| x.as_u64().unwrap() as usize).collect::<Vec<usize>>();
+    
+    
+    if let Ok(index) = set.binary_search(&chapter_number) {
+        set.remove(index);
+    } else {
+        return;
+    }
+
+    json[book_path.clone().into()]["edited_chapters"] = json!(set);
+
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_savedata_path()).unwrap();
+
+    serde_json::to_writer_pretty(file, &json).unwrap();
+    let book: String = book_path.into();
+    let folder_name = Path::new(&book).file_stem().unwrap().to_str().unwrap();
+    let path = get_edited_books_dir().join(folder_name).join(format!("page_{}.txt", chapter_number));
+    let _ = std::fs::remove_file(path);
+
+}
+
 fn evaluate_numeric_options(chapter: Option<u64>, page: Option<u64>) -> Option<(usize, usize)> {
     let chapter = chapter?;
     let page = page?;
@@ -139,9 +177,35 @@ fn evaluate_str_options<'a>(font_size: Option<&str>, saved_content: Option<&'a s
     Some((FontSize::from(font_size.to_string()), saved_content))
 }
 
+/// function to get the most similar page of chapter to the last read one
+fn search_page<T: Into<String> + Clone>(book_path: T, chapter_number: usize, text: &str) -> usize {
+    let pages = split_chapter_in_vec(
+        book_path.clone().into().as_str(),
+        Option::None,
+        chapter_number,
+        8,
+        MYENV.lock().unwrap().font.size,
+        800.0,
+        300.0,
+    );
+
+    let mut best_page = (0, 0.0);
+    for (i, page) in pages.iter().enumerate() {
+        let result = fuzzy_compare(
+            text,
+            page.as_str(),
+        );
+        if result > best_page.1 {
+            best_page = (i, result);
+        }
+    }
+    best_page.0
+}
+
 /// function to load the last read page of a chapter given the path of the book
 pub fn load_data<T: Into<String> + Clone>(
     book_path: T,
+    force_fuzzy: bool,
 ) -> Result<(usize, usize, f64), Box<dyn std::error::Error>> {
     let mut chapter = 1;
     let mut page = 0;
@@ -174,31 +238,10 @@ pub fn load_data<T: Into<String> + Clone>(
 
             let app_font_size = FontSize::from(MYENV.lock().unwrap().font.size);
             // check if the application font size (env) is different from the saved one
-            if app_font_size != font_size {
+            if (app_font_size != font_size) || force_fuzzy {
                 println!("DEBUG font size is different");
-                // changed number of pages, need to "find" the last read page
-                let pages = split_chapter_in_vec(
-                    book_path.clone().into().as_str(),
-                    Option::None,
-                    chapter,
-                    8,
-                    app_font_size.to_f64(),
-                    800.0,
-                    300.0,
-                );
-
-                let mut best_page = (0, 0.0);
-                for (i, page) in pages.iter().enumerate() {
-                    let result = fuzzy_compare(
-                        content,
-                        page.as_str(),
-                    );
-                    if result > best_page.1 {
-                        best_page = (i, result);
-                    }
-                }
-
-                page = best_page.0;
+                // need to "find" the last read page
+                page = search_page(book_path.clone(), chapter, content);
             }
         };
     }

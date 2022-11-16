@@ -1,6 +1,6 @@
 use crate::utils::envmanager::FontSize;
-use crate::utils::epub_utils::{calculate_number_of_pages, edit_chapter, split_chapter_in_vec};
-use crate::utils::saveload::load_data;
+use crate::utils::epub_utils::{calculate_number_of_pages, edit_chapter, split_chapter_in_vec, get_number_of_pages, get_cumulative_current_page_number};
+use crate::utils::saveload::{load_data, remove_edited_chapter};
 use crate::utils::{epub_utils, text_descriptor};
 use crate::MYENV;
 use derivative::Derivative;
@@ -220,12 +220,12 @@ impl Book {
             .map_or(1, |x| x.parse::<usize>().unwrap_or_default());
 
         let (chapter_number, current_page, _font_size) =
-            load_data(path_str).unwrap_or((1, 0, FontSize::MEDIUM.to_f64()));
+            load_data(path_str, false).unwrap_or((1, 0, FontSize::MEDIUM.to_f64()));
 
-        let number_of_pages = epub_utils::get_number_of_pages(path_str);
+        let number_of_pages = get_number_of_pages(path_str);
 
         let cumulative_current_page =
-            epub_utils::get_cumulative_current_page_number(path_str, chapter_number, current_page);
+            get_cumulative_current_page_number(path_str, chapter_number, current_page);
         /*
         // these functions have to be called when the you click to read the book
         let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
@@ -366,8 +366,7 @@ impl BookReading for Book {
 
     fn get_page_of_chapter(&self) -> String {
         //possibile entry point
-        //possibile entry point
-        self.chapter_text_split[self.current_page].clone()
+        self.chapter_text_split.get(self.current_page).unwrap().clone()
     }
 
     fn get_dual_pages(&self) -> (String, String) {
@@ -487,6 +486,23 @@ impl BookManagement for Book {
 
     fn load_chapter(&mut self) {
         self.chapter_text_split = self.split_chapter_in_pages(true);
+        if self.current_page > self.chapter_text_split.len() - 1 {
+            if let Ok((_, index, _)) = load_data(self.get_path(), true) {
+                self.current_page = index;
+                remove_edited_chapter(self.get_path(), self.chapter_number);
+                let result = calculate_number_of_pages(
+                    self.path.as_str(),
+                    NUMBER_OF_LINES,
+                    MYENV.lock().unwrap().font.size,
+                );
+                self.number_of_pages = result.unwrap().0;
+                self.cumulative_current_page = get_cumulative_current_page_number(
+                    self.get_path().as_str(), 
+                    self.chapter_number, 
+                    self.current_page
+                );
+            }
+        } 
     }
 
 }

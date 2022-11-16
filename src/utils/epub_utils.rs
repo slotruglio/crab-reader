@@ -1,6 +1,6 @@
 use crate::{MYENV, utils::{envmanager::FontSize, dir_manager::get_edited_books_dir}};
 
-use super::{saveload::{get_chapter_bytes, FileExtension}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
+use super::{saveload::{get_chapter_bytes, FileExtension, remove_edited_chapter}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
 use epub::doc::EpubDoc;
 use html2text::from_read;
 use serde_json::json;
@@ -218,8 +218,11 @@ pub fn get_chapter_text_utf8(path: impl Into<String>, chapter_number: usize) -> 
         println!("DEBUG: reading from txt file");
         return text;
     }
-    // try to read from html files
+    // at this point we know that the chapter is not edited,
+    // so we update the savedata in the case in which the user edited the book
+    // and then try to read from html files
     else if let Ok(text) = get_chapter_bytes(folder_name, chapter_number, FileExtension::HTML) {
+        remove_edited_chapter(path, chapter_number);
         println!("DEBUG: reading from html files");
         let text = Cursor::new(text);
         return from_read(text, 100).as_bytes().to_vec();
