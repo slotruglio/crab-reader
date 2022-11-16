@@ -13,6 +13,7 @@ pub struct RoundedButton<T> {
     active_color: Color,
     status: ButtonStatus,
     on_click: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,
+    disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
 }
 
 #[derive(PartialEq)]
@@ -33,6 +34,7 @@ impl<T: Data> RoundedButton<T> {
             active_color: colors::ACTIVE_GRAY,
             status: ButtonStatus::Normal,
             on_click: Box::new(|_, _, _| {}),
+            disable_condition: Box::new(|_, _| false),
         }
         .with_text_color(colors::TEXT_WHITE)
     }
@@ -89,11 +91,22 @@ impl<T: Data> RoundedButton<T> {
         self.label.set_text_color(color.into());
         self
     }
+
+    pub fn disabled_if(mut self, closure: impl Fn(&T, &Env) -> bool + 'static) -> Self {
+        self.disable_condition = Box::new(closure);
+        self
+    }
 }
 
 impl<T: Data> Widget<T> for RoundedButton<T> {
     fn event(&mut self, ctx: &mut druid::EventCtx, event: &druid::Event, data: &mut T, env: &Env) {
         self.label.event(ctx, event, data, env);
+        let disable = (self.disable_condition)(data, env);
+        if disable {
+            self.status = ButtonStatus::Disabled;
+        } else {
+            self.status = ButtonStatus::Normal;
+        };
 
         if self.is_disabled() {
             ctx.set_cursor(&NotAllowed);
