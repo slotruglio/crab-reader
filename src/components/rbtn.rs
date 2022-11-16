@@ -74,11 +74,6 @@ impl<T: Data> RoundedButton<T> {
         self.status == ButtonStatus::Disabled
     }
 
-    pub fn disabled(mut self) -> Self {
-        self.status = ButtonStatus::Disabled;
-        self
-    }
-
     pub fn with_on_click(
         mut self,
         on_click: impl Fn(&mut EventCtx, &mut T, &Env) + 'static,

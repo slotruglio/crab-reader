@@ -96,7 +96,7 @@ impl BookDetails {
                 println!("TODO: Implement me!!!")
             })
             .with_text_size(14.0)
-            .disabled();
+            .disabled_if(|_, _| true);
 
         let mut btn_ctls = Flex::row()
             .with_flex_child(keep_reading_btn, 1.0)
