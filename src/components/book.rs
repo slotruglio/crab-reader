@@ -1,16 +1,16 @@
 use crate::utils::envmanager::FontSize;
-use crate::utils::epub_utils::{calculate_number_of_pages, edit_chapter, split_chapter_in_vec, get_number_of_pages, get_cumulative_current_page_number};
+use crate::utils::epub_utils::{
+    calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
+    get_number_of_pages, split_chapter_in_vec,
+};
 use crate::utils::saveload::{load_data, remove_edited_chapter};
 use crate::utils::{epub_utils, text_descriptor};
 use crate::MYENV;
-use derivative::Derivative;
 use druid::im::Vector;
 use druid::image::io::Reader as ImageReader;
-use std::cmp::min;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
-use std::sync::{Arc, RwLock};
 
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
@@ -91,10 +91,10 @@ pub trait GUIBook: PartialEq + Data {
     fn unselect(&mut self);
 
     /// Returns the cover of this book
-    fn get_cover_image(&self) -> Option<Arc<Vec<u8>>>;
+    fn get_cover_image(&self) -> Option<Rc<Vec<u8>>>;
 
-    /// Uh?
-    fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>>;
+    /// Sets the cover image
+    fn set_cover_image(&mut self, cover_image: Vec<u8>);
 
     fn is_filtered_out(&self) -> bool;
 
@@ -161,13 +161,11 @@ pub trait BookManagement {
     fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
 
     fn load_chapter(&mut self);
-
 }
 
 /// Struct that models EPUB file
 /// Metadata are attributes
-#[derive(Derivative, Clone, Data, Lens)]
-#[derivative(PartialEq)]
+#[derive(PartialEq, Clone, Data, Lens)]
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
@@ -182,8 +180,7 @@ pub struct Book {
     path: Rc<String>,
     chapter_text_split: Vector<String>,
     description: Rc<String>,
-    #[derivative(PartialEq = "ignore")]
-    cover_img: Arc<RwLock<Option<Arc<Vec<u8>>>>>,
+    cover_img: Option<Rc<Vec<u8>>>,
     filtered_out: bool,
 }
 
@@ -232,7 +229,7 @@ impl Book {
         let chapter_page_text = chapter_text[0..200].to_string();
         */
 
-        let mut this = Book {
+        Book {
             title: title.into(),
             author: author.into(),
             lang: lang.into(),
@@ -246,30 +243,9 @@ impl Book {
             selected: false,
             description: desc.into(),
             chapter_text_split: Vector::new(),
-            cover_img: Arc::from(RwLock::from(None)),
+            cover_img: None,
             filtered_out: false,
-        };
-        this.load_cover_image();
-        this
-    }
-
-    fn load_cover_image(&mut self) {
-        let path = self.get_path();
-        let arc = self.get_cover_image_setter();
-        let _title = self.get_title();
-        std::thread::spawn(move || {
-            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
-            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
-            let reader = ImageReader::new(ImageCursor::new(cover))
-                .with_guessed_format()
-                .map_err(|e| e.to_string())
-                .unwrap();
-            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
-            let thumbnail = image.thumbnail_exact(150, 250);
-            let rgb = thumbnail.to_rgb8().to_vec();
-            let mut lock = arc.write().unwrap();
-            *lock = Some(Arc::from(rgb));
-        });
+        }
     }
 
     pub fn get_lang(&self) -> Rc<String> {
@@ -366,7 +342,10 @@ impl BookReading for Book {
 
     fn get_page_of_chapter(&self) -> String {
         //possibile entry point
-        self.chapter_text_split.get(self.current_page).unwrap().clone()
+        self.chapter_text_split
+            .get(self.current_page)
+            .unwrap()
+            .clone()
     }
 
     fn get_dual_pages(&self) -> (String, String) {
@@ -374,23 +353,23 @@ impl BookReading for Book {
 
         let odd = self.current_page % 2;
         let left_page = if odd == 0 {
-            self.chapter_text_split.get(self.current_page).map_or(
-                String::default(), |s| s.clone()
-            )
+            self.chapter_text_split
+                .get(self.current_page)
+                .map_or(String::default(), |s| s.clone())
         } else {
-            self.chapter_text_split.get(self.current_page - 1).map_or(
-                String::default(), |s| s.clone()
-            )
+            self.chapter_text_split
+                .get(self.current_page - 1)
+                .map_or(String::default(), |s| s.clone())
         };
 
         let right_page = if odd == 0 {
-            self.chapter_text_split.get(self.current_page + 1).map_or(
-                String::default(), |s| s.clone()
-            )
+            self.chapter_text_split
+                .get(self.current_page + 1)
+                .map_or(String::default(), |s| s.clone())
         } else {
-            self.chapter_text_split.get(self.current_page).map_or(
-                String::default(), |s| s.clone()
-            )
+            self.chapter_text_split
+                .get(self.current_page)
+                .map_or(String::default(), |s| s.clone())
         };
 
         (left_page, right_page)
@@ -421,12 +400,15 @@ impl BookManagement for Book {
             MYENV.lock().unwrap().font.size,
             width,
             height,
-        ).into_iter().map(|s| s.to_string()).collect()
+        )
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect()
     }
 
     fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S) {
         let mut split = self.chapter_text_split.clone();
-        
+
         if let Some(other_new_text) = other_new_text.into() {
             // two pages
             let odd = self.current_page % 2;
@@ -439,7 +421,6 @@ impl BookManagement for Book {
                 split[self.current_page - 1] = new_text;
                 split[self.current_page] = other_new_text;
             }
-
         } else {
             // one page
             split[self.current_page] = new_text;
@@ -497,14 +478,13 @@ impl BookManagement for Book {
                 );
                 self.number_of_pages = result.unwrap().0;
                 self.cumulative_current_page = get_cumulative_current_page_number(
-                    self.get_path().as_str(), 
-                    self.chapter_number, 
-                    self.current_page
+                    self.get_path().as_str(),
+                    self.chapter_number,
+                    self.current_page,
                 );
             }
-        } 
+        }
     }
-
 }
 
 impl GUIBook for Book {
@@ -615,14 +595,7 @@ impl GUIBook for Book {
         Ok(rgb.into())
     }
 
-    fn get_cover_image(&self) -> Option<Arc<Vec<u8>>> {
-        if let Ok(cover) = self.cover_img.read() {
-            return (*cover).clone();
-        }
-        None
-    }
-
-    fn get_cover_image_setter(&self) -> Arc<RwLock<Option<Arc<Vec<u8>>>>> {
+    fn get_cover_image(&self) -> Option<Rc<Vec<u8>>> {
         self.cover_img.clone()
     }
 
@@ -632,5 +605,9 @@ impl GUIBook for Book {
 
     fn set_filtered_out(&mut self, filtered_out: bool) {
         self.filtered_out = filtered_out;
+    }
+
+    fn set_cover_image(&mut self, cover_image: Vec<u8>) {
+        self.cover_img = Some(Rc::new(cover_image));
     }
 }

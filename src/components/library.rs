@@ -41,4 +41,10 @@ pub trait GUILibrary<B: GUIBook + PartialEq + Data> {
 
     /// Unselct the currently selected book
     fn unselect_current_book(&mut self);
+
+    /// Schedule the loading of a book.
+    fn schedule_cover_loading(&mut self, path: impl Into<String>, idx: usize);
+
+    /// Check if any covers are loaded and set the cover for the corresponding book
+    fn check_covers_loaded(&mut self) -> bool;
 }

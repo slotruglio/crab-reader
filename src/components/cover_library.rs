@@ -35,6 +35,10 @@ impl Widget<Library> for CoverLibrary {
             }
         }
 
+        if data.check_covers_loaded() {
+            ctx.request_update();
+        }
+
         match event {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
@@ -78,7 +82,6 @@ impl Widget<Library> for CoverLibrary {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(old_book) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {
-                    // TIL: let Some && let Some is unstable
                     if old_book != book {
                         (*inner).update(ctx, book, env);
                     }
@@ -97,20 +100,16 @@ impl Widget<Library> for CoverLibrary {
         let book_w = BOOK_WIDGET_SIZE.width;
         let book_h = BOOK_WIDGET_SIZE.height;
         let width = bc.max().width;
-        dbg!(data.get_number_of_visible_books(), width);
         let min_spacing = 30.0;
         let mut cnt = 0;
 
         let books_per_row = ((width - min_spacing) / (book_w + min_spacing)).floor() as usize;
         let rows =
             (data.get_number_of_visible_books() as f64 / books_per_row as f64).ceil() as usize;
-        dbg!((width - (books_per_row as f64 * book_w)) / (books_per_row as f64 + 1.0));
         let spacing = (width - (books_per_row as f64 * book_w)) / (books_per_row as f64 + 1.0);
         let xspacing = ((width - (data.get_number_of_visible_books() as f64 * book_w))
             / (data.get_number_of_visible_books() as f64 + 1.0))
             .max(spacing);
-
-        dbg!(spacing, xspacing);
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {

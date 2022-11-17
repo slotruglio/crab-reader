@@ -1,6 +1,18 @@
-use std::{path::PathBuf, rc::Rc};
+use derivative::Derivative;
+use druid::image::io::Reader as ImageReader;
+use std::{
+    io::Cursor,
+    path::PathBuf,
+    rc::Rc,
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc,
+    },
+};
+use threadpool::ThreadPool;
 
 use druid::{im::Vector, Data, Lens};
+use epub::doc::EpubDoc;
 
 use crate::utils::{
     dir_manager::{get_epub_dir, get_saved_books_dir},
@@ -28,13 +40,17 @@ impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
     }
 }
 
-#[derive(Clone, Lens, PartialEq, Data)]
+#[derive(Clone, Derivative, Lens, Data)]
+#[derivative(PartialEq)]
 pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
     filter_by: Rc<String>,
     visible_books: usize,
+    #[data(ignore)]
+    #[derivative(PartialEq = "ignore")]
+    cover_loader: Arc<CoverLoader>,
 }
 
 impl MockupLibrary<Book> {
@@ -45,11 +61,15 @@ impl MockupLibrary<Book> {
             sorted_by: SortBy::Title,
             filter_by: String::default().into(),
             visible_books: 0,
+            cover_loader: Arc::from(CoverLoader::default()),
         };
+
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
                 let path: String = path.to_str().unwrap().to_string();
-                lib.add_book(path);
+                let idx = lib.books.len();
+                lib.add_book(&path);
+                lib.schedule_cover_loading(&path, idx);
             }
         }
         lib
@@ -151,6 +171,43 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         }
         self.selected_book = None;
     }
+
+    fn schedule_cover_loading(&mut self, path: impl Into<String>, idx: usize) {
+        let path = path.into();
+        let tx = self.cover_loader.tx.clone();
+        self.cover_loader.pool.execute(move || {
+            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
+            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
+            let reader = ImageReader::new(Cursor::new(cover))
+                .with_guessed_format()
+                .map_err(|e| e.to_string())
+                .unwrap();
+            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
+            let thumbnail = image.thumbnail_exact(150, 250);
+            let rgb = thumbnail.to_rgb8().to_vec();
+            let cr = CoverResult {
+                idx,
+                cover: Some(rgb),
+            };
+            if let Ok(_) = tx.send(cr) {
+                ()
+            }
+        });
+    }
+
+    fn check_covers_loaded(&mut self) -> bool {
+        let mut loaded = false;
+        while let Ok(cr) = self.cover_loader.rx.try_recv() {
+            let book = self.get_book_mut(cr.idx);
+            if let Some(book) = book {
+                if let Some(cover) = cr.cover {
+                    book.set_cover_image(cover);
+                    loaded = true;
+                }
+            }
+        }
+        loaded
+    }
 }
 
 #[derive(Clone, PartialEq, Data)]
@@ -235,5 +292,31 @@ impl MockupLibrary<Book> {
             }
         }
         self.visible_books = cnt;
+    }
+}
+
+struct CoverResult {
+    idx: usize,
+    cover: Option<Vec<u8>>,
+}
+
+unsafe impl Send for CoverResult {}
+unsafe impl Sync for CoverResult {}
+
+struct CoverLoader {
+    pool: ThreadPool,
+    tx: Sender<CoverResult>,
+    rx: Receiver<CoverResult>,
+}
+
+impl Default for CoverLoader {
+    fn default() -> Self {
+        let (tx, rx) = mpsc::channel();
+        let pool = ThreadPool::new(4);
+        Self {
+            pool,
+            tx: tx.into(),
+            rx: rx.into(),
+        }
     }
 }
