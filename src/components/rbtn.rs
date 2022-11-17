@@ -16,7 +16,7 @@ pub struct RoundedButton<T> {
     disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 enum ButtonStatus {
     Normal,
     Hot,
@@ -54,7 +54,6 @@ impl<T: Data> RoundedButton<T> {
         self
     }
 
-    /// The hot color is the color for when the button is hovered
     pub fn with_hot_color(mut self, color: impl Into<Color>) -> Self {
         self.hot_color = color.into();
         self
@@ -96,16 +95,6 @@ impl<T: Data> RoundedButton<T> {
 impl<T: Data> Widget<T> for RoundedButton<T> {
     fn event(&mut self, ctx: &mut druid::EventCtx, event: &druid::Event, data: &mut T, env: &Env) {
         self.label.event(ctx, event, data, env);
-        let disable = (self.disable_condition)(data, env);
-        if disable {
-            self.status = ButtonStatus::Disabled;
-        } else {
-            self.status = ButtonStatus::Normal;
-        };
-
-        if self.is_disabled() {
-            ctx.set_cursor(&NotAllowed);
-        }
 
         match event {
             Event::MouseDown(_) => {
@@ -113,7 +102,6 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
                     return;
                 }
                 self.status = ButtonStatus::Active;
-                ctx.request_paint();
                 (self.on_click)(ctx, data, env);
             }
             Event::MouseUp(_) => {
@@ -121,7 +109,6 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
                     return;
                 }
                 self.status = ButtonStatus::Hot;
-                ctx.request_paint();
             }
             _ => {}
         }
@@ -155,6 +142,17 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
 
     fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
         self.label.update(ctx, old_data, data, env);
+
+        let disable = (self.disable_condition)(data, env);
+        if disable {
+            self.status = ButtonStatus::Disabled;
+            ctx.set_cursor(&NotAllowed);
+        } else if ctx.is_hot() {
+            self.status = ButtonStatus::Hot;
+        } else {
+            self.status = ButtonStatus::Normal;
+            ctx.clear_cursor();
+        };
     }
 
     fn layout(
