@@ -1,0 +1,50 @@
+- is_favorite (Cocco+Sam)
+- Flex footer in read mode (Sam)
+- Sistemare sto porcoddio di default text color (Gab)
+- Mettere qualcosa per poter utilizzare l'OCR (Gab)
+    - Colonna a destra del testo
+        - Fisico -> Virtuale (OCR)
+        - Virtuale -> Fisico (nchar / 1024)
+- Sistemare flex read/edit (Cocco)
+- Context Menù per modificare le impostazioni (Misto)
+    - Scheletro (Cocco)
+    - Seconda Finestra (Cocco)
+    - Tab per recentemente letti? (???)
+    - Tab per preferiti? (???)
+    - Tab per leggere/rimuovere libri? (Gab)
+    - Cambio lingua (per localizzazione) (Gab)
+    - Altro (__)
+- Testare home folder su Linux (Gab)
+- Gestione del tema (Gab)
+- Colori migliori (Tutti)
+    - Temizzati (Cocco+Gab)
+- Tipografia consistente (Cocco+Sam)
+- Sistemare le frecce nel sorting (Cocco) (Copiare da Gab?)
+- Key Controls (Cocco)
+- Background decente per il testo del libro (Cocco+Gab)
+    - O va bene così?
+- Icona dell'app (Gray)
+- Threadpool per caricare le cover (Cocco)
+- Sistemare la folder structure che non ha un cazzo di senso (Tutti)
+    - Separare widget da dati e utils da widget
+- Passare da Label a RichText per visualizzare il testo (Gab+Sam)
+    - Doloroso ma necessario
+- Genere del libro (Boh? Sam?)
+    - Tramite richiesta HTTP? a chi?
+    - Serializzato? (si spera di sì)
+    - Se questo è fattibile, lo è anche una sinossi?
+    - Thread vs Async
+        - Tokio?
+- Note/Appunti del libro? (Sam)
+- Localizzazione (Gab)
+
+
+
+
+
+
+
+
+
+
+- I TEST
