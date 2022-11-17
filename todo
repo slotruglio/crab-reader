@@ -24,7 +24,6 @@
 - Background decente per il testo del libro (Cocco+Gab)
     - O va bene così?
 - Icona dell'app (Gray)
-- Threadpool per caricare le cover (Cocco)
 - Sistemare la folder structure che non ha un cazzo di senso (Tutti)
     - Separare widget da dati e utils da widget
 - Passare da Label a RichText per visualizzare il testo (Gab+Sam)
@@ -37,14 +36,7 @@
         - Tokio?
 - Note/Appunti del libro? (Sam)
 - Localizzazione (Gab)
-
-
-
-
-
-
-
-
-
-
 - I TEST
+
+SVOLTE:
+- Threadpool per caricare le cover (Cocco)
