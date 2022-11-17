@@ -1,5 +1,5 @@
 use druid::widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox};
-use druid::{LensExt, TextAlignment, UnitPoint, Widget, WidgetExt};
+use druid::{LensExt, TextAlignment, UnitPoint, Widget, WidgetExt, FontDescriptor, Color};
 
 use crate::{CrabReaderState, ReadingState};
 
@@ -18,12 +18,16 @@ pub enum ReaderView {
 }
 
 impl ReaderView {
-    pub fn get_view(&self) -> impl Widget<CrabReaderState> {
+    pub fn get_view(&self) -> Container<CrabReaderState> {
+        let myenv = MYENV.lock().unwrap();
+        let font = myenv.font.clone();
+        let font_color = myenv.font_color.clone();
+
         match self {
-            ReaderView::Single => single_view_widget(),
-            ReaderView::SingleEdit => single_view_edit_widget(),
-            ReaderView::Dual => dual_view_widget(),
-            ReaderView::DualEdit => dual_view_edit_widget(),
+            ReaderView::Single => single_view_widget(font, font_color),
+            ReaderView::SingleEdit => single_view_edit_widget(font, font_color),
+            ReaderView::Dual => dual_view_widget(font, font_color),
+            ReaderView::DualEdit => dual_view_edit_widget(font, font_color),
         }
     }
     /// Returns a widget with the correct widget to show page(s) in reading or edit mode
@@ -50,10 +54,7 @@ impl ReaderView {
 }
 
 // single page view for text reader
-fn single_view_widget() -> Container<CrabReaderState> {
-    let myenv = MYENV.lock().unwrap();
-    let font = myenv.font.clone();
-    let font_color = myenv.font_color.clone();
+fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
 
     let view = Scroll::new(
         Label::dynamic(|data: &CrabReaderState, _env: &_| {
@@ -73,10 +74,7 @@ fn single_view_widget() -> Container<CrabReaderState> {
 }
 
 // single page view for text editing
-fn single_view_edit_widget() -> Container<CrabReaderState> {
-    let myenv = MYENV.lock().unwrap();
-    let font = myenv.font.clone();
-    let font_color = myenv.font_color.clone();
+fn single_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
 
     let text_box = TextBox::multiline()
         .with_text_color(font_color)
@@ -90,10 +88,7 @@ fn single_view_edit_widget() -> Container<CrabReaderState> {
 }
 
 // dual page view for text reader
-fn dual_view_widget() -> Container<CrabReaderState> {
-    let myenv = MYENV.lock().unwrap();
-    let font = myenv.font.clone();
-    let font_color = myenv.font_color.clone();
+fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
 
     let views = Flex::row()
         .with_flex_child(
@@ -138,10 +133,7 @@ fn dual_view_widget() -> Container<CrabReaderState> {
 }
 
 // dual page view for text editing
-fn dual_view_edit_widget() -> Container<CrabReaderState> {
-    let myenv = MYENV.lock().unwrap();
-    let font = myenv.font.clone();
-    let font_color = myenv.font_color.clone();
+fn dual_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
 
     let text_box_page_0 = TextBox::multiline()
         .with_text_color(font_color.clone())

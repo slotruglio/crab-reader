@@ -307,25 +307,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let undo_changes_btn = ReaderBtn::Undo.button();
     let save_changes_btn = ReaderBtn::Save.button();
 
-    let current_page = Label::dynamic(|data: &CrabReaderState, _env: &_| {
-        let page_number = data
-            .library
-            .get_selected_book()
-            .unwrap()
-            .get_cumulative_current_page_number();
-        let odd = page_number % 2;
-
-        if data.reading_state.single_view {
-            format!("Page {}", page_number)
-        } else {
-            if odd == 0 {
-                format!("Page {}-{}", page_number, page_number + 1)
-            } else {
-                format!("Page {}-{}", page_number - 1, page_number)
-            }
-        }
-    })
-    .with_text_size(FontSize::SMALL.to_f64());
+    let current_page = ReaderBtn::PageNumberSwitch.button();
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
