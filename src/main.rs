@@ -7,7 +7,7 @@ use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
-use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget};
+use components::reader_view::{current_chapter_widget, sidebar_widget, ReaderView};
 use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
@@ -16,7 +16,7 @@ use druid::{
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::envmanager::{MyEnv, FontSize};
+use utils::envmanager::{FontSize, MyEnv};
 
 mod components;
 mod utils;
@@ -24,6 +24,8 @@ type Library = MockupLibrary<Book>;
 
 pub const ENTERING_READING_MODE: Selector<()> = Selector::new("reading-mode.on");
 pub const LEAVING_READING_MODE: Selector<()> = Selector::new("reading-mode.off");
+const UP_ARROW: &str = " ↑";
+const DOWN_ARROW: &str = " ↓";
 
 //Create a global ENV variable
 #[allow(dead_code)]
@@ -104,10 +106,11 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
 fn title_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
-            SortBy::Title => "v",
-            _ => "^",
+            SortBy::Title => DOWN_ARROW,
+            SortBy::TitleRev => UP_ARROW,
+            _ => "",
         };
-        format!("Titolo {}", arrow)
+        format!("Titolo{}", arrow)
     })
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _: &Env| {
@@ -125,10 +128,11 @@ fn title_sorter_btn() -> impl Widget<Library> {
 fn author_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
-            SortBy::Author => "v",
-            _ => "^",
+            SortBy::Author => DOWN_ARROW,
+            SortBy::AuthorRev => UP_ARROW,
+            _ => "",
         };
-        format!("Autore {}", arrow)
+        format!("Autore{}", arrow)
     })
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
@@ -146,10 +150,11 @@ fn author_sorter_btn() -> impl Widget<Library> {
 fn completion_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
-            SortBy::PercRead => "v",
-            _ => "^",
+            SortBy::PercRead => DOWN_ARROW,
+            SortBy::PercReadRev => UP_ARROW,
+            _ => "",
         };
-        format!("Progresso {}", arrow)
+        format!("Progresso{}", arrow)
     })
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
@@ -284,9 +289,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     })
     .with_text_size(24.0);
 
-    let current_chapter = current_chapter_widget()
-    .with_text_size(16.0)
-    .center();
+    let current_chapter = current_chapter_widget().with_text_size(16.0).center();
 
     let sidebar = sidebar_widget();
     let text = Flex::row()
@@ -360,14 +363,12 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
         match cmd {
             notif if notif.is(ENTERING_READING_MODE) => {
                 data.reading = true;
-                data.reading_state.enable(
-                    Rc::new(
-                        data.library
-                            .get_selected_book()
-                            .unwrap()
-                            .get_page_of_chapter()
-                    ),
-                );
+                data.reading_state.enable(Rc::new(
+                    data.library
+                        .get_selected_book()
+                        .unwrap()
+                        .get_page_of_chapter(),
+                ));
                 Handled::Yes
             }
             notif if notif.is(LEAVING_READING_MODE) => {
