@@ -138,13 +138,13 @@ fn dual_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<C
     let text_box_page_0 = TextBox::multiline()
         .with_text_color(font_color.clone())
         .with_font(font.clone())
-        .with_placeholder("Text editing is not yet implemented")
+        .with_placeholder("There is no page here... but you can add one!")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_0));
 
     let text_box_page_1 = TextBox::multiline()
         .with_text_color(font_color)
         .with_font(font)
-        .with_placeholder("Text editing is not yet implemented")
+        .with_placeholder("There is no page here... but you can add one!")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_1));
 
     let views = Flex::row()
