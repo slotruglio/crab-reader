@@ -1,6 +1,6 @@
 use crate::{MYENV, utils::{envmanager::FontSize, dir_manager::get_edited_books_dir}};
 
-use super::{saveload::{get_chapter_bytes, FileExtension, remove_edited_chapter}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
+use super::{saveload::{get_chapter_bytes, FileExtension, remove_edited_chapter}, dir_manager::{get_saved_books_dir, get_saved_covers_dir, get_metadata_path}};
 use epub::doc::EpubDoc;
 use html2text::from_read;
 use serde_json::json;
@@ -125,13 +125,10 @@ pub fn edit_chapter(
 }
 
 pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
-    let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
-    println!("DEBUG: Folder path: {:?}", path_name);
-    std::fs::create_dir_all(&path_name)?;
-    let mut book = EpubDoc::new(path)?;
 
-    path_name = path_name.join("metadata.json");
+    let mut book = EpubDoc::new(path)?;
+    let path_name = get_metadata_path(&path.to_string());
+
     let mut metadata_file = File::create(&path_name).unwrap();
     let metadata_map = get_metadata_from_epub(&book)?;
 
@@ -166,13 +163,7 @@ pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
 }
 
 pub fn extract_metadata(path: &str) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
-    let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-    println!("DEBUG: Folder name: {}", folder_name);
-    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
-    println!("DEBUG: Folder path: {:?}", path_name);
-    std::fs::create_dir_all(&path_name)?;
-
-    path_name = path_name.join("metadata.json");
+    let path_name = get_metadata_path(&path.to_string());
     let mut metadata_file = File::create(&path_name).unwrap();
     let book = EpubDoc::new(path)?;
     let metadata_map = get_metadata_from_epub(&book)?;
@@ -266,11 +257,7 @@ pub fn get_chapter_text_utf8(path: impl Into<String>, chapter_number: usize) -> 
 }
 
 pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
-    let book_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-
-    let metadata_path = get_saved_books_dir()
-        .join(book_name)
-        .join("metadata.json");
+    let metadata_path = get_metadata_path(&path.to_string());
     if let Ok(metadata_file) = File::open(metadata_path) {
         let reader = BufReader::new(metadata_file);
         if let Ok(metadata) = serde_json::from_reader(reader) {
@@ -354,9 +341,7 @@ pub fn calculate_number_of_pages(
     println!("DEBUG metadata: {:?}", metadata);
 
     let json = json!(metadata);
-    let metadata_path = get_saved_books_dir()
-        .join(Path::new(path).file_stem().unwrap().to_str().unwrap())
-        .join("metadata.json");
+    let metadata_path = get_metadata_path(&path.to_string());
 
     let metadata_file = OpenOptions::new()
         .create(true)

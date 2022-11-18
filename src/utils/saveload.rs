@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 
 use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
 
-use super::envmanager::FontSize;
+use super::{envmanager::FontSize, dir_manager::get_metadata_path};
 
 pub enum FileExtension {
     TXT,
@@ -213,9 +213,7 @@ pub fn save_favorite<T: Into<String> + Clone>(book_path: T, favorite: bool) -> R
     metadata.insert("favorite".to_string(), if favorite { "true" } else { "false" }.to_string());
 
     let json = json!(metadata);
-    let metadata_path = get_saved_books_dir()
-        .join(Path::new(&book_path.into()).file_stem().unwrap().to_str().unwrap())
-        .join("metadata.json");
+    let metadata_path = get_metadata_path(&book_path.into());
 
     let metadata_file = OpenOptions::new()
         .create(true)
