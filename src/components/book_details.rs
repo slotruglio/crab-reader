@@ -92,11 +92,12 @@ impl BookDetails {
             .with_text_size(14.0);
 
         let add_fav_btn = RoundedButton::from_text("Aggiungi ai Preferiti")
-            .with_on_click(|_: &mut EventCtx, _: &mut Library, _: &Env| {
-                println!("TODO: Implement me!!!")
+            .with_on_click(|_: &mut EventCtx, library: &mut Library, _: &Env| {
+                // this implementation is just for testing purposes
+                // @Cocco: implement this
+                library.get_selected_book_mut().unwrap().set_favorite(true);
             })
-            .with_text_size(14.0)
-            .disabled_if(|_, _| true);
+            .with_text_size(14.0);
 
         let mut btn_ctls = Flex::row()
             .with_flex_child(keep_reading_btn, 1.0)

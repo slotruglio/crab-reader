@@ -3,7 +3,7 @@ use crate::utils::epub_utils::{
     calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
     get_number_of_pages, split_chapter_in_vec,
 };
-use crate::utils::saveload::{load_data, remove_edited_chapter};
+use crate::utils::saveload::{load_data, remove_edited_chapter, save_favorite};
 use crate::utils::{epub_utils, text_descriptor};
 use crate::MYENV;
 use druid::im::Vector;
@@ -161,6 +161,8 @@ pub trait BookManagement {
     fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
 
     fn load_chapter(&mut self);
+
+    fn set_favorite(&mut self, favorite: bool);
 }
 
 /// Struct that models EPUB file
@@ -178,6 +180,7 @@ pub struct Book {
     author: Rc<String>,
     lang: Rc<String>,
     path: Rc<String>,
+    is_favorite: bool,
     chapter_text_split: Vector<String>,
     description: Rc<String>,
     cover_img: Option<Rc<Vec<u8>>>,
@@ -211,7 +214,10 @@ impl Book {
             .get("desc")
             .unwrap_or(&"No description".to_string())
             .to_string();
-
+        let is_fav = book_map
+            .get("favorite")
+            .unwrap_or(&"false".to_string())
+            .parse::<bool>().unwrap();
         let number_of_chapters = book_map
             .get("chapters")
             .map_or(1, |x| x.parse::<usize>().unwrap_or_default());
@@ -240,6 +246,7 @@ impl Book {
             cumulative_current_page: cumulative_current_page,
             number_of_pages: number_of_pages,
             idx: 0, // How to set early?
+            is_favorite: is_fav,
             selected: false,
             description: desc.into(),
             chapter_text_split: Vector::new(),
@@ -483,6 +490,20 @@ impl BookManagement for Book {
                     self.current_page,
                 );
             }
+        }
+    }
+    
+    fn set_favorite(&mut self, favorite: bool) {
+        if self.is_favorite == favorite {
+            println!("DEBUG: already set");
+            return;
+        }
+
+        self.is_favorite = favorite;
+        if let Ok(()) = save_favorite(self.path.to_string(), self.is_favorite){
+            println!("DEBUG: saved favorite new status: {}", self.is_favorite);
+        } else {
+            println!("DEBUG: failed to save favorite");
         }
     }
 }

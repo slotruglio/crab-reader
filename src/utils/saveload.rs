@@ -1,7 +1,7 @@
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::BufReader,
-    sync::mpsc::channel, path::Path,
+    sync::mpsc::channel, path::Path, str::FromStr,
 };
 
 use rust_fuzzy_search::fuzzy_compare;
@@ -200,6 +200,32 @@ fn search_page<T: Into<String> + Clone>(book_path: T, chapter_number: usize, tex
         }
     }
     best_page.0
+}
+
+pub fn save_favorite<T: Into<String> + Clone>(book_path: T, favorite: bool) -> Result<(), Box<dyn std::error::Error>> {
+
+    let mut metadata = get_metadata_of_book(book_path.clone().into().as_str());
+    let old_string = &metadata["favorite"];
+    if (old_string == "true" && favorite) || (old_string == "false" && !favorite) {
+        return Ok(());
+    }
+
+    metadata.insert("favorite".to_string(), if favorite { "true" } else { "false" }.to_string());
+
+    let json = json!(metadata);
+    let metadata_path = get_saved_books_dir()
+        .join(Path::new(&book_path.into()).file_stem().unwrap().to_str().unwrap())
+        .join("metadata.json");
+
+    let metadata_file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(metadata_path)
+        .unwrap();
+
+    serde_json::to_writer_pretty(metadata_file, &json)?;
+    return Ok(());
 }
 
 /// function to load the last read page of a chapter given the path of the book

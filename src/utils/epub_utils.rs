@@ -78,6 +78,7 @@ fn get_metadata_from_epub(
     );
 
     metadata.insert("chapters".to_string(), book.get_num_pages().to_string());
+    metadata.insert("favorite".to_string(), "false".to_string());
 
     Ok(metadata)
 }
