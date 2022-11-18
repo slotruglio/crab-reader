@@ -1,8 +1,9 @@
 use druid::{
-    piet::Text, BoxConstraints, Color, Command, Data, Env, Event, EventCtx, FontDescriptor,
-    FontFamily, FontWeight, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, Size,
-    Target, TextLayout, UpdateCtx, Widget,
+    BoxConstraints, Color, Command, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    PaintCtx, RenderContext, Size, Target, TextLayout, UpdateCtx, Widget,
 };
+
+use crate::utils::fonts;
 
 use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
 
@@ -25,14 +26,7 @@ impl BookListing {
     }
 
     fn paint_num_pages(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = ctx
-            .text()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
-
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::NORMAL);
+        let font = fonts::Font::default().md().get();
 
         let mut layout = TextLayout::new();
 
@@ -60,15 +54,7 @@ impl BookListing {
     }
 
     fn paint_title(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font_family = ctx
-            .text()
-            .font_family("URW Bookman")
-            .unwrap_or(FontFamily::SYSTEM_UI);
-
-        let font = FontDescriptor::new(font_family)
-            .with_size(18.0)
-            .with_weight(FontWeight::NORMAL);
-
+        let font = fonts::Font::default().md().get();
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
         layout.set_text_color(colors::TEXT_WHITE);
@@ -76,7 +62,7 @@ impl BookListing {
         layout.set_wrap_width(ctx.size().width * 3.0 / 4.0);
         layout.rebuild_if_needed(ctx.text(), env);
 
-        let pos = (10.0, ctx.size().height / 2.0 - layout.size().height / 4.0);
+        let pos = (10.0, ctx.size().height / 2.0 - (layout.size().height / 2.0));
 
         ctx.paint_with_z_index(3, move |ctx| {
             if let Some(layout) = layout.layout() {

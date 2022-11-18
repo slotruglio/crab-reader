@@ -1,12 +1,11 @@
 use druid::widget::{Flex, Label, LineBreaking};
 use druid::{
-    BoxConstraints, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
-    LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt,
-    WidgetPod,
+    BoxConstraints, Command, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Size, Target, UpdateCtx, Widget, WidgetExt, WidgetPod,
 };
 
 use crate::components::book::BookManagement;
-use crate::ENTERING_READING_MODE;
+use crate::{utils, ENTERING_READING_MODE};
 
 use super::colors;
 use super::rbtn::RoundedButton;
@@ -24,12 +23,8 @@ pub struct BookDetails {
 
 impl BookDetails {
     pub fn new() -> Self {
-        let header_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
-            .with_weight(FontWeight::BOLD)
-            .with_size(28.0);
-        let info_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
-            .with_weight(FontWeight::NORMAL)
-            .with_size(14.0);
+        let header_font = utils::fonts::Font::default().lg().bold().get();
+        let info_font = utils::fonts::Font::default().sm().get();
 
         let mut header_label = Label::new("Dettagli del libro")
             .with_text_color(colors::TEXT_BLACK)
