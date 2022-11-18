@@ -8,7 +8,7 @@ use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
 use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget};
-use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher};
+use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher, SizedBox};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
     WidgetExt, WindowDesc,
@@ -309,6 +309,10 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let current_page = ReaderBtn::PageNumberSwitch.button();
 
+    let container_page_number = SizedBox::new(current_page.center())
+        .width(180.0)
+        .height(30.0);
+
     let header_btns = Flex::row()
         .with_child(edit_btn)
         .with_spacer(10.0)
@@ -326,11 +330,13 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             .with_default_spacer()
             .with_child(save_changes_btn),
         Flex::row()
+            .with_flex_spacer(1.0)
             .with_child(back_btn)
-            .with_spacer(10.0)
-            .with_child(current_page)
-            .with_spacer(10.0)
-            .with_child(next_btn),
+            .with_default_spacer()
+            .with_child(container_page_number)
+            .with_default_spacer()
+            .with_child(next_btn)
+            .with_flex_spacer(1.0),
     )
     .center();
 
