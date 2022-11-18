@@ -11,7 +11,7 @@ use std::{
     io::{BufReader, Cursor, Write},
     path::{Path, PathBuf},
     rc::Rc,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use utf16string::{BigEndian, BE, WString, LittleEndian};
@@ -78,6 +78,7 @@ fn get_metadata_from_epub(
     );
 
     metadata.insert("chapters".to_string(), book.get_num_pages().to_string());
+    metadata.insert("favorite".to_string(), "false".to_string());
 
     Ok(metadata)
 }
@@ -142,16 +143,23 @@ pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
     let len = book.get_num_pages();
 
     //extract all chapters
-    let mut i = 0;
-    while i < len {
-        let chapter = book.get_current_str().unwrap();
-        let page_path = path_name.with_file_name(format!("page_{}.html", i));
-        let mut file = File::create(page_path).unwrap();
-        file.write_all(chapter.as_bytes()).unwrap();
-        if let Err(_) = book.go_next() {
-            break;
-        }
-        i += 1;
+    let pool = threadpool::Builder::new().build();
+
+    let arc_book = Arc::new(Mutex::new(book));
+    for i in 0..len {
+        let this_book = arc_book.clone();
+        let this_path = path_name.clone();
+        pool.execute(move || {
+            let mut locked_book = this_book.lock().unwrap();
+            if let Err(error) = locked_book.set_current_page(i) {
+                println!("ERROR: {}", error);
+                return;
+            }
+            let chapter = locked_book.get_current_str().unwrap();
+            let page_path = this_path.with_file_name(format!("page_{}.html", i));
+            let mut file = File::create(page_path).unwrap();
+            file.write_all(chapter.as_bytes()).unwrap();
+        })
     }
 
     Ok(())
@@ -189,16 +197,23 @@ pub fn extract_chapters(path: &str) -> Result<(), Box<dyn error::Error>> {
     let len = book.get_num_pages();
 
     //extract all chapters
-    let mut i = 0;
-    while i < len {
-        let chapter = book.get_current_str().unwrap();
-        let page_path = path_name.join(format!("page_{}.html", i));
-        let mut file = File::create(page_path).unwrap();
-        file.write_all(chapter.as_bytes()).unwrap();
-        if let Err(_) = book.go_next() {
-            break;
-        }
-        i += 1;
+    let pool = threadpool::Builder::new().build();
+
+    let arc_book = Arc::new(Mutex::new(book));
+    for i in 0..len {
+        let this_book = arc_book.clone();
+        let this_path = path_name.clone();
+        pool.execute(move || {
+            let mut locked_book = this_book.lock().unwrap();
+            if let Err(error) = locked_book.set_current_page(i) {
+                println!("ERROR: {}", error);
+                return;
+            }
+            let chapter = locked_book.get_current_str().unwrap();
+            let page_path = this_path.with_file_name(format!("page_{}.html", i));
+            let mut file = File::create(page_path).unwrap();
+            file.write_all(chapter.as_bytes()).unwrap();
+        })
     }
     Ok(())
 }
