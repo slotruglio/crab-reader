@@ -115,11 +115,8 @@ fn edit_btn() -> RoundedButton<CrabReaderState> {
     })
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         if data.reading_state.is_editing {
-            data.reading_state.is_editing = false;
-            // Chiedeere a sam se sta cosa è ok
             undo_btn_fn(&mut data.reading_state);
         } else {
-            data.reading_state.single_view = true;
             edit_btn_fn(
                 &mut data.reading_state,
                 data.library.get_selected_book().unwrap(),
@@ -206,6 +203,9 @@ fn views_btn() -> RoundedButton<CrabReaderState> {
     })
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         data.reading_state.single_view = !data.reading_state.single_view;
+    })
+    .disabled_if(|data: &CrabReaderState, _env: &_| {
+        data.reading_state.is_editing
     })
     .with_text_size(24.0)
 }
