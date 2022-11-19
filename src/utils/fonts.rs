@@ -66,7 +66,7 @@ impl Font {
     }
 
     pub fn bold(mut self) -> Self {
-        self.weight = FontWeight::BOLD;
+        self.weight = FontWeight::SEMI_BOLD;
         self
     }
 
