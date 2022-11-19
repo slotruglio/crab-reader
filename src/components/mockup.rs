@@ -209,6 +209,10 @@ impl GUILibrary for MockupLibrary<Book> {
         }
         loaded
     }
+
+    fn get_sort_order(&self) -> SortBy {
+        self.sorted_by.clone()
+    }
 }
 
 #[derive(Clone, PartialEq, Data)]
@@ -255,10 +259,6 @@ impl MockupLibrary<Book> {
         });
         self.selected_book = new_idx;
         self.sorted_by = by;
-    }
-
-    pub fn get_sort_order(&self) -> SortBy {
-        self.sorted_by.clone()
     }
 
     pub fn filter_out_by_string(&mut self) {

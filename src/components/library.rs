@@ -1,4 +1,6 @@
 use druid::Selector;
+
+use super::mockup::SortBy;
 pub const SELECTED_BOOK_SELECTOR: Selector<Option<usize>> = Selector::new("selected-book");
 
 /// This trait deinfes all the functionalities that a `Library` struct must expose
@@ -47,4 +49,7 @@ pub trait GUILibrary {
 
     /// Check if any covers are loaded and set the cover for the corresponding book
     fn check_covers_loaded(&mut self) -> bool;
+
+    /// Get the order in which the books are sorted
+    fn get_sort_order(&self) -> SortBy;
 }
