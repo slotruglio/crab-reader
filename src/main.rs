@@ -17,6 +17,7 @@ use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::envmanager::{FontSize, MyEnv};
+use utils::fonts::Font;
 
 mod components;
 mod utils;
@@ -147,6 +148,18 @@ fn author_sorter_btn() -> impl Widget<Library> {
     .padding(5.0)
 }
 
+fn filter_fav_btn() -> impl Widget<Library> {
+    let emoji_font = Font::default().emoji().xs().get();
+    RoundedButton::from_text("🌟")
+        .with_text_size(18.0)
+        .with_on_click(|ctx, data: &mut Library, _| {
+            data.toggle_fav_filter();
+        })
+        .with_font(emoji_font)
+        .toggleable()
+        .padding(5.0)
+}
+
 fn completion_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
@@ -191,6 +204,7 @@ fn picker_filter_by() -> impl Widget<Library> {
     let inner = Flex::row()
         .with_flex_child(Label::new("Cerca libro").center().expand_width(), 1.0)
         .with_flex_child(text_edit.expand_width(), 3.0)
+        .with_flex_child(filter_fav_btn(), 0.5)
         .padding(druid::Insets::uniform_xy(15.0, 10.0))
         .background(colors::ACCENT_GRAY)
         .rounded(5.0)
