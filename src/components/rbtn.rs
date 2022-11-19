@@ -90,6 +90,11 @@ impl<T: Data> RoundedButton<T> {
         self.disable_condition = Box::new(closure);
         self
     }
+
+    pub fn with_font(mut self, font: impl Into<druid::FontDescriptor>) -> Self {
+        self.label.set_font(font.into());
+        self
+    }
 }
 
 impl<T: Data> Widget<T> for RoundedButton<T> {
