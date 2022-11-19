@@ -94,6 +94,11 @@ impl Font {
         self.style = FontStyle::Italic;
         self
     }
+
+    pub fn emoji(mut self) -> Self {
+        self.family = FontFamily::new_unchecked("Noto Emoji");
+        self
+    }
 }
 
 impl Default for Font {
