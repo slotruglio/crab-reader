@@ -1,5 +1,3 @@
-- Replace manual text layouts with Label
-- is_favorite (Cocco+Sam)
 - Flex footer in read mode (Sam)
 - Sistemare sto porcoddio di default text color (Gab)
 - Mettere qualcosa per poter utilizzare l'OCR (Gab)
@@ -41,3 +39,5 @@
 SVOLTE:
 - Threadpool per caricare le cover (Cocco)
 - Sistemare le frecce nel sorting (Cocco) 
+- is_favorite (Cocco+Sam)
+- Replace manual text layouts with Label (Cocco)
