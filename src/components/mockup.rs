@@ -42,7 +42,7 @@ impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
 
 #[derive(Clone, Derivative, Lens, Data)]
 #[derivative(PartialEq)]
-pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
+pub struct MockupLibrary<B: GUIBook + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
@@ -104,7 +104,8 @@ impl MockupLibrary<Book> {
     }
 }
 
-impl GUILibrary<Book> for MockupLibrary<Book> {
+impl GUILibrary for MockupLibrary<Book> {
+    type B = Book;
     fn add_book(&mut self, path: impl Into<String>) {
         let path: String = path.into();
         let file_name = path.split("/").last().unwrap();
