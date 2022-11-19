@@ -9,13 +9,12 @@ use super::{
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
     mockup::MockupLibrary,
 };
-type Library = MockupLibrary<Book>;
 
-pub struct ListLibrary {
-    children: Vec<WidgetPod<Book, BookListing>>,
+pub struct ListLibrary<B: GUIBook> {
+    children: Vec<WidgetPod<B, BookListing<B>>>,
 }
 
-impl ListLibrary {
+impl<B: GUIBook> ListLibrary<B> {
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -23,7 +22,7 @@ impl ListLibrary {
     }
 
     pub fn add_child(&mut self) {
-        let child: BookListing = BookListing::new();
+        let child = BookListing::new();
         let pod = WidgetPod::new(child);
         self.children.push(pod);
     }
@@ -36,8 +35,12 @@ impl ListLibrary {
     }
 }
 
-impl Widget<Library> for ListLibrary {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
+impl<L, B> Widget<L> for ListLibrary<B>
+where
+    L: GUILibrary + GUILibrary<B = B>,
+    B: GUIBook,
+{
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut L, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book_mut(idx) {
                 inner.event(ctx, event, book, env);
@@ -65,7 +68,7 @@ impl Widget<Library> for ListLibrary {
         }
     }
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &L, env: &Env) {
         while data.number_of_books() > self.children.len() {
             self.add_child();
             ctx.children_changed();
@@ -78,8 +81,8 @@ impl Widget<Library> for ListLibrary {
         }
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
-        if data.get_sort_order() != data.get_sort_order() {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &L, data: &L, env: &Env) {
+        if data.get_sort_order() != old_data.get_sort_order() {
             self.children.clear();
             ctx.children_changed();
         }
@@ -91,18 +94,12 @@ impl Widget<Library> for ListLibrary {
         }
     }
 
-    fn layout(
-        &mut self,
-        ctx: &mut LayoutCtx,
-        bc: &BoxConstraints,
-        data: &Library,
-        env: &Env,
-    ) -> Size {
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &L, env: &Env) -> Size {
         let w = bc.max().width;
-        let mut h = 0.0;
-        let mut cnt = 0;
-        let child_h = 70.0;
+        let max_child_h = 100.0;
         let child_spacing = 10.0;
+        let tight_bc = BoxConstraints::tight(Size::new(w, max_child_h));
+        let mut h = 0.;
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
@@ -113,22 +110,18 @@ impl Widget<Library> for ListLibrary {
                     continue;
                 }
 
-                let size = (w, child_h).into();
-                let bc = BoxConstraints::tight(size);
-                let y = child_spacing + (cnt as f64 * (child_h + child_spacing));
-                let origin = Point::new(0.0, y);
-                cnt += 1;
-
-                inner.layout(ctx, &bc, book, env);
+                let csize = inner.layout(ctx, &tight_bc, book, env);
+                let ch = csize.height;
+                let origin = Point::new(0.0, h);
                 inner.set_origin(ctx, book, env, origin);
-                h += size.height + child_spacing;
+                h += ch + child_spacing;
             }
         }
 
         (w, h).into()
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &L, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 inner.paint(ctx, book, env);
