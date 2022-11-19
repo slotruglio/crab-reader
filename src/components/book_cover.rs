@@ -1,9 +1,10 @@
 use druid::{
     piet::{ImageFormat, InterpolationMode},
+    widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
     Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
-    Size, Target, TextLayout, UpdateCtx, Widget,
+    Size, Target, TextLayout, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::utils::fonts;
@@ -14,13 +15,25 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 
 /// This structure contains the data relative to a Book when it is rendered as a cover, i.e. a rounded
 /// rect with smoothed edges and the book cover as a picture
-pub struct BookCover {
+pub struct BookCover<B: GUIBook> {
     is_hot: bool,
+    star: WidgetPod<B, Label<B>>,
 }
 
-impl BookCover {
+impl<B: GUIBook> BookCover<B> {
     pub fn new() -> Self {
-        Self { is_hot: false }
+        let star = Label::dynamic(|data: &B, _| {
+            if data.is_favorite() {
+                "🌟".into()
+            } else {
+                "".into()
+            }
+        })
+        .with_font(fonts::Font::default().lg().emoji().get());
+        Self {
+            is_hot: false,
+            star: WidgetPod::new(star),
+        }
     }
 
     fn paint_shadow(&self, ctx: &mut PaintCtx) {
@@ -36,9 +49,7 @@ impl BookCover {
             size.height + shadow_offset,
         );
 
-        ctx.paint_with_z_index(1, move |ctx| {
-            ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
-        });
+        ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
     }
 
     fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
@@ -50,11 +61,9 @@ impl BookCover {
             let h = BOOK_WIDGET_SIZE.height as usize;
 
             if let Ok(image) = ctx.make_image(w, h, &cover, ImageFormat::Rgb) {
-                ctx.paint_with_z_index(2, move |ctx| {
-                    ctx.with_save(|ctx| {
-                        ctx.clip(paint_rounded);
-                        ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
-                    });
+                ctx.with_save(|ctx| {
+                    ctx.clip(paint_rounded);
+                    ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
                 });
             }
             return;
@@ -107,8 +116,10 @@ impl BookCover {
     }
 }
 
-impl<BookData: GUIBook + Data> Widget<BookData> for BookCover {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut BookData, _: &Env) {
+impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut B, env: &Env) {
+        self.star.event(ctx, event, data, env);
+
         if ctx.is_hot() {
             ctx.set_cursor(&OpenHand);
         } else {
@@ -131,7 +142,8 @@ impl<BookData: GUIBook + Data> Widget<BookData> for BookCover {
         }
     }
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, _: &BookData, _: &Env) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &B, env: &Env) {
+        self.star.lifecycle(ctx, event, data, env);
         match event {
             LifeCycle::HotChanged(hot) => {
                 self.set_hot(*hot);
@@ -141,21 +153,26 @@ impl<BookData: GUIBook + Data> Widget<BookData> for BookCover {
         }
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &BookData, data: &BookData, _: &Env) {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &B, data: &B, env: &Env) {
         if !data.same(old_data) {
+            self.star.update(ctx, data, env);
             ctx.request_layout();
         }
     }
 
-    fn layout(&mut self, _: &mut LayoutCtx, _: &BoxConstraints, book: &BookData, _: &Env) -> Size {
-        if book.is_filtered_out() {
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &B, env: &Env) -> Size {
+        if data.is_filtered_out() {
             return Size::ZERO;
         }
+        let sl = self.star.layout(ctx, bc, data, env);
+        let origin = (10.0, BOOK_WIDGET_SIZE.height - sl.height - 10.0).into();
+        self.star.set_origin(ctx, data, env, origin);
         BOOK_WIDGET_SIZE
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &BookData, env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
         self.paint_shadow(ctx);
         self.paint_cover(ctx, env, data);
+        self.star.paint(ctx, data, env);
     }
 }
