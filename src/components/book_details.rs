@@ -1,7 +1,7 @@
 use druid::widget::{Flex, Label, LineBreaking};
 use druid::{
-    BoxConstraints, Command, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Size, Target, UpdateCtx, Widget, WidgetExt, WidgetPod,
+    BoxConstraints, Command, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt, WidgetPod,
 };
 
 use crate::components::book::BookManagement;
@@ -142,8 +142,10 @@ impl Widget<Library> for BookDetails {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
-        self.inner.update(ctx, data, env);
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
+        if !old_data.same(data) {
+            self.inner.update(ctx, data, env);
+        }
     }
 
     fn layout(
