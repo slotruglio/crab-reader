@@ -52,4 +52,8 @@ pub trait GUILibrary {
 
     /// Get the order in which the books are sorted
     fn get_sort_order(&self) -> SortBy;
+
+    fn toggle_fav_filter(&mut self);
+
+    fn only_fav(&self) -> bool;
 }

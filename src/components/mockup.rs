@@ -104,11 +104,6 @@ impl MockupLibrary<Book> {
     pub fn get_filter_by(&self) -> Rc<String> {
         self.filter_by.clone()
     }
-
-    pub fn toggle_fav_filter(&mut self) {
-        self.filter_fav = !self.filter_fav;
-        self.filter_out_by_string();
-    }
 }
 
 impl GUILibrary for MockupLibrary<Book> {
@@ -219,6 +214,15 @@ impl GUILibrary for MockupLibrary<Book> {
 
     fn get_sort_order(&self) -> SortBy {
         self.sorted_by.clone()
+    }
+
+    fn toggle_fav_filter(&mut self) {
+        self.filter_fav = !self.filter_fav;
+        self.filter_out_by_string();
+    }
+
+    fn only_fav(&self) -> bool {
+        self.filter_fav
     }
 }
 
