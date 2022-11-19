@@ -4,10 +4,9 @@ use druid::{
 };
 
 use super::{
-    book::{Book, GUIBook},
+    book::GUIBook,
     book_listing::BookListing,
     library::{GUILibrary, SELECTED_BOOK_SELECTOR},
-    mockup::MockupLibrary,
 };
 
 pub struct ListLibrary<B: GUIBook> {
@@ -83,6 +82,11 @@ where
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &L, data: &L, env: &Env) {
         if data.get_sort_order() != old_data.get_sort_order() {
+            self.children.clear();
+            ctx.children_changed();
+        }
+
+        if data.only_fav() != old_data.only_fav() {
             self.children.clear();
             ctx.children_changed();
         }
