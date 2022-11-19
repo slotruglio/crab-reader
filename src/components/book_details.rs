@@ -86,13 +86,24 @@ impl BookDetails {
             })
             .with_text_size(14.0);
 
-        let add_fav_btn = RoundedButton::from_text("Aggiungi ai Preferiti")
-            .with_on_click(|_: &mut EventCtx, library: &mut Library, _: &Env| {
-                // this implementation is just for testing purposes
-                // @Cocco: implement this
-                library.get_selected_book_mut().unwrap().set_favorite(true);
-            })
-            .with_text_size(14.0);
+        let add_fav_btn = RoundedButton::dynamic(|data: &Library, _| {
+            if let Some(book) = data.get_selected_book() {
+                if book.is_favorite() {
+                    "Rimuovi dai preferiti".into()
+                } else {
+                    "Aggiungi ai preferiti".into()
+                }
+            } else {
+                "Aggiungi ai preferiti".into()
+            }
+        })
+        .with_on_click(|_: &mut EventCtx, library: &mut Library, _: &Env| {
+            if let Some(book) = library.get_selected_book_mut() {
+                let fav = book.is_favorite();
+                book.set_favorite(!fav);
+            }
+        })
+        .with_text_size(14.0);
 
         let mut btn_ctls = Flex::row()
             .with_flex_child(keep_reading_btn, 1.0)
