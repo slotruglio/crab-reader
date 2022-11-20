@@ -34,6 +34,7 @@
         - Tokio?
 - Note/Appunti del libro? (Sam)
 - Localizzazione (Gab)
+- Ombre ON/OFF via Context Menù?
 - I TEST
 
 SVOLTE:
@@ -41,3 +42,4 @@ SVOLTE:
 - Sistemare le frecce nel sorting (Cocco) 
 - is_favorite (Cocco+Sam)
 - Replace manual text layouts with Label (Cocco)
+- Caching of cover images + enable/disable shadows via CLI (Cocco)
