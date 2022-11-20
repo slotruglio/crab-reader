@@ -309,7 +309,10 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let sidebar = sidebar_widget();
     let text = Flex::row()
         .with_flex_child(sidebar, 1.0)
-        .with_flex_child(ReaderView::dynamic_view(), 4.0);
+        .with_flex_spacer(0.2)
+        .with_flex_child(ReaderView::dynamic_view(), 4.0)
+        .with_flex_spacer(0.2)
+        .with_flex_spacer(1.0);
 
     let leave_btn = Flex::row()
         .with_child(ReaderBtn::Leave.button())

@@ -4,7 +4,6 @@
     - Colonna a destra del testo
         - Fisico -> Virtuale (OCR)
         - Virtuale -> Fisico (nchar / 1024)
-- Sistemare flex read/edit (Cocco)
 - Context Menù per modificare le impostazioni (Misto)
     - Scheletro (Cocco)
     - Seconda Finestra (Cocco)
@@ -43,3 +42,4 @@ SVOLTE:
 - is_favorite (Cocco+Sam)
 - Replace manual text layouts with Label (Cocco)
 - Caching of cover images + enable/disable shadows via CLI (Cocco)
+- Sistemare flex read/edit (Cocco)
