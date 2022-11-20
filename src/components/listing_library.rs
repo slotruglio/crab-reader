@@ -50,7 +50,6 @@ where
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     data.unselect_current_book();
-                    ctx.request_layout();
                 }
             }
             Event::Notification(cmd) => {
@@ -60,7 +59,6 @@ where
                     } else {
                         data.unselect_current_book();
                     }
-                    ctx.request_layout();
                 }
             }
             _ => {}

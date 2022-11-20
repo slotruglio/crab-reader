@@ -30,6 +30,7 @@ impl<B: GUIBook> BookCover<B> {
             }
         })
         .with_font(fonts::Font::default().lg().emoji().get());
+
         Self {
             is_hot: false,
             star: WidgetPod::new(star),
@@ -137,7 +138,6 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
                     Target::Auto,
                 );
                 ctx.submit_notification(cmd);
-                ctx.request_layout();
             }
             _ => {}
         }
@@ -148,7 +148,6 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
         match event {
             LifeCycle::HotChanged(hot) => {
                 self.set_hot(*hot);
-                ctx.request_layout();
             }
             _ => {}
         }
@@ -157,7 +156,6 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &B, data: &B, env: &Env) {
         if !data.same(old_data) {
             self.star.update(ctx, data, env);
-            ctx.request_layout();
         }
     }
 

@@ -1,5 +1,5 @@
 use druid::widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox};
-use druid::{LensExt, TextAlignment, UnitPoint, Widget, WidgetExt, FontDescriptor, Color};
+use druid::{Color, FontDescriptor, LensExt, TextAlignment, UnitPoint, Widget, WidgetExt};
 
 use crate::{CrabReaderState, ReadingState};
 
@@ -55,7 +55,6 @@ impl ReaderView {
 
 // single page view for text reader
 fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
     let view = Scroll::new(
         Label::dynamic(|data: &CrabReaderState, _env: &_| {
             data.library
@@ -75,7 +74,6 @@ fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<Crab
 
 // single page view for text editing
 fn single_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
     let text_box = TextBox::multiline()
         .with_text_color(font_color)
         .with_font(font)
@@ -89,16 +87,11 @@ fn single_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container
 
 // dual page view for text reader
 fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
     let views = Flex::row()
         .with_flex_child(
             Scroll::new(
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_dual_pages()
-                        .0
+                    data.library.get_selected_book().unwrap().get_dual_pages().0
                 })
                 .with_text_color(font_color.clone())
                 .with_font(font.clone())
@@ -113,11 +106,7 @@ fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabRe
         .with_flex_child(
             Scroll::new(
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_dual_pages()
-                        .1
+                    data.library.get_selected_book().unwrap().get_dual_pages().1
                 })
                 .with_text_color(font_color)
                 .with_font(font)
@@ -134,7 +123,6 @@ fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabRe
 
 // dual page view for text editing
 fn dual_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
     let text_box_page_0 = TextBox::multiline()
         .with_text_color(font_color.clone())
         .with_font(font.clone())
@@ -171,15 +159,14 @@ pub fn title_widget() -> impl Widget<CrabReaderState> {
 pub fn current_chapter_widget() -> Label<CrabReaderState> {
     Label::dynamic(|data: &CrabReaderState, _env: &_| {
         // + 1
-        let display_number = data.library
+        let display_number = data
+            .library
             .get_selected_book()
             .unwrap()
-            .get_chapter_number() + 1;
-            
-        format!(
-            "Chapter {}",
-            display_number
-        )
+            .get_chapter_number()
+            + 1;
+
+        format!("Chapter {}", display_number)
     })
 }
 
@@ -193,7 +180,6 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
     })
     .with_on_click(|ctx, data: &mut ReadingState, _env| {
         data.sidebar_open = !data.sidebar_open;
-        ctx.request_layout();
     })
     .with_text_size(18.0)
     .align_horizontal(UnitPoint::CENTER)
