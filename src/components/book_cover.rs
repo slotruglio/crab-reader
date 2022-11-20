@@ -1,5 +1,5 @@
 use druid::{
-    piet::{ImageFormat, InterpolationMode},
+    piet::{CairoImage, CairoRenderContext, ImageFormat, InterpolationMode},
     widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
@@ -18,6 +18,7 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 pub struct BookCover<B: GUIBook> {
     is_hot: bool,
     star: WidgetPod<B, Label<B>>,
+    image: Option<CairoImage>,
 }
 
 impl<B: GUIBook> BookCover<B> {
@@ -34,6 +35,7 @@ impl<B: GUIBook> BookCover<B> {
         Self {
             is_hot: false,
             star: WidgetPod::new(star),
+            image: None,
         }
     }
 
@@ -53,7 +55,7 @@ impl<B: GUIBook> BookCover<B> {
         ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
     }
 
-    fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
+    fn paint_cover(&mut self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
         let cover_data = data.get_cover_image();
         if cover_data.len() == 0 {
             self.paint_default_cover(ctx, data);
@@ -67,11 +69,17 @@ impl<B: GUIBook> BookCover<B> {
         let w = BOOK_WIDGET_SIZE.width as usize;
         let h = BOOK_WIDGET_SIZE.height as usize;
 
-        if let Ok(image) = ctx.make_image(w, h, &cover_data, ImageFormat::Rgb) {
+        if let Some(ref image) = self.image {
             ctx.with_save(|ctx| {
                 ctx.clip(paint_rounded);
                 ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
             });
+        } else if let Ok(image) = ctx.make_image(w, h, &cover_data, ImageFormat::Rgb) {
+            ctx.with_save(|ctx| {
+                ctx.clip(paint_rounded);
+                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+            });
+            self.image = Some(image);
         }
     }
 
