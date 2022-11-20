@@ -7,7 +7,7 @@ use druid::{
     Size, Target, TextLayout, UpdateCtx, Widget, WidgetPod,
 };
 
-use crate::utils::fonts;
+use crate::{utils::fonts, PAINT_BOOK_COVERS_SHADOWS};
 
 use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
 
@@ -178,7 +178,9 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
-        self.paint_shadow(ctx);
+        if env.get(PAINT_BOOK_COVERS_SHADOWS) {
+            self.paint_shadow(ctx);
+        }
         self.paint_cover(ctx, env, data);
         self.star.paint(ctx, data, env);
     }

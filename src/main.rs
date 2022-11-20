@@ -1,3 +1,4 @@
+use clap::{arg, command, Parser};
 use components::book::{Book, BookReading, GUIBook};
 use components::book_details::BookDetails;
 use components::colors;
@@ -10,8 +11,8 @@ use components::reader_btns::ReaderBtn;
 use components::reader_view::{current_chapter_widget, sidebar_widget, ReaderView};
 use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
-    WidgetExt, WindowDesc,
+    AppDelegate, AppLauncher, Color, Data, Env, Handled, Key, Lens, PlatformError, Selector,
+    Widget, WidgetExt, WindowDesc,
 };
 use once_cell::sync::Lazy;
 use std::rc::Rc;
@@ -397,12 +398,28 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
 
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
+    let args = CommandLineArgs::parse();
     AppLauncher::with_window(
         WindowDesc::new(get_viewswitcher)
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
+    .configure_env(move |env, _| {
+        let shadows = args.cover_shadows;
+        env.set(PAINT_BOOK_COVERS_SHADOWS, shadows);
+    })
     .delegate(ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct CommandLineArgs {
+    /// Wheter or not to paint the shadows of the book covers
+    /// It may (it will) cause some lags
+    #[arg(short, long, default_value = "false")]
+    cover_shadows: bool,
+}
+
+pub const PAINT_BOOK_COVERS_SHADOWS: Key<bool> = Key::new("shadows");
