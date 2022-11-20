@@ -1,4 +1,5 @@
 pub mod button_functions;
+pub mod delegates;
 pub mod dir_manager;
 pub mod envmanager;
 pub mod epub_utils;

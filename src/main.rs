@@ -1,5 +1,5 @@
 use clap::{arg, command, Parser};
-use components::book::{Book, BookReading, GUIBook};
+use components::book::{Book, GUIBook};
 use components::book_details::BookDetails;
 use components::colors;
 use components::cover_library::CoverLibrary;
@@ -11,13 +11,13 @@ use components::reader_btns::ReaderBtn;
 use components::reader_view::{current_chapter_widget, sidebar_widget, ReaderView};
 use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, Handled, Key, Lens, PlatformError, Selector,
-    Widget, WidgetExt, WindowDesc,
+    AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::envmanager::{FontSize, MyEnv};
+use utils::delegates;
+use utils::envmanager::MyEnv;
 use utils::fonts::Font;
 
 mod components;
@@ -153,7 +153,7 @@ fn filter_fav_btn() -> impl Widget<Library> {
     let emoji_font = Font::default().emoji().xs().get();
     RoundedButton::from_text("🌟")
         .with_text_size(18.0)
-        .with_on_click(|ctx, data: &mut Library, _| {
+        .with_on_click(|_, data: &mut Library, _| {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
@@ -367,38 +367,6 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     ui
 }
 
-struct ReadModeDelegate;
-
-impl AppDelegate<CrabReaderState> for ReadModeDelegate {
-    fn command(
-        &mut self,
-        _: &mut druid::DelegateCtx,
-        _: druid::Target,
-        cmd: &druid::Command,
-        data: &mut CrabReaderState,
-        _: &Env,
-    ) -> Handled {
-        match cmd {
-            notif if notif.is(ENTERING_READING_MODE) => {
-                data.reading = true;
-                data.reading_state.enable(Rc::new(
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_page_of_chapter(),
-                ));
-                Handled::Yes
-            }
-            notif if notif.is(LEAVING_READING_MODE) => {
-                data.reading = false;
-                data.reading_state.disable();
-                Handled::Yes
-            }
-            _ => Handled::No,
-        }
-    }
-}
-
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
     let args = CommandLineArgs::parse();
@@ -411,7 +379,7 @@ fn main() -> Result<(), PlatformError> {
         let shadows = args.cover_shadows;
         env.set(PAINT_BOOK_COVERS_SHADOWS, shadows);
     })
-    .delegate(ReadModeDelegate)
+    .delegate(delegates::ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }
