@@ -157,6 +157,7 @@ impl GUILibrary for MockupLibrary<Book> {
         if idx < self.number_of_books() {
             self.unselect_current_book();
             self.selected_book = Some(idx);
+            self.books[idx].select();
         }
     }
 
@@ -223,6 +224,29 @@ impl GUILibrary for MockupLibrary<Book> {
 
     fn only_fav(&self) -> bool {
         self.filter_fav
+    }
+
+    fn next_book_idx(&self) -> Option<usize> {
+        let Some(idx) = self.get_selected_book_idx() else {
+            return self.books.iter().enumerate().find(|(_, book)| !book.is_filtered_out()).map(|(idx, _)| idx)
+        };
+        self.books
+            .iter()
+            .enumerate()
+            .find(|(i, book)| *i > idx && !book.is_filtered_out())
+            .map(|(idx, _)| idx)
+    }
+
+    fn prev_book_idx(&self) -> Option<usize> {
+        let Some(idx) = self.get_selected_book_idx() else {
+            return self.books.iter().enumerate().find(|(_, book)| !book.is_filtered_out()).map(|(idx, _)| idx);
+        };
+        self.books
+            .iter()
+            .enumerate()
+            .rev()
+            .find(|(cidx, b)| !b.is_filtered_out() && *cidx < idx)
+            .map(|(idx, _)| idx)
     }
 }
 

@@ -56,4 +56,8 @@ pub trait GUILibrary {
     fn toggle_fav_filter(&mut self);
 
     fn only_fav(&self) -> bool;
+
+    fn next_book_idx(&self) -> Option<usize>;
+
+    fn prev_book_idx(&self) -> Option<usize>;
 }
