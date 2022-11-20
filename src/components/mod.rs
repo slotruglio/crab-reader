@@ -11,3 +11,4 @@ pub mod mockup;
 pub mod rbtn;
 pub mod reader_btns;
 pub mod reader_view;
+pub mod note;

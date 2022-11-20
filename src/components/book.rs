@@ -3,11 +3,12 @@ use crate::utils::epub_utils::{
     calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
     get_number_of_pages, split_chapter_in_vec,
 };
-use crate::utils::saveload::{load_data, remove_edited_chapter, save_favorite};
+use crate::utils::saveload::{load_data, remove_edited_chapter, save_favorite, load_notes, save_note, delete_note, delete_all_notes};
 use crate::utils::{epub_utils, text_descriptor};
 use crate::MYENV;
 use druid::im::Vector;
 use druid::image::io::Reader as ImageReader;
+use std::collections::HashMap;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
@@ -107,6 +108,8 @@ use druid::text::RichText;
 use druid::{Data, Lens};
 use epub::doc::EpubDoc;
 
+use super::note::NoteManagement;
+
 const NUMBER_OF_LINES: usize = 8;
 
 /// trait that describes the book reading functions
@@ -187,6 +190,8 @@ pub struct Book {
     description: Rc<String>,
     cover_img: Option<Rc<Vec<u8>>>,
     filtered_out: bool,
+    #[data(ignore)]
+    notes: HashMap<(usize, usize), String>
 }
 
 impl Book {
@@ -232,12 +237,9 @@ impl Book {
 
         let cumulative_current_page =
             get_cumulative_current_page_number(path_str, chapter_number, current_page);
-        /*
-        // these functions have to be called when the you click to read the book
-        let chapter_text = epub_utils::get_chapter_text(&path_str, chapter_number);
-        let chapter_page_text = chapter_text[0..200].to_string();
-        */
-
+        
+        let notes = load_notes(path_str).unwrap_or_default();
+        println!("Notes: {:?}", notes);
         Book {
             title: title.into(),
             author: author.into(),
@@ -255,6 +257,7 @@ impl Book {
             chapter_text_split: Vector::new(),
             cover_img: None,
             filtered_out: false,
+            notes: notes,
         }
     }
 
@@ -637,5 +640,35 @@ impl GUIBook for Book {
 
     fn is_favorite(&self) -> bool {
         self.is_favorite
+    }
+}
+
+impl NoteManagement for Book {
+    // get all notes
+    fn get_notes(&self) -> HashMap<(usize, usize), String> {
+        self.notes.clone()
+    }
+    // get note for the current chapter
+    fn get_current_note(&self) -> Option<String> {
+        self.notes.get(&(self.chapter_number, self.current_page)).cloned()
+    }
+    // add/edit a note for the current chapter and page
+    fn edit_note(&mut self, note: String) {
+        self.notes.insert((self.chapter_number, self.current_page), note.clone());
+        let _ = save_note(self.path.to_string(), self.chapter_number, self.get_page_of_chapter(), note);
+    }
+    // delete a note for the current chapter and page
+    fn delete_note(&mut self) {
+        self.notes.remove(&(self.chapter_number, self.current_page));
+        delete_note(
+            self.path.to_string(),
+            self.chapter_number,
+            self.get_page_of_chapter(),
+        );
+    }
+    // delete all notes
+    fn delete_all_notes(&mut self) {
+        self.notes.clear();
+        delete_all_notes(self.path.to_string());
     }
 }

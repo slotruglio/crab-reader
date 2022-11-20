@@ -337,27 +337,42 @@ pub fn save_note<T: Into<String> + Clone>(
         create_dir_all(notes_path.parent().unwrap()).unwrap();
     }
 
-    // json value for the book
+    // json value for the note to save
     let value = json!(
         {
-            "chapter": chapter,
             "start":start_page.into(),
             "note":note.into()
         }
     );
 
-    // insert the value in the json
+    // array of the book
     if let Some(array) = json[book_path.clone().into()].as_array_mut() {
-        array.push(value);
+        // other stuff
+        if let Some(obj) = array.iter_mut().find(|obj| obj["chapter"] == chapter) {
+            // chapter already exists
+            if let Some(array_notes) = obj["notes"].as_array_mut() {
+                // add the note to the array
+                array_notes.push(value);
+            } else {
+                // create the array
+                obj["notes"] = json!([value]);
+            }
+        } else {
+            // chapter doesn't exist
+            array.push(json!({"chapter":chapter, "notes":[value]}));
+        }
     } else {
-        json[book_path.into()] = json!([value]);
+        json[book_path.into()] = json!([
+            {"chapter":chapter,
+            "notes":[value]
+        }]);
     }
     // open file to write
     let file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
-        .open(get_savedata_path())?;
+        .open(get_books_notes_path())?;
 
     serde_json::to_writer_pretty(file, &json)?;
 
@@ -367,51 +382,44 @@ pub fn save_note<T: Into<String> + Clone>(
 /// function to load notes of a book
 pub fn load_notes<T: Into<String> + Clone>(
     book_path: T,
-) -> Result<HashMap<usize, (usize, String)>, Box<dyn std::error::Error>> {
+) -> Result<HashMap<(usize, usize), String>, Box<dyn std::error::Error>> {
     let mut map = HashMap::new();
 
     if let Ok(file) = File::open(get_books_notes_path()) {
         let reader = BufReader::new(file);
         let json: Value = serde_json::from_reader(reader)?;
 
-        if let Some(array) = json[book_path.clone().into()].as_array() {
-            for value in array {
-                let mut notes = ""; 
-                let mut chapter = 1;
-                let mut start_page = "";
+        if let Some(book_array) = json[book_path.clone().into()].as_array() {
+            // exists a book with that name
+            for chapter in book_array {
+                let chapter_number = chapter["chapter"].as_u64().unwrap() as usize;
+                if let Some(notes_array) = chapter["notes"].as_array() {
+                    for note in notes_array {
+                        let start_page = note["start"].as_str().unwrap();
+                        let note_text = note["note"].as_str().unwrap().to_string();
 
-                let opt_note = value.get("notes").and_then(|v| v.as_str());
-                if let None = opt_note {
-                    continue;
-                } else {
-                    notes = opt_note.unwrap();
+                        let page = search_page(book_path.clone().into(), chapter_number, start_page);
+                        map.insert((chapter_number, page), note_text);
+                    }
                 }
-
-                let opt_chapter_value = value
-                .get("chapter").and_then(|v| v.as_u64());
-                let opt_start_page = value
-                    .get("start_page").and_then(|v| v.as_str());
-
-                // assign values considering the same font size
-                if let Some(c) = opt_chapter_value {
-                    chapter = c as usize;
-                } else {
-                    continue;
-                }
-                if let Some(s) = opt_start_page{
-                    start_page = s;
-                } else {
-                    continue;
-                }
-
-                // need to "find" the last read page
-                let page = search_page(book_path.clone(), chapter, start_page);
-
-                map.insert(chapter, (page, notes.to_string()));
             }
-        };
+        }
     }
     Ok(map)
+}
+
+pub fn delete_note<T: Into<String> + Clone>(
+    book_path: T,
+    chapter: usize,
+    start_page: T,
+) {
+    todo!("delete note");
+}
+
+pub fn delete_all_notes<T: Into<String> + Clone>(
+    book_path: T,
+) {
+    todo!("delete all notes");
 }
 
 /*
