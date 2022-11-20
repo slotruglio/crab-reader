@@ -11,6 +11,7 @@ use druid::image::io::Reader as ImageReader;
 use std::io::Cursor as ImageCursor;
 use std::rc::Rc;
 use std::string::String;
+use std::sync::Arc;
 
 /// This trait defines all the methods that a `Book` struct must implement
 /// in order to be rendered visually correct in the GUI of the application.
@@ -91,7 +92,7 @@ pub trait GUIBook: PartialEq + Data {
     fn unselect(&mut self);
 
     /// Returns the cover of this book
-    fn get_cover_image(&self) -> Option<Rc<Vec<u8>>>;
+    fn get_cover_image(&self) -> Arc<Vec<u8>>;
 
     /// Sets the cover image
     fn set_cover_image(&mut self, cover_image: Vec<u8>);
@@ -185,7 +186,7 @@ pub struct Book {
     is_favorite: bool,
     chapter_text_split: Vector<String>,
     description: Rc<String>,
-    cover_img: Option<Rc<Vec<u8>>>,
+    cover_img: Arc<Vec<u8>>,
     filtered_out: bool,
 }
 
@@ -253,7 +254,7 @@ impl Book {
             selected: false,
             description: desc.into(),
             chapter_text_split: Vector::new(),
-            cover_img: None,
+            cover_img: vec![].into(),
             filtered_out: false,
         }
     }
@@ -619,7 +620,7 @@ impl GUIBook for Book {
         Ok(rgb.into())
     }
 
-    fn get_cover_image(&self) -> Option<Rc<Vec<u8>>> {
+    fn get_cover_image(&self) -> Arc<Vec<u8>> {
         self.cover_img.clone()
     }
 
@@ -632,7 +633,7 @@ impl GUIBook for Book {
     }
 
     fn set_cover_image(&mut self, cover_image: Vec<u8>) {
-        self.cover_img = Some(Rc::new(cover_image));
+        self.cover_img = cover_image.into();
     }
 
     fn is_favorite(&self) -> bool {

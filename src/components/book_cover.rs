@@ -53,24 +53,25 @@ impl<B: GUIBook> BookCover<B> {
     }
 
     fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        if let Some(cover) = data.get_cover_image() {
-            let round_factr = 20.0;
-            let paint_rect = ctx.size().to_rect();
-            let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
-            let w = BOOK_WIDGET_SIZE.width as usize;
-            let h = BOOK_WIDGET_SIZE.height as usize;
-
-            if let Ok(image) = ctx.make_image(w, h, &cover, ImageFormat::Rgb) {
-                ctx.with_save(|ctx| {
-                    ctx.clip(paint_rounded);
-                    ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
-                });
-            }
+        let cover_data = data.get_cover_image();
+        if cover_data.len() == 0 {
+            self.paint_default_cover(ctx, data);
+            self.paint_book_title(ctx, env, data);
             return;
         }
 
-        self.paint_default_cover(ctx, data);
-        self.paint_book_title(ctx, env, data);
+        let round_factr = 20.0;
+        let paint_rect = ctx.size().to_rect();
+        let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
+        let w = BOOK_WIDGET_SIZE.width as usize;
+        let h = BOOK_WIDGET_SIZE.height as usize;
+
+        if let Ok(image) = ctx.make_image(w, h, &cover_data, ImageFormat::Rgb) {
+            ctx.with_save(|ctx| {
+                ctx.clip(paint_rounded);
+                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+            });
+        }
     }
 
     fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook) {
