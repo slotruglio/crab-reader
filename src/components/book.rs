@@ -99,6 +99,8 @@ pub trait GUIBook: PartialEq + Data {
     fn is_filtered_out(&self) -> bool;
 
     fn set_filtered_out(&mut self, filtered_out: bool);
+
+    fn is_favorite(&self) -> bool;
 }
 
 use druid::text::RichText;
@@ -217,7 +219,8 @@ impl Book {
         let is_fav = book_map
             .get("favorite")
             .unwrap_or(&"false".to_string())
-            .parse::<bool>().unwrap();
+            .parse::<bool>()
+            .unwrap();
         let number_of_chapters = book_map
             .get("chapters")
             .map_or(1, |x| x.parse::<usize>().unwrap_or_default());
@@ -492,7 +495,7 @@ impl BookManagement for Book {
             }
         }
     }
-    
+
     fn set_favorite(&mut self, favorite: bool) {
         if self.is_favorite == favorite {
             println!("DEBUG: already set");
@@ -500,7 +503,7 @@ impl BookManagement for Book {
         }
 
         self.is_favorite = favorite;
-        if let Ok(()) = save_favorite(self.path.to_string(), self.is_favorite){
+        if let Ok(()) = save_favorite(self.path.to_string(), self.is_favorite) {
             println!("DEBUG: saved favorite new status: {}", self.is_favorite);
         } else {
             println!("DEBUG: failed to save favorite");
@@ -630,5 +633,9 @@ impl GUIBook for Book {
 
     fn set_cover_image(&mut self, cover_image: Vec<u8>) {
         self.cover_img = Some(Rc::new(cover_image));
+    }
+
+    fn is_favorite(&self) -> bool {
+        self.is_favorite
     }
 }

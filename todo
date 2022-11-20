@@ -1,5 +1,3 @@
-- is_favorite (Cocco+Sam)
-- Flex footer in read mode (Sam)
 - Sistemare sto porcoddio di default text color (Gab)
 - Mettere qualcosa per poter utilizzare l'OCR (Gab)
     - Colonna a destra del testo
@@ -19,7 +17,6 @@
 - Colori migliori (Tutti)
     - Temizzati (Cocco+Gab)
 - Tipografia consistente (Cocco+Sam)
-- Sistemare le frecce nel sorting (Cocco) (Copiare da Gab?)
 - Key Controls (Cocco)
 - Background decente per il testo del libro (Cocco+Gab)
     - O va bene così?
@@ -40,3 +37,7 @@
 
 SVOLTE:
 - Threadpool per caricare le cover (Cocco)
+- Sistemare le frecce nel sorting (Cocco) 
+- is_favorite (Cocco+Sam)
+- Replace manual text layouts with Label (Cocco)
+- Flex footer in read mode (Sam)

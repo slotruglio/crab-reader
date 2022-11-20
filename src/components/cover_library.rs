@@ -12,7 +12,7 @@ use super::{
 };
 
 pub struct CoverLibrary {
-    children: Vec<WidgetPod<Book, BookCover>>,
+    children: Vec<WidgetPod<Book, BookCover<Book>>>,
 }
 
 impl CoverLibrary {
@@ -124,9 +124,8 @@ impl Widget<Library> for CoverLibrary {
                 let x = xspacing + (col as f64 * (book_w + xspacing));
                 let y = spacing + (row as f64 * (book_h + spacing));
 
-                let size = Size::new(book_w, book_h);
                 let origin = Point::new(x, y);
-                inner.layout(ctx, &BoxConstraints::tight(size), book, env);
+                inner.layout(ctx, bc, book, env);
                 inner.set_origin(ctx, book, env, origin); // TLDR: must be a WidgetPod...
                 cnt += 1;
             }

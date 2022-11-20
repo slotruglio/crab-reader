@@ -42,11 +42,12 @@ impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
 
 #[derive(Clone, Derivative, Lens, Data)]
 #[derivative(PartialEq)]
-pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
+pub struct MockupLibrary<B: GUIBook + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
     filter_by: Rc<String>,
+    filter_fav: bool,
     visible_books: usize,
     #[data(ignore)]
     #[derivative(PartialEq = "ignore")]
@@ -62,6 +63,7 @@ impl MockupLibrary<Book> {
             filter_by: String::default().into(),
             visible_books: 0,
             cover_loader: Arc::from(CoverLoader::default()),
+            filter_fav: false,
         };
 
         if let Ok(paths) = lib.epub_paths() {
@@ -104,7 +106,8 @@ impl MockupLibrary<Book> {
     }
 }
 
-impl GUILibrary<Book> for MockupLibrary<Book> {
+impl GUILibrary for MockupLibrary<Book> {
+    type B = Book;
     fn add_book(&mut self, path: impl Into<String>) {
         let path: String = path.into();
         let file_name = path.split("/").last().unwrap();
@@ -208,6 +211,19 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         }
         loaded
     }
+
+    fn get_sort_order(&self) -> SortBy {
+        self.sorted_by.clone()
+    }
+
+    fn toggle_fav_filter(&mut self) {
+        self.filter_fav = !self.filter_fav;
+        self.filter_out_by_string();
+    }
+
+    fn only_fav(&self) -> bool {
+        self.filter_fav
+    }
 }
 
 #[derive(Clone, PartialEq, Data)]
@@ -256,12 +272,9 @@ impl MockupLibrary<Book> {
         self.sorted_by = by;
     }
 
-    pub fn get_sort_order(&self) -> SortBy {
-        self.sorted_by.clone()
-    }
-
     pub fn filter_out_by_string(&mut self) {
         let filter = self.get_filter_by();
+        let only_fav = self.filter_fav;
         let mut cnt = 0;
         self.books.iter_mut().for_each(|book| {
             let auth = book.get_author().to_lowercase();
@@ -278,6 +291,8 @@ impl MockupLibrary<Book> {
 
             // what is a good number for this threshold??
             if sim < 0.3 {
+                book.set_filtered_out(true);
+            } else if only_fav && !book.is_favorite() {
                 book.set_filtered_out(true);
             } else {
                 book.set_filtered_out(false);
