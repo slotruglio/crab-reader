@@ -50,6 +50,14 @@ pub fn get_epub_dir() -> PathBuf {
     data_dir
 }
 
+/// Get path of the folder where cover images are stored
+pub fn get_saved_covers_dir() -> PathBuf {
+    let mut data_dir = get_app_dir();
+    data_dir.push("covers");
+    let _ = std::fs::create_dir_all(&data_dir);
+    data_dir
+}
+
 /// Get path of the books with saved progress
 pub fn get_savedata_path() -> PathBuf {
     let mut config_file = get_config_dir();
@@ -57,12 +65,10 @@ pub fn get_savedata_path() -> PathBuf {
     config_file
 }
 
-/// Get path of the folder where cover images are stored
-pub fn get_saved_covers_dir() -> PathBuf {
-    let mut data_dir = get_app_dir();
-    data_dir.push("covers");
-    let _ = std::fs::create_dir_all(&data_dir);
-    data_dir
+pub fn get_books_notes_path() -> PathBuf {
+    let mut config_file = get_config_dir();
+    config_file.push("books_notes.json");
+    config_file
 }
 
 /// Get path of the metadata file given a book path

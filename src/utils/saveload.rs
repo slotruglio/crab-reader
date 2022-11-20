@@ -1,13 +1,13 @@
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::BufReader,
-    sync::mpsc::channel, path::Path, str::FromStr,
+    sync::mpsc::channel, path::Path, str::FromStr, collections::HashMap,
 };
 
 use rust_fuzzy_search::fuzzy_compare;
 use serde_json::{json, Value};
 
-use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
+use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir, get_books_notes_path}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
 
 use super::{envmanager::FontSize, dir_manager::get_metadata_path};
 
@@ -305,6 +305,113 @@ pub fn get_chapter_bytes(
     println!("filename from where get page: {:?}", filename);
 
     std::fs::read(filename).map_err(|e| e.to_string())
+}
+
+/// function to save note in a page of chapter of currently opened book
+pub fn save_note<T: Into<String> + Clone>(
+    book_path: T,
+    chapter: usize,
+    start_page: T,
+    note: T,
+) -> Result<(), Box<dyn std::error::Error>> {
+
+    println!(
+        "DEBUG saving note: {} {} {} {}",
+        chapter,
+        start_page.clone().into(),
+        book_path.clone().into(),
+        note.clone().into()
+    );
+
+    // check if exists a file
+    let notes_path = get_books_notes_path();
+    let mut json = json!({});
+    if let Ok(opened_file) = File::open(notes_path.clone()) {
+        println!("DEBUG file exists");
+        let reader = BufReader::new(opened_file);
+        if let Ok(content) = serde_json::from_reader(reader) {
+            json = content
+        };
+    } else {
+        println!("DEBUG file doesn't exist");
+        create_dir_all(notes_path.parent().unwrap()).unwrap();
+    }
+
+    // json value for the book
+    let value = json!(
+        {
+            "chapter": chapter,
+            "start":start_page.into(),
+            "note":note.into()
+        }
+    );
+
+    // insert the value in the json
+    if let Some(array) = json[book_path.clone().into()].as_array_mut() {
+        array.push(value);
+    } else {
+        json[book_path.into()] = json!([value]);
+    }
+    // open file to write
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_savedata_path())?;
+
+    serde_json::to_writer_pretty(file, &json)?;
+
+    Ok(())
+}
+
+/// function to load notes of a book
+pub fn load_notes<T: Into<String> + Clone>(
+    book_path: T,
+) -> Result<HashMap<usize, (usize, String)>, Box<dyn std::error::Error>> {
+    let mut map = HashMap::new();
+
+    if let Ok(file) = File::open(get_books_notes_path()) {
+        let reader = BufReader::new(file);
+        let json: Value = serde_json::from_reader(reader)?;
+
+        if let Some(array) = json[book_path.clone().into()].as_array() {
+            for value in array {
+                let mut notes = ""; 
+                let mut chapter = 1;
+                let mut start_page = "";
+
+                let opt_note = value.get("notes").and_then(|v| v.as_str());
+                if let None = opt_note {
+                    continue;
+                } else {
+                    notes = opt_note.unwrap();
+                }
+
+                let opt_chapter_value = value
+                .get("chapter").and_then(|v| v.as_u64());
+                let opt_start_page = value
+                    .get("start_page").and_then(|v| v.as_str());
+
+                // assign values considering the same font size
+                if let Some(c) = opt_chapter_value {
+                    chapter = c as usize;
+                } else {
+                    continue;
+                }
+                if let Some(s) = opt_start_page{
+                    start_page = s;
+                } else {
+                    continue;
+                }
+
+                // need to "find" the last read page
+                let page = search_page(book_path.clone(), chapter, start_page);
+
+                map.insert(chapter, (page, notes.to_string()));
+            }
+        };
+    }
+    Ok(map)
 }
 
 /*
