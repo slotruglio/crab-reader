@@ -1,6 +1,6 @@
 use crate::{
-    components::book::{Book, BookManagement, BookReading, GUIBook},
-    utils::{saveload::{save_data}, envmanager::FontSize}, ReadingState,
+    components::{book::{Book, BookManagement, BookReading, GUIBook}, library::GUILibrary},
+    utils::{saveload::{save_data}, envmanager::FontSize}, ReadingState, CrabReaderState,
 };
 use druid::EventCtx;
 
@@ -29,9 +29,7 @@ pub fn edit_btn_fn(
 }
 
 /// Go to the next or previous page of the book
-#[allow(dead_code)]
-pub fn change_page(
-    ctx: &mut EventCtx,
+fn change_page(
     book: &mut Book,
     is_editing: bool,
     single_view: bool,
@@ -76,9 +74,19 @@ pub fn change_page(
             false,
         )
         .unwrap();
-        ctx.request_paint();
         println!("DEBUG: Chapter: {}", book.get_chapter_number());
     }
+}
+
+// function for going to next page
+pub fn go_next(data: &mut CrabReaderState) {
+    let book = data.library.get_selected_book_mut().unwrap();
+    change_page(book, data.reading_state.is_editing, data.reading_state.single_view, true);
+}
+// function for going to previous page
+pub fn go_prev(data: &mut CrabReaderState) {
+    let book = data.library.get_selected_book_mut().unwrap();
+    change_page(book, data.reading_state.is_editing, data.reading_state.single_view, false);
 }
 
 pub fn save_btn_fn(

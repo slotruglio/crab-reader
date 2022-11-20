@@ -1,6 +1,6 @@
 use crate::components::library::GUILibrary;
 use crate::utils::button_functions::{
-    change_page, edit_btn_fn, page_number_switch_button, save_btn_fn, undo_btn_fn,
+    edit_btn_fn, page_number_switch_button, save_btn_fn, undo_btn_fn, go_next, go_prev,
 };
 use crate::CrabReaderState;
 use crate::utils::envmanager::FontSize;
@@ -152,15 +152,8 @@ fn undo_btn() -> RoundedButton<CrabReaderState> {
 // button that let to go to next page of book
 fn next_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Prossima pagina")
-        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            let book = data.library.get_selected_book_mut().unwrap();
-            change_page(
-                ctx,
-                book,
-                data.reading_state.is_editing,
-                data.reading_state.single_view,
-                true,
-            );
+        .with_on_click(|_, data: &mut CrabReaderState, _| {
+            go_next(data);
         })
         .disabled_if(|data: &CrabReaderState, _env: &_| {
             let book = data.library.get_selected_book().unwrap();
@@ -174,15 +167,8 @@ fn next_btn() -> RoundedButton<CrabReaderState> {
 // button that let to go to previous page of book
 fn back_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Pagina precedente")
-        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            let book = data.library.get_selected_book_mut().unwrap();
-            change_page(
-                ctx,
-                book,
-                data.reading_state.is_editing,
-                data.reading_state.single_view,
-                false,
-            );
+        .with_on_click(|_, data: &mut CrabReaderState, _| {
+            go_prev(data);
         })
         .disabled_if(|data: &CrabReaderState, _env: &_|{
             let book = data.library.get_selected_book().unwrap();
