@@ -6,7 +6,7 @@ use crate::{
     },
     CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
-use druid::{AppDelegate, Code, Env, Event, Handled};
+use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent};
 use std::rc::Rc;
 
 pub struct ReadModeDelegate;
@@ -49,31 +49,31 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
         env: &Env,
     ) -> Option<druid::Event> {
         match &event {
-            Event::KeyDown(key) => {
-                let key = key.code;
+            Event::KeyDown(key_event) => {
+                let key = key_event.code;
                 match key {
                     Code::Escape => {
-                        handle_esc(ctx, window_id, event, data, env);
+                        handle_esc(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::ArrowLeft => {
-                        handle_arrow_left(ctx, window_id, event, data, env);
+                        handle_arrow_left(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::ArrowRight => {
-                        handle_arrow_right(ctx, window_id, event, data, env);
+                        handle_arrow_right(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::Tab => {
-                        handle_tab(ctx, window_id, event, data, env);
+                        handle_tab(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::Enter | Code::NumpadEnter => {
-                        handle_enter(ctx, window_id, event, data, env);
+                        handle_enter(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::KeyF => {
-                        handle_f(ctx, window_id, event, data, env);
+                        handle_f(ctx, window_id, key_event, data, env);
                         None
                     }
                     _ => Some(event),
@@ -87,7 +87,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
 fn handle_arrow_right(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: druid::Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -119,7 +119,7 @@ fn handle_arrow_right(
 fn handle_arrow_left(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -154,7 +154,7 @@ fn handle_arrow_left(
 fn handle_esc(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: druid::Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -178,7 +178,7 @@ fn handle_esc(
 fn handle_tab(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: druid::Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -203,7 +203,7 @@ fn handle_tab(
 fn handle_enter(
     ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -216,11 +216,23 @@ fn handle_enter(
 fn handle_f(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: Event,
+    event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
-    if let Some(book) = data.library.get_selected_book_mut() {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let ctl_down = event.mods.ctrl();
+
+    if ctl_down {
+        data.library.toggle_fav_filter();
+    } else if let Some(book) = data.library.get_selected_book_mut() {
         let fav = book.is_favorite();
         book.set_favorite(!fav);
     }
