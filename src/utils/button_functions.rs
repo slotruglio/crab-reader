@@ -17,11 +17,11 @@ pub fn edit_btn_fn(
     if !reading_state.is_editing {
         reading_state.is_editing = true;
         if reading_state.single_view {
-            reading_state.text_0 = book.get_page_of_chapter().to_string();
+            reading_state.text_0 = book.get_page_of_chapter();
         } else {
             let (text_0, text_1) = book.get_dual_pages();
-            reading_state.text_0 = text_0.to_string();
-            reading_state.text_1 = text_1.to_string();
+            reading_state.text_0 = text_0;
+            reading_state.text_1 = text_1;
         }
     } else {
         println!("DEBUG: EDIT BUTTON DISABLED");
@@ -71,8 +71,8 @@ pub fn change_page(
             book.get_path().to_string(),
             book.get_chapter_number(),
             book.get_current_page_number(),
-            book.get_page_of_chapter().to_string(),
-            FontSize::from_f64(MYENV.lock().unwrap().font.size),
+            book.get_page_of_chapter(),
+            FontSize::from(MYENV.lock().unwrap().font.size),
             false,
         )
         .unwrap();
@@ -87,7 +87,7 @@ pub fn save_btn_fn(
     book: &mut Book,
 ) {
     if reading_state.single_view {
-        if reading_state.text_0 != book.get_page_of_chapter().to_string() {
+        if reading_state.text_0 != book.get_page_of_chapter() {
             book.edit_text(reading_state.text_0.clone(), None);
         }
     } else {
@@ -100,8 +100,8 @@ pub fn save_btn_fn(
         book.get_path(), 
         book.get_chapter_number(), 
         book.get_current_page_number(), 
-        book.get_page_of_chapter().to_string(), 
-        FontSize::from_f64(MYENV.lock().unwrap().font.size), 
+        book.get_page_of_chapter(), 
+        FontSize::from(MYENV.lock().unwrap().font.size), 
         true
     );
     println!("DEBUG: SAVED");
@@ -122,4 +122,19 @@ pub fn undo_btn_fn(
 pub fn page_number_switch_button(reading_state: &mut ReadingState) {
     let old = reading_state.pages_btn_style;
     reading_state.pages_btn_style = (old+1)%3;
+}
+
+pub fn change_chapter(book: &mut Book, chapter_number: usize) {
+    // change chapter number in book
+    book.set_chapter_number(chapter_number, true);
+    // save the new reading position
+    save_data(
+        book.get_path().to_string(),
+        book.get_chapter_number(),
+        book.get_current_page_number(),
+        book.get_page_of_chapter(),
+        FontSize::from(MYENV.lock().unwrap().font.size),
+        false,
+    )
+    .unwrap();
 }

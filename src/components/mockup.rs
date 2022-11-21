@@ -1,17 +1,28 @@
+use derivative::Derivative;
+use druid::image::io::Reader as ImageReader;
 use std::{
-    path::{Path, PathBuf},
+    io::Cursor,
+    path::PathBuf,
     rc::Rc,
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc,
+    },
 };
+use threadpool::ThreadPool;
 
 use druid::{im::Vector, Data, Lens};
+use epub::doc::EpubDoc;
 
-use crate::utils::{epub_utils, dir_manager::{get_epub_dir, get_saved_books_dir}};
+use crate::utils::{
+    dir_manager::{get_epub_dir, get_saved_books_dir},
+    epub_utils,
+};
 
 use super::{
     book::{Book, GUIBook},
     library::GUILibrary,
 };
-
 
 pub struct LibraryFilterLens;
 
@@ -29,13 +40,18 @@ impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
     }
 }
 
-#[derive(Clone, Lens, PartialEq, Data)]
-pub struct MockupLibrary<B: GUIBook + PartialEq + Data> {
+#[derive(Clone, Derivative, Lens, Data)]
+#[derivative(PartialEq)]
+pub struct MockupLibrary<B: GUIBook + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
     filter_by: Rc<String>,
+    filter_fav: bool,
     visible_books: usize,
+    #[data(ignore)]
+    #[derivative(PartialEq = "ignore")]
+    cover_loader: Arc<CoverLoader>,
 }
 
 impl MockupLibrary<Book> {
@@ -46,11 +62,16 @@ impl MockupLibrary<Book> {
             sorted_by: SortBy::Title,
             filter_by: String::default().into(),
             visible_books: 0,
+            cover_loader: Arc::from(CoverLoader::default()),
+            filter_fav: false,
         };
+
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
                 let path: String = path.to_str().unwrap().to_string();
-                lib.add_book(path);
+                let idx = lib.books.len();
+                lib.add_book(&path);
+                lib.schedule_cover_loading(&path, idx);
             }
         }
         lib
@@ -85,7 +106,8 @@ impl MockupLibrary<Book> {
     }
 }
 
-impl GUILibrary<Book> for MockupLibrary<Book> {
+impl GUILibrary for MockupLibrary<Book> {
+    type B = Book;
     fn add_book(&mut self, path: impl Into<String>) {
         let path: String = path.into();
         let file_name = path.split("/").last().unwrap();
@@ -135,6 +157,7 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
         if idx < self.number_of_books() {
             self.unselect_current_book();
             self.selected_book = Some(idx);
+            self.books[idx].select();
         }
     }
 
@@ -151,6 +174,79 @@ impl GUILibrary<Book> for MockupLibrary<Book> {
             selected.unselect();
         }
         self.selected_book = None;
+    }
+
+    fn schedule_cover_loading(&mut self, path: impl Into<String>, idx: usize) {
+        let path = path.into();
+        let tx = self.cover_loader.tx.clone();
+        self.cover_loader.pool.execute(move || {
+            let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
+            let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
+            let reader = ImageReader::new(Cursor::new(cover))
+                .with_guessed_format()
+                .map_err(|e| e.to_string())
+                .unwrap();
+            let image = reader.decode().map_err(|e| e.to_string()).unwrap();
+            let thumbnail = image.thumbnail_exact(150, 250);
+            let rgb = thumbnail.to_rgb8().to_vec();
+            let cr = CoverResult {
+                idx,
+                cover: Some(rgb),
+            };
+            if let Ok(_) = tx.send(cr) {
+                ()
+            }
+        });
+    }
+
+    fn check_covers_loaded(&mut self) -> bool {
+        let mut loaded = false;
+        while let Ok(cr) = self.cover_loader.rx.try_recv() {
+            let book = self.get_book_mut(cr.idx);
+            if let Some(book) = book {
+                if let Some(cover) = cr.cover {
+                    book.set_cover_image(cover);
+                    loaded = true;
+                }
+            }
+        }
+        loaded
+    }
+
+    fn get_sort_order(&self) -> SortBy {
+        self.sorted_by.clone()
+    }
+
+    fn toggle_fav_filter(&mut self) {
+        self.filter_fav = !self.filter_fav;
+        self.filter_out_by_string();
+    }
+
+    fn only_fav(&self) -> bool {
+        self.filter_fav
+    }
+
+    fn next_book_idx(&self) -> Option<usize> {
+        let Some(idx) = self.get_selected_book_idx() else {
+            return self.books.iter().enumerate().find(|(_, book)| !book.is_filtered_out()).map(|(idx, _)| idx)
+        };
+        self.books
+            .iter()
+            .enumerate()
+            .find(|(i, book)| *i > idx && !book.is_filtered_out())
+            .map(|(idx, _)| idx)
+    }
+
+    fn prev_book_idx(&self) -> Option<usize> {
+        let Some(idx) = self.get_selected_book_idx() else {
+            return self.books.iter().enumerate().find(|(_, book)| !book.is_filtered_out()).map(|(idx, _)| idx);
+        };
+        self.books
+            .iter()
+            .enumerate()
+            .rev()
+            .find(|(cidx, b)| !b.is_filtered_out() && *cidx < idx)
+            .map(|(idx, _)| idx)
     }
 }
 
@@ -200,12 +296,9 @@ impl MockupLibrary<Book> {
         self.sorted_by = by;
     }
 
-    pub fn get_sort_order(&self) -> SortBy {
-        self.sorted_by.clone()
-    }
-
     pub fn filter_out_by_string(&mut self) {
         let filter = self.get_filter_by();
+        let only_fav = self.filter_fav;
         let mut cnt = 0;
         self.books.iter_mut().for_each(|book| {
             let auth = book.get_author().to_lowercase();
@@ -223,6 +316,8 @@ impl MockupLibrary<Book> {
             // what is a good number for this threshold??
             if sim < 0.3 {
                 book.set_filtered_out(true);
+            } else if only_fav && !book.is_favorite() {
+                book.set_filtered_out(true);
             } else {
                 book.set_filtered_out(false);
                 cnt += 1;
@@ -236,5 +331,31 @@ impl MockupLibrary<Book> {
             }
         }
         self.visible_books = cnt;
+    }
+}
+
+struct CoverResult {
+    idx: usize,
+    cover: Option<Vec<u8>>,
+}
+
+unsafe impl Send for CoverResult {}
+unsafe impl Sync for CoverResult {}
+
+struct CoverLoader {
+    pool: ThreadPool,
+    tx: Sender<CoverResult>,
+    rx: Receiver<CoverResult>,
+}
+
+impl Default for CoverLoader {
+    fn default() -> Self {
+        let (tx, rx) = mpsc::channel();
+        let pool = ThreadPool::new(4);
+        Self {
+            pool,
+            tx: tx.into(),
+            rx: rx.into(),
+        }
     }
 }

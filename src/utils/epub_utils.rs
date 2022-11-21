@@ -1,6 +1,6 @@
-use crate::{MYENV, utils::envmanager::FontSize};
+use crate::{MYENV, utils::{envmanager::FontSize, dir_manager::get_edited_books_dir}};
 
-use super::{saveload::{get_chapter_bytes, FileExtension}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
+use super::{saveload::{get_chapter_bytes, FileExtension, remove_edited_chapter}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
 use epub::doc::EpubDoc;
 use html2text::from_read;
 use serde_json::json;
@@ -11,6 +11,7 @@ use std::{
     io::{BufReader, Cursor, Write},
     path::{Path, PathBuf},
     rc::Rc,
+    sync::{Arc, Mutex},
 };
 
 /// Method to extract metadata from epub file
@@ -75,6 +76,7 @@ fn get_metadata_from_epub(
     );
 
     metadata.insert("chapters".to_string(), book.get_num_pages().to_string());
+    metadata.insert("favorite".to_string(), "false".to_string());
 
     Ok(metadata)
 }
@@ -104,7 +106,7 @@ pub fn edit_chapter(
     text: impl Into<String>,
 ) -> Result<(), Box<dyn error::Error>> {
     let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
+    let mut path_name: PathBuf = get_edited_books_dir().join(folder_name);
     println!("DEBUG: Folder path: {:?}", path_name);
     std::fs::create_dir_all(&path_name)?;
     path_name = path_name.join(format!("page_{}.txt", chapter_number));
@@ -139,16 +141,23 @@ pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
     let len = book.get_num_pages();
 
     //extract all chapters
-    let mut i = 0;
-    while i < len {
-        let chapter = book.get_current_str().unwrap();
-        let page_path = path_name.with_file_name(format!("page_{}.html", i));
-        let mut file = File::create(page_path).unwrap();
-        file.write_all(chapter.as_bytes()).unwrap();
-        if let Err(_) = book.go_next() {
-            break;
-        }
-        i += 1;
+    let pool = threadpool::Builder::new().build();
+
+    let arc_book = Arc::new(Mutex::new(book));
+    for i in 0..len {
+        let this_book = arc_book.clone();
+        let this_path = path_name.clone();
+        pool.execute(move || {
+            let mut locked_book = this_book.lock().unwrap();
+            if let Err(error) = locked_book.set_current_page(i) {
+                println!("ERROR: {}", error);
+                return;
+            }
+            let chapter = locked_book.get_current_str().unwrap();
+            let page_path = this_path.with_file_name(format!("page_{}.html", i));
+            let mut file = File::create(page_path).unwrap();
+            file.write_all(chapter.as_bytes()).unwrap();
+        })
     }
 
     Ok(())
@@ -186,16 +195,23 @@ pub fn extract_chapters(path: &str) -> Result<(), Box<dyn error::Error>> {
     let len = book.get_num_pages();
 
     //extract all chapters
-    let mut i = 0;
-    while i < len {
-        let chapter = book.get_current_str().unwrap();
-        let page_path = path_name.join(format!("page_{}.html", i));
-        let mut file = File::create(page_path).unwrap();
-        file.write_all(chapter.as_bytes()).unwrap();
-        if let Err(_) = book.go_next() {
-            break;
-        }
-        i += 1;
+    let pool = threadpool::Builder::new().build();
+
+    let arc_book = Arc::new(Mutex::new(book));
+    for i in 0..len {
+        let this_book = arc_book.clone();
+        let this_path = path_name.clone();
+        pool.execute(move || {
+            let mut locked_book = this_book.lock().unwrap();
+            if let Err(error) = locked_book.set_current_page(i) {
+                println!("ERROR: {}", error);
+                return;
+            }
+            let chapter = locked_book.get_current_str().unwrap();
+            let page_path = this_path.with_file_name(format!("page_{}.html", i));
+            let mut file = File::create(page_path).unwrap();
+            file.write_all(chapter.as_bytes()).unwrap();
+        })
     }
     Ok(())
 }
@@ -215,8 +231,11 @@ pub fn get_chapter_text_utf8(path: impl Into<String>, chapter_number: usize) -> 
         println!("DEBUG: reading from txt file");
         return text;
     }
-    // try to read from html files
+    // at this point we know that the chapter is not edited,
+    // so we update the savedata in the case in which the user edited the book
+    // and then try to read from html files
     else if let Ok(text) = get_chapter_bytes(folder_name, chapter_number, FileExtension::HTML) {
+        remove_edited_chapter(path, chapter_number);
         println!("DEBUG: reading from html files");
         let text = Cursor::new(text);
         return from_read(text, 100).as_bytes().to_vec();
@@ -270,8 +289,8 @@ pub fn calculate_number_of_pages(
     let mut metadata = get_metadata_of_book(path);
     let number_of_chapters = metadata["chapters"].parse::<usize>().unwrap_or_default();
 
-    let n_workers = 4;
-    let pool = threadpool::ThreadPool::new(n_workers);
+    let pool = threadpool::Builder::new().build();
+
 
     let (tx, rx) = std::sync::mpsc::channel();
     for i in 0..number_of_chapters {
@@ -317,7 +336,7 @@ pub fn calculate_number_of_pages(
 
     // save number of pages per chapter in metadata
     metadata.insert(
-        format!("pages_per_chapter_{}", FontSize::from_f64(font_size).to_string()),
+        format!("pages_per_chapter_{}", FontSize::from(font_size).to_string()),
         format!(
             "[{}]",
             pages_per_chapter_start_end
@@ -366,7 +385,7 @@ pub fn get_number_of_pages(path: &str) -> usize {
 pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
     let metadata = get_metadata_of_book(path);
 
-    let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from_f64(MYENV.lock().unwrap().font.size).to_string()).as_str());
+    let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from(MYENV.lock().unwrap().font.size).to_string()).as_str());
     if let Some(pages_per_chapter) = result {
         let vec_as_str = pages_per_chapter.to_string();
         vec_as_str

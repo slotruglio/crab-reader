@@ -1,0 +1,47 @@
+- Key Controls (Cocco)
+    - Integrare next page/prev page di Sam (Sam)
+
+- Flex footer in read mode (Sam)
+- Sistemare sto porcoddio di default text color (Gab)
+- Mettere qualcosa per poter utilizzare l'OCR (Gab)
+    - Colonna a destra del testo
+        - Fisico -> Virtuale (OCR)
+        - Virtuale -> Fisico (nchar / 1024)
+- Context Menù per modificare le impostazioni (Misto)
+    - Scheletro (Cocco)
+    - Seconda Finestra (Cocco)
+    - Tab per recentemente letti? (???)
+    - Tab per preferiti? (???)
+    - Tab per leggere/rimuovere libri? (Gab)
+    - Cambio lingua (per localizzazione) (Gab)
+    - Altro (__)
+- Testare home folder su Linux (Gab)
+- Gestione del tema (Gab)
+- Colori migliori (Tutti)
+    - Temizzati (Cocco+Gab)
+- Tipografia consistente (Cocco+Sam)
+- Background decente per il testo del libro (Cocco+Gab)
+    - O va bene così?
+- Icona dell'app (Gray)
+- Sistemare la folder structure che non ha un cazzo di senso (Tutti)
+    - Separare widget da dati e utils da widget
+- Passare da Label a RichText per visualizzare il testo (Gab+Sam)
+    - Doloroso ma necessario
+- Genere del libro (Boh? Sam?)
+    - Tramite richiesta HTTP? a chi?
+    - Serializzato? (si spera di sì)
+    - Se questo è fattibile, lo è anche una sinossi?
+    - Thread vs Async
+        - Tokio?
+- Note/Appunti del libro? (Sam)
+- Localizzazione (Gab)
+- Ombre ON/OFF via Context Menù?
+- I TEST
+
+SVOLTE:
+- Threadpool per caricare le cover (Cocco)
+- Sistemare le frecce nel sorting (Cocco) 
+- is_favorite (Cocco+Sam)
+- Replace manual text layouts with Label (Cocco)
+- Caching of cover images + enable/disable shadows via CLI (Cocco)
+- Sistemare flex read/edit (Cocco)

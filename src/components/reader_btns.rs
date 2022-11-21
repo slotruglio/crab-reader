@@ -3,10 +3,11 @@ use crate::utils::button_functions::{
     change_page, edit_btn_fn, page_number_switch_button, save_btn_fn, undo_btn_fn,
 };
 use crate::CrabReaderState;
+use crate::utils::envmanager::FontSize;
 use druid::widget::{Align, Label};
-use druid::{Color, WidgetExt};
+use druid::WidgetExt;
 
-use super::book::{BookReading, GUIBook};
+use super::book::{BookReading, GUIBook, Book};
 use super::rbtn::RoundedButton;
 
 #[allow(unused)]
@@ -21,6 +22,60 @@ pub enum ReaderBtn {
     PageNumberSwitch,
     ChaptersList,
 }
+
+enum PageCounterStyle {
+    CUMULATIVE,
+    ENDOFCHAPTER,
+    ENDOFBOOK
+}
+impl PageCounterStyle {
+    fn to_string(&self, book: &Book, single_view: bool) -> String {
+        let page_number = book.get_cumulative_current_page_number();
+
+        match self {
+            PageCounterStyle::ENDOFCHAPTER => {
+                let chapter_page_number = book.get_current_page_number();
+                let pages_to_end = book.get_last_page_number() - chapter_page_number;
+                format!("Pages to end of chapter: {}", pages_to_end.to_string())
+            },
+            PageCounterStyle::ENDOFBOOK => {
+                let pages_to_end = book.get_number_of_pages() - page_number;
+                format!("Pages to end of book: {}", pages_to_end.to_string())
+            },
+            PageCounterStyle::CUMULATIVE => {
+                let odd = page_number % 2;
+                if single_view {
+                    format!("Page {}", page_number.to_string())
+                } else {
+                    if odd == 0 {
+                        format!(
+                            "Pages {}-{}",
+                            page_number.to_string(),
+                            (page_number + 1).to_string()
+                        )
+                    } else {
+                        format!(
+                            "Pages {}-{}",
+                            (page_number - 1).to_string(),
+                            page_number.to_string()
+                        )
+                    }
+                }
+            },
+        }
+    }
+}
+impl From<u8> for PageCounterStyle {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => PageCounterStyle::CUMULATIVE,
+            1 => PageCounterStyle::ENDOFCHAPTER,
+            2 => PageCounterStyle::ENDOFBOOK,
+            _ => PageCounterStyle::CUMULATIVE,
+        }
+    }
+}
+
 
 impl ReaderBtn {
     /// Returns a button with the correct label and function
@@ -45,10 +100,6 @@ fn leave_btn() -> RoundedButton<CrabReaderState> {
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(24.0)
 }
 
@@ -62,11 +113,6 @@ fn edit_btn() -> RoundedButton<CrabReaderState> {
             "Modifica testo".into()
         }
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
-    .with_text_size(24.0)
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         if data.reading_state.is_editing {
             data.reading_state.is_editing = false;
@@ -80,16 +126,12 @@ fn edit_btn() -> RoundedButton<CrabReaderState> {
             );
         }
     })
+    .with_text_size(24.0)
 }
 
 // button that let to go to save edited page
 fn save_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Salva modifiche")
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(18.0)
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
             save_btn_fn(
                 ctx,
@@ -97,19 +139,16 @@ fn save_btn() -> RoundedButton<CrabReaderState> {
                 &mut data.library.get_selected_book_mut().unwrap(),
             );
         })
+        .with_text_size(18.0)
 }
 
 // button that let to go to undo last edit
 fn undo_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Annulla modifiche")
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
-        .with_text_size(18.0)
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             undo_btn_fn(&mut data.reading_state);
         })
+        .with_text_size(18.0)
 }
 
 //* EDIT SECTION END */
@@ -126,10 +165,12 @@ fn next_btn() -> RoundedButton<CrabReaderState> {
                 true,
             );
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
+        .disabled_if(|data: &CrabReaderState, _env: &_| {
+            let book = data.library.get_selected_book().unwrap();
+            let last_page = book.get_number_of_pages() - 1;
+            // if last page -> disable button
+            book.get_cumulative_current_page_number() == last_page
+        })
         .with_text_size(18.0)
 }
 
@@ -146,10 +187,11 @@ fn back_btn() -> RoundedButton<CrabReaderState> {
                 false,
             );
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
+        .disabled_if(|data: &CrabReaderState, _env: &_|{
+            let book = data.library.get_selected_book().unwrap();
+            // if first page -> disable button
+            book.get_cumulative_current_page_number() == 0
+        })
         .with_text_size(18.0)
 }
 
@@ -165,71 +207,25 @@ fn views_btn() -> RoundedButton<CrabReaderState> {
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         data.reading_state.single_view = !data.reading_state.single_view;
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(20, 20, 20))
-    .with_text_color(Color::WHITE)
     .with_text_size(24.0)
 }
 
 // button that let to see page number with different views
 fn pages_number_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::dynamic(|data: &CrabReaderState, _env: &_| {
-        let page_number = data
-            .library
+
+        PageCounterStyle::from(data.reading_state.pages_btn_style)
+        .to_string(
+            data.library
             .get_selected_book()
-            .unwrap()
-            .get_cumulative_current_page_number();
-        let chapter_page_number = data
-            .library
-            .get_selected_book()
-            .unwrap()
-            .get_current_page_number();
-        match data.reading_state.pages_btn_style {
-            1 => {
-                let pages_to_end = data
-                    .library
-                    .get_selected_book()
-                    .unwrap()
-                    .get_last_page_number()
-                    - chapter_page_number;
-                format!("Pages to end of chatpter: {}", pages_to_end.to_string())
-            }
-            2 => {
-                let pages_to_end = data
-                    .library
-                    .get_selected_book()
-                    .unwrap()
-                    .get_number_of_pages()
-                    - page_number;
-                format!("Pages to end of book: {}", pages_to_end.to_string())
-            }
-            _ => {
-                let odd = page_number % 2;
-                if data.reading_state.single_view {
-                    format!("Page {}", page_number.to_string())
-                } else {
-                    if odd == 0 {
-                        format!(
-                            "Pages {}-{}",
-                            page_number.to_string(),
-                            (page_number + 1).to_string()
-                        )
-                    } else {
-                        format!(
-                            "Pages {}-{}",
-                            (page_number - 1).to_string(),
-                            page_number.to_string()
-                        )
-                    }
-                }
-            }
-        }
+            .unwrap(),
+            data.reading_state.single_view
+        )
     })
-    .with_text_size(12.0)
     .with_on_click(|_, data: &mut CrabReaderState, _| {
         page_number_switch_button(&mut data.reading_state);
     })
+    .with_text_size(FontSize::SMALL.to_f64())
 }
 
 fn chapters_list_btn() -> RoundedButton<CrabReaderState> {
@@ -237,10 +233,6 @@ fn chapters_list_btn() -> RoundedButton<CrabReaderState> {
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading_state.sidebar_open = !data.reading_state.sidebar_open;
         })
-        .with_color(Color::rgb8(70, 70, 70))
-        .with_hot_color(Color::rgb8(50, 50, 50))
-        .with_active_color(Color::rgb8(20, 20, 20))
-        .with_text_color(Color::WHITE)
         .with_text_size(18.0)
 }
 

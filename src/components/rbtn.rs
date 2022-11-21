@@ -3,6 +3,8 @@ use druid::{
     LifeCycle::HotChanged, RenderContext, Size, Widget,
 };
 
+use super::colors;
+
 pub struct RoundedButton<T> {
     label: Label<T>,
     label_size: Size,
@@ -11,9 +13,11 @@ pub struct RoundedButton<T> {
     active_color: Color,
     status: ButtonStatus,
     on_click: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,
+    disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
+    toggle_condition: Box<dyn Fn(&T, &Env) -> bool>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 enum ButtonStatus {
     Normal,
     Hot,
@@ -24,14 +28,17 @@ enum ButtonStatus {
 impl<T: Data> RoundedButton<T> {
     fn new(label: Label<T>) -> Self {
         Self {
-            label,
+            label: label.with_line_break_mode(druid::widget::LineBreaking::WordWrap),
             label_size: Size::ZERO,
-            color: Color::GRAY,
-            hot_color: Color::RED,
-            active_color: Color::GREEN,
+            color: colors::NORMAL_GRAY,
+            hot_color: colors::HOT_GRAY,
+            active_color: colors::ACTIVE_GRAY,
             status: ButtonStatus::Normal,
             on_click: Box::new(|_, _, _| {}),
+            disable_condition: Box::new(|_, _| false),
+            toggle_condition: Box::new(|_, _| false),
         }
+        .with_text_color(colors::TEXT_WHITE)
     }
 
     pub fn dynamic(closure: impl Fn(&T, &Env) -> String + 'static) -> Self {
@@ -49,17 +56,19 @@ impl<T: Data> RoundedButton<T> {
         self
     }
 
-    /// The hot color is the color for when the button is hovered
+    #[allow(dead_code)]
     pub fn with_hot_color(mut self, color: impl Into<Color>) -> Self {
         self.hot_color = color.into();
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_color(mut self, color: impl Into<Color>) -> Self {
         self.color = color.into();
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_active_color(mut self, color: impl Into<Color>) -> Self {
         self.active_color = color.into();
         self
@@ -67,11 +76,6 @@ impl<T: Data> RoundedButton<T> {
 
     fn is_disabled(&self) -> bool {
         self.status == ButtonStatus::Disabled
-    }
-
-    pub fn disabled(mut self) -> Self {
-        self.status = ButtonStatus::Disabled;
-        self
     }
 
     pub fn with_on_click(
@@ -86,15 +90,26 @@ impl<T: Data> RoundedButton<T> {
         self.label.set_text_color(color.into());
         self
     }
+
+    pub fn disabled_if(mut self, closure: impl Fn(&T, &Env) -> bool + 'static) -> Self {
+        self.disable_condition = Box::new(closure);
+        self
+    }
+
+    pub fn with_font(mut self, font: impl Into<druid::FontDescriptor>) -> Self {
+        self.label.set_font(font.into());
+        self
+    }
+
+    pub fn with_toggle(mut self, closure: impl Fn(&T, &Env) -> bool + 'static) -> Self {
+        self.toggle_condition = Box::new(closure);
+        self
+    }
 }
 
 impl<T: Data> Widget<T> for RoundedButton<T> {
     fn event(&mut self, ctx: &mut druid::EventCtx, event: &druid::Event, data: &mut T, env: &Env) {
         self.label.event(ctx, event, data, env);
-
-        if self.is_disabled() {
-            ctx.set_cursor(&NotAllowed);
-        }
 
         match event {
             Event::MouseDown(_) => {
@@ -102,7 +117,6 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
                     return;
                 }
                 self.status = ButtonStatus::Active;
-                ctx.request_paint();
                 (self.on_click)(ctx, data, env);
             }
             Event::MouseUp(_) => {
@@ -127,16 +141,16 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
 
         match event {
             HotChanged(_) => {
-                if self.is_disabled() {
+                if self.is_disabled() || &self.status == &ButtonStatus::Active {
                     return;
                 }
+
                 if ctx.is_hot() {
                     self.status = ButtonStatus::Hot;
-                    ctx.request_paint();
                 } else {
                     self.status = ButtonStatus::Normal;
-                    ctx.request_paint();
                 }
+                ctx.request_paint();
             }
             _ => {}
         }
@@ -144,6 +158,19 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
 
     fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
         self.label.update(ctx, old_data, data, env);
+
+        let disable = (self.disable_condition)(data, env);
+        if disable {
+            self.status = ButtonStatus::Disabled;
+            ctx.set_cursor(&NotAllowed);
+        } else if &self.status == &ButtonStatus::Active {
+            // nop
+        } else if ctx.is_hot() {
+            self.status = ButtonStatus::Hot;
+        } else {
+            self.status = ButtonStatus::Normal;
+            ctx.clear_cursor();
+        };
     }
 
     fn layout(
@@ -172,12 +199,17 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &T, env: &Env) {
         let rrect = ctx.size().to_rect().to_rounded_rect(5.0);
 
-        let color = match self.status {
-            ButtonStatus::Normal => &self.color,
-            ButtonStatus::Hot => &self.hot_color,
+        let mut color = match &self.status {
             ButtonStatus::Active => &self.active_color,
-            _ => &self.color,
+            ButtonStatus::Hot => &self.hot_color,
+            ButtonStatus::Normal => &self.color,
+            ButtonStatus::Disabled => &self.color,
         };
+
+        if (self.toggle_condition)(data, env) {
+            color = &self.active_color;
+        }
+
         ctx.fill(rrect, color);
 
         let label_origin = ctx.size().to_rect().center() - self.label_size.to_vec2() / 2.0;

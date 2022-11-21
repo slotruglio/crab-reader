@@ -1,16 +1,17 @@
-use components::book::{Book, BookReading, GUIBook};
+use clap::{arg, command, Parser};
+use components::book::{Book, GUIBook};
 use components::book_details::BookDetails;
+use components::colors;
 use components::cover_library::CoverLibrary;
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
-use components::reader_view::{sidebar_widget, ReaderView};
-use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
+use components::reader_view::{current_chapter_widget, sidebar_widget, ReaderView};
+use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, EventCtx, Handled, Lens, PlatformError, Selector,
-    Widget, WidgetExt, WindowDesc, FileSpec, Command, Target
+    AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
 
 use druid::FileDialogOptions;
@@ -21,7 +22,9 @@ use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::{button_functions, ocrmanager}; // 1.3.1
+use utils::delegates;
 use utils::envmanager::MyEnv;
+use utils::fonts::Font;
 
 use crate::components::book::BookManagement;
 
@@ -31,6 +34,8 @@ type Library = MockupLibrary<Book>;
 
 pub const ENTERING_READING_MODE: Selector<()> = Selector::new("reading-mode.on");
 pub const LEAVING_READING_MODE: Selector<()> = Selector::new("reading-mode.off");
+const UP_ARROW: &str = " ↑";
+const DOWN_ARROW: &str = " ↓";
 
 //Create a global ENV variable
 #[allow(dead_code)]
@@ -84,7 +89,6 @@ pub enum DisplayMode {
 
 #[derive(Clone, Data, Lens)]
 pub struct CrabReaderState {
-    user: UserState,
     library: Library,
     display_mode: DisplayMode,
     reading: bool,
@@ -94,7 +98,6 @@ pub struct CrabReaderState {
 impl Default for CrabReaderState {
     fn default() -> Self {
         Self {
-            user: UserState::new(),
             library: Library::new(),
             display_mode: DisplayMode::Cover,
             reading: false,
@@ -103,22 +106,9 @@ impl Default for CrabReaderState {
     }
 }
 
-#[derive(Clone, Data)]
-struct UserState {
-    username: Rc<String>,
-}
-
-impl UserState {
-    pub fn new() -> Self {
-        Self {
-            username: Rc::from("Username".to_string()),
-        }
-    }
-}
-
 fn book_details_panel() -> impl Widget<CrabReaderState> {
     BookDetails::new()
-        .background(Color::GRAY)
+        .background(colors::ACCENT_GRAY)
         .rounded(10.0)
         .lens(CrabReaderState::library)
 }
@@ -126,14 +116,12 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
 fn title_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
-            SortBy::Title => "v",
-            _ => "^",
+            SortBy::Title => DOWN_ARROW,
+            SortBy::TitleRev => UP_ARROW,
+            _ => "",
         };
-        format!("Title {}", arrow)
+        format!("Titolo{}", arrow)
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(0, 0, 0))
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _: &Env| {
         let sort = data.get_sort_order();
@@ -144,20 +132,22 @@ fn title_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let order = data.get_sort_order();
+        order == SortBy::Title || order == SortBy::TitleRev
+    })
     .padding(5.0)
 }
 
 fn author_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
-            SortBy::Author => "v",
-            _ => "^",
+            SortBy::Author => DOWN_ARROW,
+            SortBy::AuthorRev => UP_ARROW,
+            _ => "",
         };
-        format!("Author {}", arrow)
+        format!("Autore{}", arrow)
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(0, 0, 0))
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
         let sort = data.get_sort_order();
@@ -168,20 +158,34 @@ fn author_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let order = data.get_sort_order();
+        order == SortBy::Author || order == SortBy::AuthorRev
+    })
     .padding(5.0)
+}
+
+fn filter_fav_btn() -> impl Widget<Library> {
+    let emoji_font = Font::default().emoji().xs().get();
+    RoundedButton::from_text("🌟")
+        .with_text_size(18.0)
+        .with_on_click(|_, data: &mut Library, _| {
+            data.toggle_fav_filter();
+        })
+        .with_font(emoji_font)
+        .with_toggle(|data: &Library, _env: &Env| data.only_fav())
+        .padding(5.0)
 }
 
 fn completion_sorter_btn() -> impl Widget<Library> {
     RoundedButton::dynamic(|data: &Library, _env: &Env| {
         let arrow = match data.get_sort_order() {
-            SortBy::PercRead => "v",
-            _ => "^",
+            SortBy::PercRead => DOWN_ARROW,
+            SortBy::PercReadRev => UP_ARROW,
+            _ => "",
         };
-        format!("Completion {}", arrow)
+        format!("Progresso{}", arrow)
     })
-    .with_color(Color::rgb8(70, 70, 70))
-    .with_hot_color(Color::rgb8(50, 50, 50))
-    .with_active_color(Color::rgb8(0, 0, 0))
     .with_text_size(18.0)
     .with_on_click(|ctx, data: &mut Library, _| {
         let sort = data.get_sort_order();
@@ -192,53 +196,52 @@ fn completion_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let sort = data.get_sort_order();
+        sort == SortBy::PercRead || sort == SortBy::PercReadRev
+    })
     .padding(5.0)
 }
 
-// Showcase per Sam su come si usa
-pub fn disabled_btn() -> impl Widget<Library> {
-    RoundedButton::from_text("I am a disabled button")
-        .with_text_size(18.0)
-        .with_color(Color::rgb8(200, 20, 20))
-        .with_hot_color(Color::rgb8(170, 20, 20))
-        .with_on_click(|_, _, _| println!("You won't see this"))
-        .disabled()
-}
-
 fn picker_sort_by() -> impl Widget<Library> {
-    Flex::row()
-        .with_child(Label::new("Sort by"))
-        .with_child(completion_sorter_btn())
-        .with_child(author_sorter_btn())
-        .with_child(title_sorter_btn())
-        .with_child(disabled_btn())
-        .padding(5.0)
-        .background(Color::GRAY)
+    let inner = Flex::row()
+        .with_flex_child(Label::new("Ordina").center().expand_width(), 1.0)
+        .with_flex_child(completion_sorter_btn(), 1.0)
+        .with_flex_child(author_sorter_btn(), 1.0)
+        .with_flex_child(title_sorter_btn(), 1.0)
+        .padding(druid::Insets::uniform_xy(15.0, 5.0))
+        .background(colors::ACCENT_GRAY)
         .rounded(5.0)
-        .padding(druid::Insets::uniform_xy(10.0, 5.0))
-        .expand_width()
+        .padding(druid::Insets::uniform_xy(10.0, 5.0));
+    Container::new(inner).expand_width()
 }
 
 fn picker_filter_by() -> impl Widget<Library> {
     let text_edit = druid::widget::TextBox::new()
-        .with_placeholder("Filter by")
-        .lens(LibraryFilterLens)
-        .fix_width(500.0);
-    Flex::row()
-        .with_child(Label::new("Filter by"))
-        .with_child(text_edit)
-        .padding(5.0)
-        .background(Color::GRAY)
+        .with_text_size(18.0)
+        .with_placeholder("Titolo, autore, genere...")
+        .lens(LibraryFilterLens);
+
+    let inner = Flex::row()
+        .with_flex_child(Label::new("Cerca libro").center().expand_width(), 1.0)
+        .with_flex_child(text_edit.expand_width(), 3.0)
+        .with_flex_child(filter_fav_btn(), 0.5)
+        .padding(druid::Insets::uniform_xy(15.0, 10.0))
+        .background(colors::ACCENT_GRAY)
         .rounded(5.0)
         .padding(druid::Insets::uniform_xy(10.0, 5.0))
-        .expand_width()
-        .fix_height(50.0)
+        .expand_width();
+
+    Container::new(inner).expand_width()
 }
 
 fn picker_controller() -> impl Widget<Library> {
     let sort_by = picker_sort_by();
     let filter_by = picker_filter_by();
-    Flex::column().with_child(sort_by).with_child(filter_by)
+    Flex::column()
+        .with_child(sort_by)
+        .with_default_spacer()
+        .with_child(filter_by)
 }
 
 fn build_ui() -> impl Widget<CrabReaderState> {
@@ -250,7 +253,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         library_list.padding(5.0),
         library_cover,
     )
-    .background(Color::GRAY)
+    .background(colors::ACCENT_GRAY)
     .rounded(10.0)
     .padding(10.0);
 
@@ -265,15 +268,10 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_child(
             RoundedButton::dynamic(
                 |data: &CrabReaderState, _env: &Env| match data.display_mode {
-                    DisplayMode::List => "Passa a visualizzazione a lista".into(),
-                    DisplayMode::Cover => "Passa a visualiazione a copertine".into(),
+                    DisplayMode::List => "Passa a visualizzazione a copertine".into(),
+                    DisplayMode::Cover => "Passa a visualiazione a liste".into(),
                 },
             )
-            .with_color(Color::rgb8(70, 70, 70))
-            .with_hot_color(Color::rgb8(50, 50, 50))
-            .with_active_color(Color::rgb8(20, 20, 20))
-            .with_text_size(24.0)
-            .with_text_color(Color::WHITE)
             .with_on_click(|ctx, data: &mut CrabReaderState, _| {
                 data.display_mode = match data.display_mode {
                     DisplayMode::List => DisplayMode::Cover,
@@ -326,23 +324,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     })
     .with_text_size(24.0);
 
-    let current_chapter = Label::dynamic(|data: &CrabReaderState, _env: &_| {
-        format!(
-            "Chapter {}",
-            data.library
-                .get_selected_book()
-                .unwrap()
-                .get_chapter_number()
-                .to_string()
-        )
-    })
-    .with_text_size(16.0)
-    .center();
+    let current_chapter = current_chapter_widget().with_text_size(16.0).center();
 
     let sidebar = sidebar_widget();
     let text = Flex::row()
         .with_flex_child(sidebar, 1.0)
-        .with_flex_child(ReaderView::dynamic_view(), 4.0);
+        .with_flex_spacer(0.2)
+        .with_flex_child(ReaderView::dynamic_view(), 4.0)
+        .with_flex_spacer(0.2)
+        .with_flex_spacer(1.0);
 
     let leave_btn = Flex::row()
         .with_child(ReaderBtn::Leave.button())
@@ -351,113 +341,16 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     // todo() switch to change single view and double view
     // this is a mock to test layout
 
-    let ocr_btn = Button::new("OCR")
-        .on_click(|event_ctx, _: &mut CrabReaderState, _| {
+    let views_btn = ReaderBtn::ViewsSwitch.button();
+    let next_btn = ReaderBtn::NextPage.button();
+    let back_btn = ReaderBtn::PrevPage.button();
+    let edit_btn = ReaderBtn::Edit.button().align_right();
+    let undo_changes_btn = ReaderBtn::Undo.button();
+    let save_changes_btn = ReaderBtn::Save.button();
 
-            //Trigger a FILE PICKER
-            let cmd = Command::new(
-                SHOW_OPEN_PANEL,
-                FileDialogOptions::new().allowed_types(vec![FileSpec::JPG, FileSpec::PNG]),
-                Target::Auto,
-            );
-
-            event_ctx.submit_command(cmd);
-
-        })
-        .fix_height(64.0)
-        .center();
-
-    let next_btn = Button::new("Next")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED NEXT START");
-            let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(
-                ctx,
-                book,
-                data.reading_state.is_editing.unwrap(),
-                data.reading_state.single_view.unwrap(),
-                true,
-            );
-            println!("DEBUG: PRESSED NEXT END\n");
-        })
-        .center();
-
-    let back_btn = Button::new("Back")
-        .on_click(|ctx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED BACK START");
-            let book = data.library.get_selected_book_mut().unwrap();
-            button_functions::change_page(
-                ctx,
-                book,
-                data.reading_state.is_editing.unwrap(),
-                data.reading_state.single_view.unwrap(),
-                false,
-            );
-
-            println!("DEBUG: PRESSED BACK END\n");
-        })
-        .center();
-
-    let edit_btn = Button::new("Edit")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED EDIT BUTTON");
-
-            button_functions::edit_button(
-                &mut data.reading_state,
-                data.library.get_selected_book().unwrap(),
-            );
-        })
-        .fix_height(64.0)
-        .center();
-
-    let save_changes_btn = Button::new("Save")
-        .on_click(|ctx: &mut EventCtx, data: &mut CrabReaderState, _| {
-            println!("DEBUG: PRESSED SAVE BUTTON");
-
-            button_functions::save_button(
-                ctx,
-                &mut data.reading_state,
-                &mut data.library.get_selected_book_mut().unwrap(),
-            );
-        })
-        .center();
-
-    let undo_changes_btn = Button::new("Undo")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            button_functions::undo_button(&mut data.reading_state);
-        })
-        .center();
-
-    let current_page = Label::dynamic(|data: &CrabReaderState, _env: &_| {
-        let page_number = data
-            .library
-            .get_selected_book()
-            .unwrap()
-            .get_cumulative_current_page_number();
-        let odd = page_number % 2;
-
-        if data.reading_state.single_view {
-            format!("Page {}", page_number.to_string())
-        } else {
-            if odd == 0 {
-                format!(
-                    "Page {}-{}",
-                    page_number.to_string(),
-                    (page_number + 1).to_string()
-                )
-            } else {
-                format!(
-                    "Page {}-{}",
-                    (page_number - 1).to_string(),
-                    page_number.to_string()
-                )
-            }
-        }
-    })
-    .with_text_size(12.0);
+    let current_page = ReaderBtn::PageNumberSwitch.button();
 
     let header_btns = Flex::row()
-        .with_child(ocr_btn)
         .with_child(edit_btn)
         .with_spacer(10.0)
         .with_child(views_btn)
@@ -487,86 +380,38 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(title)
         .with_child(current_chapter)
         .with_spacer(20.0)
-        .with_child(text)
-        .with_flex_spacer(5.0)
+        .with_flex_child(text, 1.0)
         .with_child(footer)
         .padding(15.0);
 
     ui
 }
 
-struct ReadModeDelegate;
-
-impl AppDelegate<CrabReaderState> for ReadModeDelegate {
-    fn command(
-        &mut self,
-        _: &mut druid::DelegateCtx,
-        _: druid::Target,
-        cmd: &druid::Command,
-        data: &mut CrabReaderState,
-        _: &Env,
-    ) -> Handled {
-        match cmd {
-            notif if notif.is(ENTERING_READING_MODE) => {
-                data.reading = true;
-                data.reading_state.enable(
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_page_of_chapter(),
-                );
-                Handled::Yes
-            }
-            notif if notif.is(LEAVING_READING_MODE) => {
-                data.reading = false;
-                data.reading_state.disable();
-
-                Handled::Yes
-            }
-            notif if notif.is(OPEN_FILE) => {
-                println!("Opening file!");
-                let file = cmd.get_unchecked(OPEN_FILE);
-
-                //get file path
-                let path = file.path();
-
-                let selected_book_path = data.library.get_selected_book().unwrap().get_path();
-                
-                //split by slash, get last element, split by dot, get first element
-                let folder_name = selected_book_path.split("/").last().unwrap().split(".").next().unwrap();
-
-                //call ocr on the img path
-                let ocr_result = ocrmanager::get_ebook_page(folder_name.to_string(), path.to_str().unwrap().to_string());
-
-                match ocr_result {
-                    Some(ocr_result) => {
-                        //move to the found page
-                        data.library.get_selected_book_mut().unwrap().set_chapter_number(ocr_result.0, true);
-                        data.library.get_selected_book_mut().unwrap().set_chapter_current_page_number(ocr_result.1);
-                    }
-                    None => {
-                        println!("ERROR: OCR page not found");
-                    }
-                }
-
-                
-
-                Handled::Yes
-            }
-            _ => Handled::No,
-        }
-    }
-}
-
 fn main() -> Result<(), PlatformError> {
 
     let crab_state = CrabReaderState::default();
+    let args = CommandLineArgs::parse();
     AppLauncher::with_window(
         WindowDesc::new(get_viewswitcher)
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
-    .delegate(ReadModeDelegate)
+    .configure_env(move |env, _| {
+        let shadows = args.cover_shadows;
+        env.set(PAINT_BOOK_COVERS_SHADOWS, shadows);
+    })
+    .delegate(delegates::ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct CommandLineArgs {
+    /// Wheter or not to paint the shadows of the book covers
+    /// It may (it will) cause some lags
+    #[arg(short, long, default_value = "false")]
+    cover_shadows: bool,
+}
+
+pub const PAINT_BOOK_COVERS_SHADOWS: Key<bool> = Key::new("shadows");

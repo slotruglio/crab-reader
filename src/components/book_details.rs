@@ -1,13 +1,13 @@
 use druid::widget::{Flex, Label, LineBreaking};
 use druid::{
-    BoxConstraints, Color, Command, Env, Event, EventCtx, FontDescriptor, FontFamily, FontWeight,
-    LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt,
-    WidgetPod,
+    BoxConstraints, Command, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    PaintCtx, Size, Target, UpdateCtx, Widget, WidgetExt, WidgetPod,
 };
 
 use crate::components::book::BookManagement;
-use crate::ENTERING_READING_MODE;
+use crate::{utils, ENTERING_READING_MODE};
 
+use super::colors;
 use super::rbtn::RoundedButton;
 use super::{
     book::{Book, GUIBook},
@@ -23,15 +23,11 @@ pub struct BookDetails {
 
 impl BookDetails {
     pub fn new() -> Self {
-        let header_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
-            .with_weight(FontWeight::BOLD)
-            .with_size(28.0);
-        let info_font = FontDescriptor::new(FontFamily::new_unchecked("Roboto"))
-            .with_weight(FontWeight::NORMAL)
-            .with_size(14.0);
+        let header_font = utils::fonts::Font::default().lg().bold().get();
+        let info_font = utils::fonts::Font::default().sm().get();
 
         let mut header_label = Label::new("Dettagli del libro")
-            .with_text_color(Color::rgb8(0, 0, 0))
+            .with_text_color(colors::TEXT_BLACK)
             .with_font(header_font)
             .with_text_alignment(druid::TextAlignment::Start);
         header_label.set_line_break_mode(LineBreaking::WordWrap);
@@ -42,7 +38,7 @@ impl BookDetails {
                     format!("Titolo: {}", book.get_title().to_string())
                 })
         })
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .with_font(info_font.clone())
         .align_left()
         .padding(5.0);
@@ -53,7 +49,7 @@ impl BookDetails {
                     format!("Autore: {}", book.get_author().to_string())
                 })
         })
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .with_font(info_font.clone())
         .align_left()
         .padding(5.0);
@@ -65,7 +61,7 @@ impl BookDetails {
                 })
         })
         .with_font(info_font.clone())
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .align_left()
         .padding(5.0);
 
@@ -77,7 +73,7 @@ impl BookDetails {
                 })
         })
         .with_font(info_font.clone())
-        .with_text_color(Color::BLACK)
+        .with_text_color(colors::TEXT_BLACK)
         .align_left()
         .padding(5.0);
 
@@ -85,26 +81,29 @@ impl BookDetails {
             .with_on_click(|ctx, library: &mut Library, _: &Env| {
                 let current_book = library.get_selected_book_mut().unwrap();
                 current_book.load_chapter();
-                current_book.load_page();
                 let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
                 ctx.submit_command(cmd.clone());
             })
-            .with_color(Color::rgb8(70, 70, 70))
-            .with_hot_color(Color::rgb8(50, 50, 50))
-            .with_active_color(Color::rgb8(20, 20, 20))
-            .with_text_color(Color::rgb8(220, 220, 220))
             .with_text_size(14.0);
 
-        let add_fav_btn = RoundedButton::from_text("Aggiungi ai Preferiti")
-            .with_on_click(|_: &mut EventCtx, _: &mut Library, _: &Env| {
-                println!("TODO: Implement me!!!")
-            })
-            .with_color(Color::rgb8(70, 70, 70))
-            .with_hot_color(Color::rgb8(50, 50, 50))
-            .with_active_color(Color::rgb8(20, 20, 20))
-            .with_text_color(Color::rgb8(220, 220, 220))
-            .with_text_size(14.0)
-            .disabled();
+        let add_fav_btn = RoundedButton::dynamic(|data: &Library, _| {
+            if let Some(book) = data.get_selected_book() {
+                if book.is_favorite() {
+                    "Rimuovi dai preferiti".into()
+                } else {
+                    "Aggiungi ai preferiti".into()
+                }
+            } else {
+                "Aggiungi ai preferiti".into()
+            }
+        })
+        .with_on_click(|_: &mut EventCtx, library: &mut Library, _: &Env| {
+            if let Some(book) = library.get_selected_book_mut() {
+                let fav = book.is_favorite();
+                book.set_favorite(!fav);
+            }
+        })
+        .with_text_size(14.0);
 
         let mut btn_ctls = Flex::row()
             .with_flex_child(keep_reading_btn, 1.0)
@@ -143,8 +142,10 @@ impl Widget<Library> for BookDetails {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, _: &Library, data: &Library, env: &Env) {
-        self.inner.update(ctx, data, env);
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
+        if !old_data.same(data) {
+            self.inner.update(ctx, data, env);
+        }
     }
 
     fn layout(
