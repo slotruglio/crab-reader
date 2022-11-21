@@ -1,6 +1,6 @@
 use druid::{
-    BoxConstraints, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
-    Size, UpdateCtx, Widget, WidgetPod,
+    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Point, Size, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::Library;
@@ -43,7 +43,7 @@ impl Widget<Library> for CoverLibrary {
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     data.unselect_current_book();
-                    ctx.request_layout();
+                    ctx.request_paint();
                 }
             }
             Event::Notification(cmd) => {
@@ -53,7 +53,7 @@ impl Widget<Library> for CoverLibrary {
                     } else {
                         data.unselect_current_book();
                     }
-                    ctx.request_layout();
+                    ctx.request_paint();
                 }
             }
             _ => {}
@@ -82,8 +82,8 @@ impl Widget<Library> for CoverLibrary {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(old_book) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {
-                    if old_book != book {
-                        (*inner).update(ctx, book, env);
+                    if !old_book.same(book) {
+                        inner.update(ctx, book, env);
                     }
                 }
             }

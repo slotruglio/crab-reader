@@ -1,9 +1,18 @@
+- Key Controls (Cocco)
+    - Ctrl+F per filtrare solo preferiti
+    - Ctrl+L per focussare la barra di ricerca (non so se lo farò onestamente)
+    - Integrare next page/prev page di Sam
+    - A per cambiare sorting autori
+    - T per cambiare sorting per titolo
+    - P per cambiare sorting per progresso
+    - Direi puo' bastare 
+
+
 - Sistemare sto porcoddio di default text color (Gab)
 - Mettere qualcosa per poter utilizzare l'OCR (Gab)
     - Colonna a destra del testo
         - Fisico -> Virtuale (OCR)
         - Virtuale -> Fisico (nchar / 1024)
-- Sistemare flex read/edit (Cocco)
 - Context Menù per modificare le impostazioni (Misto)
     - Scheletro (Cocco)
     - Seconda Finestra (Cocco)
@@ -17,7 +26,6 @@
 - Colori migliori (Tutti)
     - Temizzati (Cocco+Gab)
 - Tipografia consistente (Cocco+Sam)
-- Key Controls (Cocco)
 - Background decente per il testo del libro (Cocco+Gab)
     - O va bene così?
 - Icona dell'app (Gray)
@@ -33,6 +41,7 @@
         - Tokio?
 - Note/Appunti del libro? (Sam)
 - Localizzazione (Gab)
+- Ombre ON/OFF via Context Menù?
 - I TEST
 
 SVOLTE:
@@ -41,3 +50,5 @@ SVOLTE:
 - is_favorite (Cocco+Sam)
 - Replace manual text layouts with Label (Cocco)
 - Flex footer in read mode (Sam)
+- Caching of cover images + enable/disable shadows via CLI (Cocco)
+- Sistemare flex read/edit (Cocco)

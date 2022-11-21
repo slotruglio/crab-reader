@@ -72,7 +72,7 @@ impl<B: GUIBook + Data> Widget<B> for BookListing<B> {
                     Target::Auto,
                 );
                 ctx.submit_notification(cmd);
-                ctx.request_layout();
+                ctx.request_paint();
             }
             Event::MouseMove(_) => {
                 self.is_hot = ctx.is_hot();

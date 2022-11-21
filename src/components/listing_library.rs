@@ -50,7 +50,6 @@ where
             Event::MouseDown(_) => {
                 if !ctx.is_handled() {
                     data.unselect_current_book();
-                    ctx.request_layout();
                 }
             }
             Event::Notification(cmd) => {
@@ -60,7 +59,6 @@ where
                     } else {
                         data.unselect_current_book();
                     }
-                    ctx.request_layout();
                 }
             }
             _ => {}
@@ -93,7 +91,11 @@ where
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
-                inner.update(ctx, book, env);
+                if let Some(old_book) = old_data.get_book(idx) {
+                    if !book.same(old_book) {
+                        inner.update(ctx, book, env);
+                    }
+                }
             }
         }
     }

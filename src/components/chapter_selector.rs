@@ -1,8 +1,9 @@
 use druid::{
-    widget::Label, Affine, Color, MouseEvent, RenderContext, Size, Widget, WidgetExt, WidgetPod,
+    widget::Label, Affine, Color, Data, MouseEvent, RenderContext, Size, Widget, WidgetExt,
+    WidgetPod,
 };
 
-use crate::{Library, utils::button_functions::change_chapter};
+use crate::{utils::button_functions::change_chapter, Library};
 
 use super::{book::BookReading, colors, library::GUILibrary};
 
@@ -83,8 +84,10 @@ impl Widget<Library> for ChapterSelector {
         data: &Library,
         env: &druid::Env,
     ) {
-        for child in self.children.iter_mut() {
-            child.update(ctx, old_data, data, env);
+        if !data.same(old_data) {
+            for child in self.children.iter_mut() {
+                child.update(ctx, old_data, data, env);
+            }
         }
     }
 
@@ -145,10 +148,7 @@ impl Widget<Library> for ChapterSelectorItem {
             druid::Event::MouseDown(_) => {
                 if self.hot {
                     println!("Current index: {}", self.idx);
-                    change_chapter(
-                        data.get_selected_book_mut().unwrap(),
-                        self.idx,
-                    );
+                    change_chapter(data.get_selected_book_mut().unwrap(), self.idx);
                     ctx.request_paint();
                 }
             }

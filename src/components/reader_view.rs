@@ -1,5 +1,5 @@
 use druid::widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox};
-use druid::{LensExt, TextAlignment, UnitPoint, Widget, WidgetExt, FontDescriptor, Color};
+use druid::{Color, FontDescriptor, LensExt, TextAlignment, UnitPoint, Widget, WidgetExt};
 
 use crate::{CrabReaderState, ReadingState};
 
@@ -18,21 +18,22 @@ pub enum ReaderView {
 }
 
 impl ReaderView {
-    pub fn get_view(&self) -> Container<CrabReaderState> {
+    pub fn get_view(&self) -> impl Widget<CrabReaderState> {
         let myenv = MYENV.lock().unwrap();
         let font = myenv.font.clone();
         let font_color = myenv.font_color.clone();
 
         match self {
             ReaderView::Single => single_view_widget(font, font_color),
-            ReaderView::SingleEdit => single_view_edit_widget(font, font_color),
+            ReaderView::SingleEdit => single_view_edit_widget(font, font_color), // single_view_edit_widget(font, font_color),
             ReaderView::Dual => dual_view_widget(font, font_color),
             ReaderView::DualEdit => dual_view_edit_widget(font, font_color),
         }
     }
+
     /// Returns a widget with the correct widget to show page(s) in reading or edit mode
     pub fn dynamic_view() -> impl Widget<CrabReaderState> {
-        let either = Either::new(
+        Either::new(
             |data: &CrabReaderState, _env| data.reading_state.single_view,
             Either::new(
                 |data: &CrabReaderState, _env| data.reading_state.is_editing,
@@ -46,17 +47,13 @@ impl ReaderView {
             ),
         )
         .center()
-        .padding(10.0)
-        .fix_size(800.0, 450.0);
-
-        either
+        .expand()
     }
 }
 
 // single page view for text reader
 fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
-    let view = Scroll::new(
+    let inner = Scroll::new(
         Label::dynamic(|data: &CrabReaderState, _env: &_| {
             data.library
                 .get_selected_book()
@@ -70,71 +67,57 @@ fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<Crab
     )
     .vertical();
 
-    Container::new(view)
+    Container::new(inner)
 }
 
 // single page view for text editing
 fn single_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
-    let text_box = TextBox::multiline()
+    let tb = TextBox::multiline()
         .with_text_color(font_color)
         .with_font(font)
         .with_placeholder("Text editing is not yet implemented")
-        .lens(CrabReaderState::reading_state.then(ReadingState::text_0));
+        .lens(CrabReaderState::reading_state.then(ReadingState::text_0))
+        .expand_width();
 
-    let view = Scroll::new(text_box.fix_size(500.0, 500.0)).vertical();
-
-    Container::new(view)
+    Container::new(Scroll::new(tb).vertical())
 }
 
 // dual page view for text reader
 fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
-    let views = Flex::row()
+    let inner = Flex::row()
         .with_flex_child(
             Scroll::new(
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_dual_pages()
-                        .0
+                    data.library.get_selected_book().unwrap().get_dual_pages().0
                 })
                 .with_text_color(font_color.clone())
                 .with_font(font.clone())
                 .with_text_alignment(TextAlignment::Justified)
                 .with_line_break_mode(LineBreaking::WordWrap),
             )
-            .vertical()
-            .fix_size(400.0, 300.0),
+            .vertical(),
             1.0,
         )
-        .with_spacer(20.0)
+        .with_flex_spacer(0.1)
         .with_flex_child(
             Scroll::new(
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_dual_pages()
-                        .1
+                    data.library.get_selected_book().unwrap().get_dual_pages().1
                 })
                 .with_text_color(font_color)
                 .with_font(font)
                 .with_text_alignment(TextAlignment::Justified)
-                .with_line_break_mode(LineBreaking::WordWrap),
+                .with_line_break_mode(LineBreaking::WordWrap)
+                .expand_width(),
             )
-            .vertical()
-            .fix_size(400.0, 300.0),
+            .vertical(),
             1.0,
         );
-
-    Container::new(views)
+    Container::new(inner)
 }
 
 // dual page view for text editing
 fn dual_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-
     let text_box_page_0 = TextBox::multiline()
         .with_text_color(font_color.clone())
         .with_font(font.clone())
@@ -147,11 +130,12 @@ fn dual_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<C
         .with_placeholder("There is no page here... but you can add one!")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_1));
 
-    let views = Flex::row()
-        .with_child(Scroll::new(text_box_page_0.fix_size(500.0, 500.0)).vertical())
-        .with_spacer(10.0)
-        .with_child(Scroll::new(text_box_page_1.fix_size(500.0, 500.0)).vertical());
-    Container::new(views)
+    let inner = Flex::row()
+        .with_flex_child(Scroll::new(text_box_page_0).vertical(), 1.0)
+        .with_flex_spacer(0.1)
+        .with_flex_child(Scroll::new(text_box_page_1).vertical(), 1.0);
+
+    Container::new(inner)
 }
 
 pub fn title_widget() -> impl Widget<CrabReaderState> {
@@ -171,15 +155,14 @@ pub fn title_widget() -> impl Widget<CrabReaderState> {
 pub fn current_chapter_widget() -> Label<CrabReaderState> {
     Label::dynamic(|data: &CrabReaderState, _env: &_| {
         // + 1
-        let display_number = data.library
+        let display_number = data
+            .library
             .get_selected_book()
             .unwrap()
-            .get_chapter_number() + 1;
-            
-        format!(
-            "Chapter {}",
-            display_number
-        )
+            .get_chapter_number()
+            + 1;
+
+        format!("Chapter {}", display_number)
     })
 }
 
@@ -193,7 +176,6 @@ pub fn sidebar_widget() -> impl Widget<CrabReaderState> {
     })
     .with_on_click(|ctx, data: &mut ReadingState, _env| {
         data.sidebar_open = !data.sidebar_open;
-        ctx.request_layout();
     })
     .with_text_size(18.0)
     .align_horizontal(UnitPoint::CENTER)

@@ -1,4 +1,5 @@
-use components::book::{Book, BookReading, GUIBook};
+use clap::{arg, command, Parser};
+use components::book::{Book, GUIBook};
 use components::book_details::BookDetails;
 use components::colors;
 use components::cover_library::CoverLibrary;
@@ -11,13 +12,13 @@ use components::reader_btns::ReaderBtn;
 use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget};
 use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher, SizedBox};
 use druid::{
-    AppDelegate, AppLauncher, Color, Data, Env, Handled, Lens, PlatformError, Selector, Widget,
-    WidgetExt, WindowDesc,
+    AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::envmanager::{FontSize, MyEnv};
+use utils::delegates;
+use utils::envmanager::MyEnv;
 use utils::fonts::Font;
 
 mod components;
@@ -156,7 +157,7 @@ fn filter_fav_btn() -> impl Widget<Library> {
     let emoji_font = Font::default().emoji().xs().get();
     RoundedButton::from_text("🌟")
         .with_text_size(18.0)
-        .with_on_click(|ctx, data: &mut Library, _| {
+        .with_on_click(|_, data: &mut Library, _| {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
@@ -324,7 +325,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let text = Flex::row()
         .with_flex_child(sidebar, 1.0)
+        .with_flex_spacer(0.2)
         .with_flex_child(ReaderView::dynamic_view(), 4.0)
+        .with_flex_spacer(0.2)
         .with_flex_child(col, 1.0);
 
     let leave_btn = Flex::row()
@@ -383,46 +386,30 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     ui
 }
 
-struct ReadModeDelegate;
-
-impl AppDelegate<CrabReaderState> for ReadModeDelegate {
-    fn command(
-        &mut self,
-        _: &mut druid::DelegateCtx,
-        _: druid::Target,
-        cmd: &druid::Command,
-        data: &mut CrabReaderState,
-        _: &Env,
-    ) -> Handled {
-        match cmd {
-            notif if notif.is(ENTERING_READING_MODE) => {
-                data.reading = true;
-                data.reading_state.enable(Rc::new(
-                    data.library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_page_of_chapter(),
-                ));
-                Handled::Yes
-            }
-            notif if notif.is(LEAVING_READING_MODE) => {
-                data.reading = false;
-                data.reading_state.disable();
-                Handled::Yes
-            }
-            _ => Handled::No,
-        }
-    }
-}
-
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
+    let args = CommandLineArgs::parse();
     AppLauncher::with_window(
         WindowDesc::new(get_viewswitcher)
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
-    .delegate(ReadModeDelegate)
+    .configure_env(move |env, _| {
+        let shadows = args.cover_shadows;
+        env.set(PAINT_BOOK_COVERS_SHADOWS, shadows);
+    })
+    .delegate(delegates::ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct CommandLineArgs {
+    /// Wheter or not to paint the shadows of the book covers
+    /// It may (it will) cause some lags
+    #[arg(short, long, default_value = "false")]
+    cover_shadows: bool,
+}
+
+pub const PAINT_BOOK_COVERS_SHADOWS: Key<bool> = Key::new("shadows");

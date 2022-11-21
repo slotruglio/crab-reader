@@ -1,5 +1,5 @@
 use druid::{
-    piet::{ImageFormat, InterpolationMode},
+    piet::{ImageFormat, InterpolationMode, PietImage},
     widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
@@ -7,7 +7,7 @@ use druid::{
     Size, Target, TextLayout, UpdateCtx, Widget, WidgetPod,
 };
 
-use crate::utils::fonts;
+use crate::{utils::fonts, PAINT_BOOK_COVERS_SHADOWS};
 
 use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
 
@@ -18,6 +18,7 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 pub struct BookCover<B: GUIBook> {
     is_hot: bool,
     star: WidgetPod<B, Label<B>>,
+    image: Option<PietImage>,
 }
 
 impl<B: GUIBook> BookCover<B> {
@@ -30,9 +31,11 @@ impl<B: GUIBook> BookCover<B> {
             }
         })
         .with_font(fonts::Font::default().lg().emoji().get());
+
         Self {
             is_hot: false,
             star: WidgetPod::new(star),
+            image: None,
         }
     }
 
@@ -52,25 +55,32 @@ impl<B: GUIBook> BookCover<B> {
         ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
     }
 
-    fn paint_cover(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        if let Some(cover) = data.get_cover_image() {
-            let round_factr = 20.0;
-            let paint_rect = ctx.size().to_rect();
-            let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
-            let w = BOOK_WIDGET_SIZE.width as usize;
-            let h = BOOK_WIDGET_SIZE.height as usize;
-
-            if let Ok(image) = ctx.make_image(w, h, &cover, ImageFormat::Rgb) {
-                ctx.with_save(|ctx| {
-                    ctx.clip(paint_rounded);
-                    ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
-                });
-            }
+    fn paint_cover(&mut self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
+        let cover_data = data.get_cover_image();
+        if cover_data.len() == 0 {
+            self.paint_default_cover(ctx, data);
+            self.paint_book_title(ctx, env, data);
             return;
         }
 
-        self.paint_default_cover(ctx, data);
-        self.paint_book_title(ctx, env, data);
+        let round_factr = 20.0;
+        let paint_rect = ctx.size().to_rect();
+        let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
+        let w = BOOK_WIDGET_SIZE.width as usize;
+        let h = BOOK_WIDGET_SIZE.height as usize;
+
+        if let Some(ref image) = self.image {
+            ctx.with_save(|ctx| {
+                ctx.clip(paint_rounded);
+                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+            });
+        } else if let Ok(image) = ctx.make_image(w, h, &cover_data, ImageFormat::Rgb) {
+            ctx.with_save(|ctx| {
+                ctx.clip(paint_rounded);
+                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+            });
+            self.image = Some(image);
+        }
     }
 
     fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook) {
@@ -136,7 +146,6 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
                     Target::Auto,
                 );
                 ctx.submit_notification(cmd);
-                ctx.request_layout();
             }
             _ => {}
         }
@@ -147,7 +156,6 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
         match event {
             LifeCycle::HotChanged(hot) => {
                 self.set_hot(*hot);
-                ctx.request_layout();
             }
             _ => {}
         }
@@ -156,7 +164,6 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &B, data: &B, env: &Env) {
         if !data.same(old_data) {
             self.star.update(ctx, data, env);
-            ctx.request_layout();
         }
     }
 
@@ -171,7 +178,9 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
-        self.paint_shadow(ctx);
+        if env.get(PAINT_BOOK_COVERS_SHADOWS) {
+            self.paint_shadow(ctx);
+        }
         self.paint_cover(ctx, env, data);
         self.star.paint(ctx, data, env);
     }
