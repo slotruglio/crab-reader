@@ -1,5 +1,5 @@
 use druid::{
-    piet::{CairoImage, CairoRenderContext, ImageFormat, InterpolationMode},
+    piet::{ImageFormat, InterpolationMode, PietImage},
     widget::Label,
     BoxConstraints, Color, Command,
     Cursor::OpenHand,
@@ -18,7 +18,7 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 pub struct BookCover<B: GUIBook> {
     is_hot: bool,
     star: WidgetPod<B, Label<B>>,
-    image: Option<CairoImage>,
+    image: Option<PietImage>,
 }
 
 impl<B: GUIBook> BookCover<B> {
