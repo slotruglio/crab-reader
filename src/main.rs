@@ -1,21 +1,22 @@
 use clap::{arg, command, Parser};
-use components::book::{Book, GUIBook};
-use components::book_details::BookDetails;
-use components::colors;
-use components::cover_library::CoverLibrary;
-use components::library::GUILibrary;
-use components::listing_library::ListLibrary;
+use crate::models::book::Book;
+use components::book::book_details::BookDetails;
+use crate::utils::colors;
+use components::library::cover_library::CoverLibrary;
+use components::library::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
-use components::note::NoteManagement;
-use components::rbtn::RoundedButton;
-use components::reader_btns::ReaderBtn;
-use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget, sidebar_right_widget};
+use components::buttons::{
+    rbtn::RoundedButton, 
+    reader_btns::ReaderBtn
+};
+use components::views::reader_view::{sidebar_widget, ReaderView, current_chapter_widget, sidebar_right_widget};
 use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher, SizedBox};
 use druid::{
     AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
 
 use once_cell::sync::Lazy;
+use traits::gui::{GUIBook, GUILibrary};
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::delegates;
@@ -24,6 +25,8 @@ use utils::fonts::Font;
 
 
 mod components;
+mod models;
+mod traits;
 mod utils;
 type Library = MockupLibrary<Book>;
 

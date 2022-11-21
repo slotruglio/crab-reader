@@ -4,9 +4,10 @@ use druid::{
     PaintCtx, RenderContext, Size, Target, UpdateCtx, Widget, WidgetPod,
 };
 
-use crate::utils::fonts;
-
-use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
+use crate::{
+    utils::{fonts, library::SELECTED_BOOK_SELECTOR, colors},
+    traits::gui::GUIBook
+};
 
 pub struct BookListing<T> {
     is_hot: bool,

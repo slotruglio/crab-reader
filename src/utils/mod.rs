@@ -7,3 +7,5 @@ pub mod fonts;
 pub mod ocrmanager;
 pub mod saveload;
 pub mod text_descriptor;
+pub mod colors;
+pub mod library;

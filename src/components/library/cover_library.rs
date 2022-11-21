@@ -3,12 +3,15 @@ use druid::{
     Point, Size, UpdateCtx, Widget, WidgetPod,
 };
 
-use crate::Library;
+use crate::{
+    Library, 
+    traits::gui::{GUIBook, GUILibrary},
+    models::book::Book,
+    utils::library::SELECTED_BOOK_SELECTOR,
+    components::{
+        book::book_cover::{BookCover, BOOK_WIDGET_SIZE},
+    },
 
-use super::{
-    book::{Book, GUIBook},
-    book_cover::{BookCover, BOOK_WIDGET_SIZE},
-    library::{GUILibrary, SELECTED_BOOK_SELECTOR},
 };
 
 pub struct CoverLibrary {

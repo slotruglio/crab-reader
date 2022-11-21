@@ -3,10 +3,10 @@ use druid::{
     Size, UpdateCtx, Widget, WidgetPod,
 };
 
-use super::{
-    book::GUIBook,
-    book_listing::BookListing,
-    library::{GUILibrary, SELECTED_BOOK_SELECTOR},
+use crate::{
+    components::book::book_listing::BookListing,
+    traits::gui::{GUIBook, GUILibrary},
+    utils::library::SELECTED_BOOK_SELECTOR,
 };
 
 pub struct ListLibrary<B: GUIBook> {

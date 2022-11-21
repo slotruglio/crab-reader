@@ -1,14 +1,20 @@
-use crate::components::library::GUILibrary;
-use crate::utils::button_functions::{
-    edit_btn_fn, page_number_switch_button, save_btn_fn, undo_btn_fn, go_next, go_prev,
+use druid::{
+    widget::{Align, Label},
+    commands::SHOW_OPEN_PANEL,
+    WidgetExt, Command, FileSpec, FileDialogOptions, Target
 };
-use crate::CrabReaderState;
-use crate::utils::envmanager::FontSize;
-use druid::commands::SHOW_OPEN_PANEL;
-use druid::widget::{Align, Label};
-use druid::{WidgetExt, Command, FileSpec, FileDialogOptions, Target};
+use crate::{
+    CrabReaderState,
+    traits::{reader::BookReading, gui::{GUIBook, GUILibrary}},
+    utils::{
+        button_functions::{
+            edit_btn_fn, page_number_switch_button, save_btn_fn, undo_btn_fn, go_next, go_prev,
+        },
+        envmanager::FontSize,
+    },
+    models::book::Book,
+};
 
-use super::book::{BookReading, GUIBook, Book};
 use super::rbtn::RoundedButton;
 
 #[allow(unused)]

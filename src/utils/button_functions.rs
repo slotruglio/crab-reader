@@ -1,10 +1,15 @@
 use crate::{
-    components::{book::{Book, BookManagement, BookReading, GUIBook}, library::GUILibrary},
-    utils::{saveload::{save_data}, envmanager::FontSize}, ReadingState, CrabReaderState,
+    MYENV,
+    models::book::Book,
+    utils::{saveload::{save_data}, envmanager::FontSize}, 
+    ReadingState, 
+    CrabReaderState, 
+    traits::{
+        gui::{GUIBook, GUILibrary}, 
+        reader::{BookReading, BookManagement}
+    },
 };
 use druid::EventCtx;
-
-use crate::MYENV;
 
 /// Activate or deactivate editing mode
 /// return the new value of is_editing

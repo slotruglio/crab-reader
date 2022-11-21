@@ -3,7 +3,7 @@ use druid::{
     LifeCycle::HotChanged, RenderContext, Size, Widget,
 };
 
-use super::colors;
+use crate::utils::colors;
 
 pub struct RoundedButton<T> {
     label: Label<T>,

@@ -7,9 +7,16 @@ use druid::{
     Size, Target, TextLayout, UpdateCtx, Widget, WidgetPod,
 };
 
-use crate::{utils::fonts, PAINT_BOOK_COVERS_SHADOWS};
+use crate::{
+    PAINT_BOOK_COVERS_SHADOWS,
+    traits::gui::GUIBook,
+    utils::{
+        library::SELECTED_BOOK_SELECTOR,
+        colors,
+        fonts,
+    },
+};
 
-use super::{book::GUIBook, colors, library::SELECTED_BOOK_SELECTOR};
 
 pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 

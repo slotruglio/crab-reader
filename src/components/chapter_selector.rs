@@ -1,11 +1,13 @@
 use druid::{
-    widget::Label, Affine, Color, Data, MouseEvent, RenderContext, Size, Widget, WidgetExt,
-    WidgetPod,
+    widget::Label, Affine, Data, RenderContext, Size, Widget, WidgetPod,
 };
 
-use crate::{utils::button_functions::change_chapter, Library};
-
-use super::{book::BookReading, colors, library::GUILibrary};
+use crate::{
+    utils::{button_functions::change_chapter, colors}, 
+    Library, 
+    traits::reader::BookReading,
+    traits::gui::GUILibrary,
+};
 
 pub struct ChapterSelector {
     children: Vec<ChapterSelectorItem>,

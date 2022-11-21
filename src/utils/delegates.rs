@@ -1,15 +1,14 @@
+use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
+use std::rc::Rc;
+
 use super::button_functions::{self, go_next, go_prev};
 use crate::{
     components::{
-        book::{BookManagement, BookReading, GUIBook},
-        library::GUILibrary,
         mockup::SortBy,
     },
     utils::ocrmanager,
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE, traits::{gui::{GUILibrary, GUIBook}, reader::{BookReading, BookManagement}},
 };
-use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent};
-use std::rc::Rc;
 
 pub struct ReadModeDelegate;
 

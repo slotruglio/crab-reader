@@ -1,15 +1,22 @@
-use druid::widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox};
-use druid::{Color, FontDescriptor, LensExt, TextAlignment, UnitPoint, Widget, WidgetExt};
+use druid::{
+    widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox},
+    Color, FontDescriptor, LensExt, TextAlignment, UnitPoint, Widget, WidgetExt,
+};
 
-use crate::{CrabReaderState, ReadingState};
-
-use super::book::{BookReading, GUIBook};
-use super::chapter_selector::ChapterSelector;
-use super::library::GUILibrary;
-use super::note::NoteManagement;
-use super::rbtn::RoundedButton;
-
-use crate::MYENV;
+use crate::{
+    CrabReaderState, 
+    ReadingState,
+    MYENV,
+    traits::{
+        gui::{GUIBook, GUILibrary},
+        reader::BookReading,
+        note::NoteManagement
+    },
+    components::{
+        chapter_selector::ChapterSelector,
+        buttons::rbtn::RoundedButton,
+    }
+};
 
 pub enum ReaderView {
     Single,
@@ -213,8 +220,6 @@ pub fn sidebar_right_widget() -> impl Widget<CrabReaderState> {
     .with_line_break_mode(LineBreaking::WordWrap);
 
     let tb = TextBox::multiline()
-        .with_text_color(font_color)
-        .with_font(font)
         .with_placeholder("Scrivi...")
         .lens(CrabReaderState::reading_state.then(ReadingState::notes));
 
