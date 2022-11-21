@@ -660,16 +660,18 @@ impl NoteManagement for Book {
     }
     // delete a note for the current chapter and page
     fn delete_note(&mut self) {
-        self.notes.remove(&(self.chapter_number, self.current_page));
-        delete_note(
+        if delete_note(
             self.path.to_string(),
             self.chapter_number,
             self.get_page_of_chapter(),
-        );
+        ).is_ok() {
+            self.notes.remove(&(self.chapter_number, self.current_page));
+        }
     }
     // delete all notes
     fn delete_all_notes(&mut self) {
-        self.notes.clear();
-        delete_all_notes(self.path.to_string());
+        if delete_all_notes(self.path.to_string()).is_ok() {
+            self.notes.clear();
+        }
     }
 }
