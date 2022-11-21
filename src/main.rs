@@ -9,7 +9,7 @@ use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::note::NoteManagement;
 use components::rbtn::RoundedButton;
 use components::reader_btns::ReaderBtn;
-use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget};
+use components::reader_view::{sidebar_widget, ReaderView, current_chapter_widget, sidebar_right_widget};
 use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher, SizedBox};
 use druid::{
     AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
@@ -45,18 +45,21 @@ pub struct ReadingState {
     text_0: String,
     text_1: String,
     notes: String,
+    is_editing_notes: bool,
 }
 
 impl ReadingState {
     fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S) {
         self.single_view = true;
         self.is_editing = false;
+        self.is_editing_notes = false;
         self.pages_btn_style = 0;
         self.sidebar_open = false;
     }
     fn disable(&mut self) {
         self.single_view = false;
         self.is_editing = false;
+        self.is_editing_notes = false;
         self.pages_btn_style = 0;
         self.sidebar_open = false;
         self.text_0 = String::default();
@@ -70,6 +73,7 @@ impl Default for ReadingState {
         Self {
             single_view: true,
             is_editing: false,
+            is_editing_notes: false,
             pages_btn_style: 0,
             sidebar_open: false,
             text_0: String::default(),
@@ -325,24 +329,15 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let current_chapter = current_chapter_widget().with_text_size(16.0).center();
 
     let sidebar = sidebar_widget();
-    let notes = Label::dynamic(|data: &CrabReaderState, _env: &_| {
-        data.library
-            .get_selected_book().unwrap().get_current_note().unwrap_or("Nessuna nota trovata".to_string())
-    });
-    let add_note_btn = RoundedButton::from_text("Aggiungi nota").with_on_click(|ctx, data: &mut CrabReaderState, _| {
-        data.library.get_selected_book_mut().unwrap().edit_note("Test".to_string());
-    });
 
-    let col = Flex::column()
-        .with_child(notes)
-        .with_child(add_note_btn);
+    let sidebar_rx = sidebar_right_widget();
 
     let text = Flex::row()
         .with_flex_child(sidebar, 1.0)
         .with_flex_spacer(0.2)
         .with_flex_child(ReaderView::dynamic_view(), 4.0)
         .with_flex_spacer(0.2)
-        .with_flex_child(col, 1.0);
+        .with_flex_child(sidebar_rx, 1.0);
 
     let leave_btn = Flex::row()
         .with_child(ReaderBtn::Leave.button())

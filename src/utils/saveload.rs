@@ -408,18 +408,90 @@ pub fn load_notes<T: Into<String> + Clone>(
     Ok(map)
 }
 
+/// function to delete a note of a book
 pub fn delete_note<T: Into<String> + Clone>(
     book_path: T,
     chapter: usize,
     start_page: T,
-) {
-    todo!("delete note");
+) -> Result<(), Box<dyn std::error::Error>> {
+    // open file to read
+    let Ok(file) = File::open(get_books_notes_path()) else {
+        return Ok(());
+    };
+
+    let reader = BufReader::new(file);
+    let mut json: Value = serde_json::from_reader(reader)?;
+    
+    // check if there is a book with that name and an array
+    let Some(book_array) = json[book_path.clone().into()].as_array_mut() else {
+        return Ok(());
+    };
+
+    let mut index_to_delete = None;
+
+    for chapter_value in book_array {
+        let chapter_number = chapter_value["chapter"].as_u64().unwrap() as usize;
+        if chapter_number == chapter {
+            println!("chapter found");
+            let Some(notes_array) = chapter_value["notes"].as_array_mut() else {
+                return Ok(());
+            };
+            
+            for (i, note) in notes_array.into_iter().enumerate() {
+                let saved_start_page = note["start"].as_str().unwrap();
+                if saved_start_page == start_page.clone().into() {
+                    println!("note found");
+                    index_to_delete = Some(i);
+                }
+            }
+
+            if let Some(index) = index_to_delete {
+                notes_array.remove(index);
+            }
+        }
+    }
+
+    // open file to write
+    let file = OpenOptions::new()
+    .write(true)
+    .create(true)
+    .truncate(true)
+    .open(get_books_notes_path())?;
+
+    serde_json::to_writer_pretty(file, &json)?;
+
+    Ok(())
 }
 
+/// function to delete all notes of a book
 pub fn delete_all_notes<T: Into<String> + Clone>(
     book_path: T,
-) {
-    todo!("delete all notes");
+) -> Result<(), Box<dyn std::error::Error>>{
+    // open file to read
+    let Ok(file) = File::open(get_books_notes_path()) else {
+        return Ok(());
+    };
+
+    let reader = BufReader::new(file);
+    let mut json: Value = serde_json::from_reader(reader)?;
+    
+    // check if there is a book with that name and an array
+    let Some(book_array) = json[book_path.clone().into()].as_array_mut() else {
+        return Ok(());
+    };
+
+    book_array.clear();
+
+    // open file to write
+    let file = OpenOptions::new()
+    .write(true)
+    .create(true)
+    .truncate(true)
+    .open(get_books_notes_path())?;
+
+    serde_json::to_writer_pretty(file, &json)?;
+
+    Ok(())
 }
 
 /*
