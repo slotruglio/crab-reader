@@ -14,8 +14,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use utf16string::{BigEndian, BE, WString, LittleEndian};
-
 /// Method to extract metadata from epub file
 /// and returns explicit metadata.
 /// title: title of the book

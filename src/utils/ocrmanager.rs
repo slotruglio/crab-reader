@@ -2,8 +2,6 @@ use rust_fuzzy_search::fuzzy_compare;
 
 use std::sync::{mpsc::channel, Arc, Mutex, Condvar};
 
-use crate::components::book::book_derived_lenses::chapter_number;
-
 use super::epub_utils;
 
 #[derive(Debug)]
@@ -16,7 +14,7 @@ struct Page {
 
 
 //function that, given a pic of a physical book page, gives the corresponding page in the ebook
-pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize> {
+pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usize,usize)> {
 
     //start timer
     let start = std::time::Instant::now();
@@ -25,7 +23,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     let mut lt = leptess::LepTess::new(None, "eng").unwrap();
     lt.set_image(physical_page).unwrap();
 
-    //the text variable contains a book page: there can be words splitted between lines, so join them
+    //the "text" variable contains a book page: there can be words splitted between lines, so join them
     //also remove all new lines, making the text a single big string
     let text = lt.get_utf8_text().unwrap().replace("-\n", "").replace("\n", " ");
 
@@ -39,9 +37,10 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     let (tx, rx) = channel();
 
     //Setup condition variable holding a usize: this will allow us to save the page number of the best match
-    let pair: Arc<(Mutex<Option<usize>>, Condvar)> = Arc::new((Mutex::new(Some(0)), Condvar::new()));
+    let pair: Arc<(Mutex<Option<(usize,usize)>>, Condvar)> = Arc::new((Mutex::new(Some((0,0))), Condvar::new()));
 
     //This will contain the pages of each chapter, to calculate the global page number
+    //USELESS - TOREMOVE
     let chapters_pages_numbers = Arc::new(Mutex::new(vec![0; chapters_number]));
 
     //For each chapter..
@@ -71,19 +70,20 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
 
         let mut to_return = None;
 
-        //create a duration: 2 seconds for each chapter
-        let duration = std::time::Duration::from_secs(2 * chapters_number as u64);
-        println!("Waiting for {} seconds", duration.as_secs());
+        //create a duration: 10 seconds
+        let duration = std::time::Duration::from_secs(10);
 
         //If a found page is found in "duration" seconds..
         if let Ok(found_page) = rx.recv_timeout(duration) {
             //Calculate the global page number
-            let mut pages_sum = 0;
-            for i in 0..found_page.chapter_number {
-                pages_sum += chapters_pages_numbers.lock().unwrap()[i];
-            }
-            pages_sum += found_page.chapter_page_number;
-            to_return = Some(pages_sum);
+            // let mut pages_sum = 0;
+            // for i in 0..found_page.chapter_number {
+            //     pages_sum += chapters_pages_numbers.lock().unwrap()[i];
+            // }
+            // pages_sum += found_page.chapter_page_number;
+
+            //Save the chapter and page number
+            to_return = Some((found_page.chapter_number, found_page.chapter_page_number));
         }
 
         //Notify the main thread, wheter we had a match or not
@@ -96,7 +96,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<usize
     //Go to sleep until the receiver thread sends a notification
     let (lock, cvar) = &*pair;
     let mut page_number = lock.lock().unwrap();
-    while *page_number == Some(0) {
+    while *page_number == Some((0,0)) {
         page_number = cvar.wait(page_number).unwrap();
     }
 
@@ -114,11 +114,11 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 
     let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, 800.0, 300.0);
 
-    println!("CHAPTER NUMBER {} PAGES NUMBER: {}", chapter_to_examine, chapter_pages.len());
-
     //add the number of pages of the chapter to the vector chapters_pages_number
-    let mut chapters_pages_number = chapters_pages_number.lock().unwrap();
-    chapters_pages_number[chapter_to_examine] = chapter_pages.len();
+    // {
+    //     let mut chapters_pages_number = chapters_pages_number.lock().unwrap();
+    //     chapters_pages_number[chapter_to_examine] = chapter_pages.len();    
+    // }
 
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {

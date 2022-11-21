@@ -3,10 +3,11 @@ use crate::{
     components::{
         book::{BookManagement, BookReading, GUIBook},
         library::GUILibrary,
+        mockup::SortBy,
     },
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE, utils::ocrmanager,
 };
-use druid::{AppDelegate, Code, Env, Event, Handled};
+use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
 use std::rc::Rc;
 
 pub struct ReadModeDelegate;
@@ -36,6 +37,33 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 data.reading_state.disable();
                 Handled::Yes
             }
+            notif if notif.is(OPEN_FILE) => {
+                println!("Opening file!");
+                let file = cmd.get_unchecked(OPEN_FILE);
+            
+                //get file path
+                let path = file.path();
+            
+                let selected_book_path = data.library.get_selected_book().unwrap().get_path();
+                
+                //split by slash, get last element, split by dot, get first element
+                let folder_name = selected_book_path.split("/").last().unwrap().split(".").next().unwrap();
+            
+                //call ocr on the img path
+                let ocr_result = ocrmanager::get_ebook_page(folder_name.to_string(), path.to_str().unwrap().to_string());
+            
+                match ocr_result {
+                    Some(ocr_result) => {
+                        //move to the found page
+                        data.library.get_selected_book_mut().unwrap().set_chapter_number(ocr_result.0, true);
+                        data.library.get_selected_book_mut().unwrap().set_chapter_current_page_number(ocr_result.1);
+                    }
+                    None => {
+                        println!("ERROR: OCR page not found");
+                    }
+                }    
+                Handled::Yes
+            }
             _ => Handled::No,
         }
     }
@@ -49,31 +77,43 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
         env: &Env,
     ) -> Option<druid::Event> {
         match &event {
-            Event::KeyDown(key) => {
-                let key = key.code;
+            Event::KeyDown(key_event) => {
+                let key = key_event.code;
                 match key {
                     Code::Escape => {
-                        handle_esc(ctx, window_id, event, data, env);
+                        handle_esc(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::ArrowLeft => {
-                        handle_arrow_left(ctx, window_id, event, data, env);
+                        handle_arrow_left(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::ArrowRight => {
-                        handle_arrow_right(ctx, window_id, event, data, env);
+                        handle_arrow_right(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::Tab => {
-                        handle_tab(ctx, window_id, event, data, env);
+                        handle_tab(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::Enter | Code::NumpadEnter => {
-                        handle_enter(ctx, window_id, event, data, env);
+                        handle_enter(ctx, window_id, key_event, data, env);
                         None
                     }
                     Code::KeyF => {
-                        handle_f(ctx, window_id, event, data, env);
+                        handle_f(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyA => {
+                        handle_a(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyP => {
+                        handle_p(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyT => {
+                        handle_t(ctx, window_id, key_event, data, env);
                         None
                     }
                     _ => Some(event),
@@ -87,7 +127,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
 fn handle_arrow_right(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: druid::Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -120,7 +160,7 @@ fn handle_arrow_right(
 fn handle_arrow_left(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -148,7 +188,7 @@ fn handle_arrow_left(
 fn handle_esc(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: druid::Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -172,7 +212,7 @@ fn handle_esc(
 fn handle_tab(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: druid::Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -197,7 +237,7 @@ fn handle_tab(
 fn handle_enter(
     ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: Event,
+    _event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
@@ -210,12 +250,96 @@ fn handle_enter(
 fn handle_f(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    _event: Event,
+    event: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {
-    if let Some(book) = data.library.get_selected_book_mut() {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let ctl_down = event.mods.ctrl();
+
+    if ctl_down {
+        data.library.toggle_fav_filter();
+    } else if let Some(book) = data.library.get_selected_book_mut() {
         let fav = book.is_favorite();
         book.set_favorite(!fav);
     }
+}
+
+fn handle_p(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let new_sort = match data.library.get_sort_order() {
+        SortBy::PercRead => SortBy::PercReadRev,
+        SortBy::PercReadRev => SortBy::PercRead,
+        _ => SortBy::PercRead,
+    };
+
+    data.library.sort_by(new_sort);
+}
+
+fn handle_a(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let new_sort = match data.library.get_sort_order() {
+        SortBy::Author => SortBy::AuthorRev,
+        SortBy::AuthorRev => SortBy::Author,
+        _ => SortBy::Author,
+    };
+
+    data.library.sort_by(new_sort);
+}
+
+fn handle_t(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let new_sort = match data.library.get_sort_order() {
+        SortBy::Title => SortBy::TitleRev,
+        SortBy::TitleRev => SortBy::Title,
+        _ => SortBy::Title,
+    };
+
+    data.library.sort_by(new_sort);
 }

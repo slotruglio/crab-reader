@@ -4,8 +4,9 @@ use crate::utils::button_functions::{
 };
 use crate::CrabReaderState;
 use crate::utils::envmanager::FontSize;
+use druid::commands::SHOW_OPEN_PANEL;
 use druid::widget::{Align, Label};
-use druid::WidgetExt;
+use druid::{WidgetExt, Command, FileSpec, FileDialogOptions, Target};
 
 use super::book::{BookReading, GUIBook, Book};
 use super::rbtn::RoundedButton;
@@ -21,6 +22,7 @@ pub enum ReaderBtn {
     ViewsSwitch,
     PageNumberSwitch,
     ChaptersList,
+    Ocr,
 }
 
 enum PageCounterStyle {
@@ -90,6 +92,7 @@ impl ReaderBtn {
             ReaderBtn::ViewsSwitch => views_btn(),
             ReaderBtn::PageNumberSwitch => pages_number_btn(),
             ReaderBtn::ChaptersList => chapters_list_btn(),
+            ReaderBtn::Ocr => ocr_btn(),
         }
     }
 }
@@ -230,4 +233,19 @@ pub fn chapter_label(number: usize) -> Align<CrabReaderState> {
         })
         .padding(5.0)
         .center()
+}
+
+pub fn ocr_btn() -> RoundedButton<CrabReaderState> {
+    RoundedButton::from_text("OCR")
+        .with_on_click(|ctx, _: &mut CrabReaderState, _| {
+            //Trigger a FILE PICKER
+            let cmd = Command::new(
+                SHOW_OPEN_PANEL,
+                FileDialogOptions::new().allowed_types(vec![FileSpec::JPG, FileSpec::PNG]),
+                Target::Auto,
+            );
+
+            ctx.submit_command(cmd);
+        })
+        .with_text_size(24.0)
 }

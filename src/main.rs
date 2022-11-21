@@ -14,12 +14,14 @@ use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher, SizedB
 use druid::{
     AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
+
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
 use utils::delegates;
 use utils::envmanager::MyEnv;
 use utils::fonts::Font;
+
 
 mod components;
 mod utils;
@@ -128,6 +130,10 @@ fn title_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let order = data.get_sort_order();
+        order == SortBy::Title || order == SortBy::TitleRev
+    })
     .padding(5.0)
 }
 
@@ -150,6 +156,10 @@ fn author_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let order = data.get_sort_order();
+        order == SortBy::Author || order == SortBy::AuthorRev
+    })
     .padding(5.0)
 }
 
@@ -161,7 +171,7 @@ fn filter_fav_btn() -> impl Widget<Library> {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
-        .toggleable()
+        .with_toggle(|data: &Library, _env: &Env| data.only_fav())
         .padding(5.0)
 }
 
@@ -183,6 +193,10 @@ fn completion_sorter_btn() -> impl Widget<Library> {
             data.sort_by(SortBy::PercRead);
         }
         ctx.request_update();
+    })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let sort = data.get_sort_order();
+        sort == SortBy::PercRead || sort == SortBy::PercReadRev
     })
     .padding(5.0)
 }
@@ -340,6 +354,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let edit_btn = ReaderBtn::Edit.button().align_right();
     let undo_changes_btn = ReaderBtn::Undo.button();
     let save_changes_btn = ReaderBtn::Save.button();
+    let ocr_btn = ReaderBtn::Ocr.button();
 
     let current_page = ReaderBtn::PageNumberSwitch.button();
 
@@ -351,6 +366,8 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(edit_btn)
         .with_spacer(10.0)
         .with_child(views_btn)
+        .with_spacer(10.0)
+        .with_child(ocr_btn)
         .align_right();
 
     let header = Flex::row()
@@ -387,6 +404,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 }
 
 fn main() -> Result<(), PlatformError> {
+
     let crab_state = CrabReaderState::default();
     let args = CommandLineArgs::parse();
     AppLauncher::with_window(
