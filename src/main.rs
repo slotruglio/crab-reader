@@ -14,19 +14,13 @@ use druid::{
     AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
 
-use druid::FileDialogOptions;
-
-use druid::commands::{SHOW_OPEN_PANEL, OPEN_FILE};
-
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::{button_functions, ocrmanager}; // 1.3.1
 use utils::delegates;
 use utils::envmanager::MyEnv;
 use utils::fonts::Font;
 
-use crate::components::book::BookManagement;
 
 mod components;
 mod utils;
@@ -347,6 +341,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let edit_btn = ReaderBtn::Edit.button().align_right();
     let undo_changes_btn = ReaderBtn::Undo.button();
     let save_changes_btn = ReaderBtn::Save.button();
+    let ocr_btn = ReaderBtn::Ocr.button();
 
     let current_page = ReaderBtn::PageNumberSwitch.button();
 
@@ -354,6 +349,8 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(edit_btn)
         .with_spacer(10.0)
         .with_child(views_btn)
+        .with_spacer(10.0)
+        .with_child(ocr_btn)
         .align_right();
 
     let header = Flex::row()

@@ -5,9 +5,9 @@ use crate::{
         library::GUILibrary,
         mockup::SortBy,
     },
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE, utils::ocrmanager,
 };
-use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent};
+use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
 use std::rc::Rc;
 
 pub struct ReadModeDelegate;
@@ -35,6 +35,33 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             notif if notif.is(ENTERING_READING_MODE) => {
                 data.reading = false;
                 data.reading_state.disable();
+                Handled::Yes
+            }
+            notif if notif.is(OPEN_FILE) => {
+                println!("Opening file!");
+                let file = cmd.get_unchecked(OPEN_FILE);
+            
+                //get file path
+                let path = file.path();
+            
+                let selected_book_path = data.library.get_selected_book().unwrap().get_path();
+                
+                //split by slash, get last element, split by dot, get first element
+                let folder_name = selected_book_path.split("/").last().unwrap().split(".").next().unwrap();
+            
+                //call ocr on the img path
+                let ocr_result = ocrmanager::get_ebook_page(folder_name.to_string(), path.to_str().unwrap().to_string());
+            
+                match ocr_result {
+                    Some(ocr_result) => {
+                        //move to the found page
+                        data.library.get_selected_book_mut().unwrap().set_chapter_number(ocr_result.0, true);
+                        data.library.get_selected_book_mut().unwrap().set_chapter_current_page_number(ocr_result.1);
+                    }
+                    None => {
+                        println!("ERROR: OCR page not found");
+                    }
+                }    
                 Handled::Yes
             }
             _ => Handled::No,
