@@ -3,6 +3,7 @@ use crate::{
     components::{
         book::{BookManagement, BookReading, GUIBook},
         library::GUILibrary,
+        mockup::SortBy,
     },
     CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
@@ -74,6 +75,18 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     }
                     Code::KeyF => {
                         handle_f(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyA => {
+                        handle_a(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyP => {
+                        handle_p(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyT => {
+                        handle_t(ctx, window_id, key_event, data, env);
                         None
                     }
                     _ => Some(event),
@@ -236,4 +249,76 @@ fn handle_f(
         let fav = book.is_favorite();
         book.set_favorite(!fav);
     }
+}
+
+fn handle_p(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let new_sort = match data.library.get_sort_order() {
+        SortBy::PercRead => SortBy::PercReadRev,
+        SortBy::PercReadRev => SortBy::PercRead,
+        _ => SortBy::PercRead,
+    };
+
+    data.library.sort_by(new_sort);
+}
+
+fn handle_a(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let new_sort = match data.library.get_sort_order() {
+        SortBy::Author => SortBy::AuthorRev,
+        SortBy::AuthorRev => SortBy::Author,
+        _ => SortBy::Author,
+    };
+
+    data.library.sort_by(new_sort);
+}
+
+fn handle_t(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    let new_sort = match data.library.get_sort_order() {
+        SortBy::Title => SortBy::TitleRev,
+        SortBy::TitleRev => SortBy::Title,
+        _ => SortBy::Title,
+    };
+
+    data.library.sort_by(new_sort);
 }
