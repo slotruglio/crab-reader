@@ -5,9 +5,10 @@ use crate::{
         library::GUILibrary,
         mockup::SortBy,
     },
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE, utils::ocrmanager,
+    utils::ocrmanager,
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
-use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
+use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent};
 use std::rc::Rc;
 
 pub struct ReadModeDelegate;
@@ -40,28 +41,43 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             notif if notif.is(OPEN_FILE) => {
                 println!("Opening file!");
                 let file = cmd.get_unchecked(OPEN_FILE);
-            
+
                 //get file path
                 let path = file.path();
-            
+
                 let selected_book_path = data.library.get_selected_book().unwrap().get_path();
-                
+
                 //split by slash, get last element, split by dot, get first element
-                let folder_name = selected_book_path.split("/").last().unwrap().split(".").next().unwrap();
-            
+                let folder_name = selected_book_path
+                    .split("/")
+                    .last()
+                    .unwrap()
+                    .split(".")
+                    .next()
+                    .unwrap();
+
                 //call ocr on the img path
-                let ocr_result = ocrmanager::get_ebook_page(folder_name.to_string(), path.to_str().unwrap().to_string());
-            
+                let ocr_result = ocrmanager::get_ebook_page(
+                    folder_name.to_string(),
+                    path.to_str().unwrap().to_string(),
+                );
+
                 match ocr_result {
                     Some(ocr_result) => {
                         //move to the found page
-                        data.library.get_selected_book_mut().unwrap().set_chapter_number(ocr_result.0, true);
-                        data.library.get_selected_book_mut().unwrap().set_chapter_current_page_number(ocr_result.1);
+                        data.library
+                            .get_selected_book_mut()
+                            .unwrap()
+                            .set_chapter_number(ocr_result.0, true);
+                        data.library
+                            .get_selected_book_mut()
+                            .unwrap()
+                            .set_chapter_current_page_number(ocr_result.1);
                     }
                     None => {
                         println!("ERROR: OCR page not found");
                     }
-                }    
+                }
                 Handled::Yes
             }
             _ => Handled::No,
@@ -76,6 +92,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
         data: &mut CrabReaderState,
         env: &Env,
     ) -> Option<druid::Event> {
+        return Some(event);
         match &event {
             Event::KeyDown(key_event) => {
                 let key = key_event.code;
