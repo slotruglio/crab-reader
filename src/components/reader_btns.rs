@@ -261,5 +261,5 @@ pub fn ocr_btn() -> RoundedButton<CrabReaderState> {
 
             ctx.submit_command(cmd);
         })
-        .with_text_size(18.0)
+        .with_text_size(24.0)
 }
