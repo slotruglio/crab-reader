@@ -79,6 +79,11 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
         match &event {
             Event::KeyDown(key_event) => {
                 let key = key_event.code;
+
+                if !key_event.mods.ctrl() {
+                    return Some(event);
+                };
+
                 match key {
                     Code::Escape => {
                         handle_esc(ctx, window_id, key_event, data, env);
@@ -114,6 +119,10 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     }
                     Code::KeyT => {
                         handle_t(ctx, window_id, key_event, data, env);
+                        None
+                    }
+                    Code::KeyU => {
+                        handle_u(ctx, window_id, key_event, data, env);
                         None
                     }
                     _ => Some(event),
@@ -257,14 +266,7 @@ fn handle_f(
         return;
     }
 
-    let ctl_down = event.mods.ctrl();
-
-    if ctl_down {
-        data.library.toggle_fav_filter();
-    } else if let Some(book) = data.library.get_selected_book_mut() {
-        let fav = book.is_favorite();
-        book.set_favorite(!fav);
-    }
+    data.library.toggle_fav_filter();
 }
 
 fn handle_p(
@@ -337,4 +339,25 @@ fn handle_t(
     };
 
     data.library.sort_by(new_sort);
+}
+
+fn handle_u(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    if let Some(selected_book) = data.library.get_selected_book_mut() {
+        let fav = selected_book.is_favorite();
+        selected_book.set_favorite(!fav);
+    }
 }
