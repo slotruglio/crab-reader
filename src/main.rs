@@ -124,6 +124,10 @@ fn title_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let order = data.get_sort_order();
+        order == SortBy::Title || order == SortBy::TitleRev
+    })
     .padding(5.0)
 }
 
@@ -145,6 +149,10 @@ fn author_sorter_btn() -> impl Widget<Library> {
             data.sort_by(SortBy::Author);
         }
         ctx.request_update();
+    })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let order = data.get_sort_order();
+        order == SortBy::Author || order == SortBy::AuthorRev
     })
     .padding(5.0)
 }
@@ -179,6 +187,10 @@ fn completion_sorter_btn() -> impl Widget<Library> {
             data.sort_by(SortBy::PercRead);
         }
         ctx.request_update();
+    })
+    .with_toggle(|data: &Library, _env: &Env| {
+        let sort = data.get_sort_order();
+        sort == SortBy::PercRead || sort == SortBy::PercReadRev
     })
     .padding(5.0)
 }
