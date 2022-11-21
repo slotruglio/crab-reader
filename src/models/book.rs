@@ -1,175 +1,27 @@
-use crate::utils::envmanager::FontSize;
-use crate::utils::epub_utils::{
-    calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
-    get_number_of_pages, split_chapter_in_vec,
-};
-use crate::utils::saveload::{load_data, remove_edited_chapter, save_favorite, load_notes, save_note, delete_note, delete_all_notes};
-use crate::utils::{epub_utils, text_descriptor};
-use crate::MYENV;
-use druid::im::Vector;
-use druid::image::io::Reader as ImageReader;
-use std::collections::HashMap;
-use std::io::Cursor as ImageCursor;
-use std::rc::Rc;
-use std::string::String;
-use std::sync::Arc;
-
-/// This trait defines all the methods that a `Book` struct must implement
-/// in order to be rendered visually correct in the GUI of the application.
-pub trait GUIBook: PartialEq + Data {
-    /// Returns the title
-    fn get_title(&self) -> String;
-
-    /// Builder pattern for title
-    fn with_title(self, title: impl Into<String>) -> Self;
-
-    /// Sets the title for the book
-    fn set_title(&mut self, title: impl Into<String>);
-
-    /// Returns the author
-    fn get_author(&self) -> String;
-
-    /// Builder pattern for author
-    fn with_author(self, author: impl Into<String>) -> Self;
-
-    /// Sets the author for the book
-    fn set_author(&mut self, author: impl Into<String>);
-
-    /// Returns the number of pages
-    fn get_number_of_pages(&self) -> usize;
-
-    /// Builder pattern for number of pages
-    fn with_number_of_pages(self, npages: usize) -> Self;
-
-    /// Sets the number of pages for the book
-    fn set_number_of_pages(&mut self, npages: usize);
-
-    /// Returns the number of read pages
-    fn get_number_of_read_pages(&self) -> usize;
-
-    /// Builder pattern for number of read pages
-    fn with_number_of_read_pages(self, read_pages: usize) -> Self;
-
-    /// Sets the number of read pages for the book
-    fn set_number_of_read_pages(&mut self, read_pages: usize);
-
-    /// Returns the index of the book.
-    ///
-    /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn get_index(&self) -> usize;
-
-    /// Builder pattern for index
-    ///
-    /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn with_index(self, idx: usize) -> Self;
-
-    /// Sets the index of the book.
-    ///
-    /// The idx is intended to be the position in the array of the `Library` struct (relax this constraint?)
-    fn set_index(&mut self, idx: usize);
-
-    /// Builds the cover image from the cover image data
-    fn build_cover(&self) -> Result<Box<[u8]>, String>;
-
-    /// Builds the cover image from the cover image data with the specified size
-    fn build_cover_with_size(&self, width: u32, height: u32) -> Result<Box<[u8]>, String>;
-
-    /// Builder pattern for the description (i.e, like a synopsis for the book)
-    fn with_description(self, description: impl Into<String>) -> Self;
-
-    /// Sets the description (i.e, like a synopsis for the book)
-    fn set_description(&mut self, description: impl Into<String>);
-
-    /// Returns the selected state of the book
-    fn is_selected(&self) -> bool;
-
-    /// Sets the book as selected
-    fn set_selected(&mut self, selected: bool);
-
-    /// Set the book as selected
-    fn select(&mut self);
-
-    /// Set the book as unselected
-    fn unselect(&mut self);
-
-    /// Returns the cover of this book
-    fn get_cover_image(&self) -> Arc<Vec<u8>>;
-
-    /// Sets the cover image
-    fn set_cover_image(&mut self, cover_image: Vec<u8>);
-
-    fn is_filtered_out(&self) -> bool;
-
-    fn set_filtered_out(&mut self, filtered_out: bool);
-
-    fn is_favorite(&self) -> bool;
-}
-
-use druid::text::RichText;
-use druid::{Data, Lens};
+use std::{collections::HashMap, io::Cursor as ImageCursor, rc::Rc, string::String, sync::Arc};
+use druid::{im::Vector, image::io::Reader as ImageReader, text::RichText, Data, Lens};
 use epub::doc::EpubDoc;
 
-use super::note::NoteManagement;
+use crate::{
+    MYENV,
+    traits::{gui::GUIBook, reader::{BookReading, BookManagement}, note::NoteManagement},
+    utils::{
+        envmanager::FontSize, 
+        epub_utils::{
+        calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
+        get_number_of_pages, split_chapter_in_vec
+        },
+        saveload::{
+            load_data, remove_edited_chapter, save_favorite, 
+            load_notes, save_note, delete_note, delete_all_notes
+        },
+        epub_utils, text_descriptor
+    },
+};
+
+
 
 const NUMBER_OF_LINES: usize = 8;
-
-/// trait that describes the book reading functions
-pub trait BookReading {
-    /// Method that returns the current chapter number
-    fn get_chapter_number(&self) -> usize;
-
-    /// Method that set the chapter number
-    /// chapter number must be in the range [0, number_of_chapters)
-    /// next is true if the chapter number is incremented, false otherwise
-    fn set_chapter_number(&mut self, chapter: usize, next: bool);
-
-    /// Method that returns the number of
-    /// the last page of the current chapter
-    fn get_last_page_number(&self) -> usize;
-
-    /// Method that returns the current page number with respect to the chapter
-    fn get_current_page_number(&self) -> usize;
-
-    /// Method that return the current page number with respect to the total number of pages
-    fn get_cumulative_current_page_number(&self) -> usize;
-
-    /// Method that set the current page number
-    /// you can use it to change page
-    /// Example: go back and go forward
-    fn set_chapter_current_page_number(&mut self, page: usize);
-
-    /// Method that returns rich text of the current chapter
-    fn get_chapter_rich_text(&self) -> RichText;
-
-    /// Method that returns the page as String of the current chapter
-    fn get_page_of_chapter(&self) -> String;
-
-    /// Method that returns two pages dealing with two page mode
-    fn get_dual_pages(&self) -> (String, String);
-
-    fn get_number_of_chapters(&self) -> usize;
-}
-
-/// Trait that describes book management functions
-/// not related directly to the reading
-pub trait BookManagement {
-    /// Method that returns the path of the book
-    fn get_path(&self) -> String;
-
-    /// Method that splits the chapter in blocks of const NUMBER_OF_LINES
-    /// and returns a vector of strings. Each string is a page of the chapter
-    fn split_chapter_in_pages(&self, is_single_view: bool) -> Vector<String>;
-
-    /// Method that edits the text of the current chapter
-    fn edit_text<S: Into<Option<String>>>(&mut self, new_text: String, other_new_text: S);
-
-    /// Method that extracts the book's chapters in local files
-    fn save_chapters(&self) -> Result<(), Box<dyn std::error::Error>>;
-
-    fn load_chapter(&mut self);
-
-    fn set_favorite(&mut self, favorite: bool);
-}
 
 /// Struct that models EPUB file
 /// Metadata are attributes

@@ -1,4 +1,5 @@
 use derivative::Derivative;
+use druid::{im::Vector, Data, Lens};
 use druid::image::io::Reader as ImageReader;
 use std::{
     io::Cursor,
@@ -10,18 +11,14 @@ use std::{
     },
 };
 use threadpool::ThreadPool;
-
-use druid::{im::Vector, Data, Lens};
 use epub::doc::EpubDoc;
 
-use crate::utils::{
+use crate::{utils::{
     dir_manager::{get_epub_dir, get_saved_books_dir},
     epub_utils,
-};
-
-use super::{
-    book::{Book, GUIBook},
-    library::GUILibrary,
+    },
+    traits::gui::{GUIBook, GUILibrary},
+    models::book::Book,
 };
 
 pub struct LibraryFilterLens;
