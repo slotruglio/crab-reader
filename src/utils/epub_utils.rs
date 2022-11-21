@@ -1,4 +1,6 @@
-use super::saveload::{get_chapter_bytes, FileExtension};
+use crate::{MYENV, utils::envmanager::FontSize};
+
+use super::{saveload::{get_chapter_bytes, FileExtension}, dir_manager::{get_saved_books_dir, get_saved_covers_dir}};
 use epub::doc::EpubDoc;
 use html2text::from_read;
 use serde_json::json;
@@ -22,10 +24,6 @@ use std::{
 /// rights: rights of the book
 /// identifier: identifier of the book
 
-const SAVED_BOOKS_PATH: &str = "saved_books";
-
-#[allow(dead_code)]
-const SAVED_BOOKS_COVERS_PATH: &str = "covers";
 
 fn get_metadata_from_epub(
     book: &EpubDoc<File>,
@@ -90,7 +88,7 @@ fn get_metadata_from_epub(
 #[allow(dead_code)]
 pub fn save_book_cover(image: &Vec<u8>, name: &String) -> Result<String, Box<dyn error::Error>> {
     // create dir
-    let mut path = Path::new(SAVED_BOOKS_PATH).join(SAVED_BOOKS_COVERS_PATH);
+    let mut path = get_saved_covers_dir();
     std::fs::create_dir_all(&path)?;
 
     path.push(format!("{}.png", &name));
@@ -106,7 +104,7 @@ pub fn edit_chapter(
     text: impl Into<String>,
 ) -> Result<(), Box<dyn error::Error>> {
     let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-    let mut path_name: PathBuf = [SAVED_BOOKS_PATH, folder_name].iter().collect();
+    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
     println!("DEBUG: Folder path: {:?}", path_name);
     std::fs::create_dir_all(&path_name)?;
     path_name = path_name.join(format!("page_{}.txt", chapter_number));
@@ -124,7 +122,7 @@ pub fn edit_chapter(
 
 pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
     let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
-    let mut path_name: PathBuf = [SAVED_BOOKS_PATH, folder_name].iter().collect();
+    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
     println!("DEBUG: Folder path: {:?}", path_name);
     std::fs::create_dir_all(&path_name)?;
     let mut book = EpubDoc::new(path)?;
@@ -159,7 +157,7 @@ pub fn extract_all(path: &str) -> Result<(), Box<dyn error::Error>> {
 pub fn extract_metadata(path: &str) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
     let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
     println!("DEBUG: Folder name: {}", folder_name);
-    let mut path_name: PathBuf = [SAVED_BOOKS_PATH, folder_name].iter().collect();
+    let mut path_name: PathBuf = get_saved_books_dir().join(folder_name);
     println!("DEBUG: Folder path: {:?}", path_name);
     std::fs::create_dir_all(&path_name)?;
 
@@ -179,7 +177,7 @@ pub fn extract_metadata(path: &str) -> Result<HashMap<String, String>, Box<dyn e
 pub fn extract_chapters(path: &str) -> Result<(), Box<dyn error::Error>> {
     let folder_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
     println!("DEBUG: Folder name: {:?}", folder_name);
-    let path_name: PathBuf = [SAVED_BOOKS_PATH, folder_name].iter().collect();
+    let path_name: PathBuf = get_saved_books_dir().join(folder_name);
     println!("DEBUG: Folder path: {:?}", path_name);
     std::fs::create_dir_all(&path_name)?;
 
@@ -232,13 +230,10 @@ pub fn get_chapter_text_utf8(path: impl Into<String>, chapter_number: usize) -> 
 
         let text = from_read(cursor, 100).as_bytes().to_vec();
         // save html page
-        let page_path: PathBuf = [
-            SAVED_BOOKS_PATH,
-            folder_name,
-            &format!("page_{}.html", chapter_number),
-        ]
-        .iter()
-        .collect();
+        let page_path: PathBuf = get_saved_books_dir()
+        .join(folder_name)
+        .join(&format!("page_{}.html", chapter_number));
+
         println!("DEBUG: path to save chapter: {:?}", page_path);
         let mut file = File::create(page_path).unwrap();
         file.write_all(&text).unwrap();
@@ -252,7 +247,7 @@ pub fn get_chapter_text_utf8(path: impl Into<String>, chapter_number: usize) -> 
 pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
     let book_name = Path::new(path).file_stem().unwrap().to_str().unwrap();
 
-    let metadata_path = Path::new(SAVED_BOOKS_PATH)
+    let metadata_path = get_saved_books_dir()
         .join(book_name)
         .join("metadata.json");
     if let Ok(metadata_file) = File::open(metadata_path) {
@@ -270,7 +265,7 @@ pub fn get_metadata_of_book(path: &str) -> HashMap<String, String> {
 pub fn calculate_number_of_pages(
     path: &str,
     number_of_lines: usize,
-    font_size: usize,
+    font_size: f64,
 ) -> Result<(usize, Vec<(usize, usize)>), Box<dyn error::Error>> {
     let mut metadata = get_metadata_of_book(path);
     let number_of_chapters = metadata["chapters"].parse::<usize>().unwrap_or_default();
@@ -322,7 +317,7 @@ pub fn calculate_number_of_pages(
 
     // save number of pages per chapter in metadata
     metadata.insert(
-        "pages_per_chapter".into(),
+        format!("pages_per_chapter_{}", FontSize::from_f64(font_size).to_string()),
         format!(
             "[{}]",
             pages_per_chapter_start_end
@@ -338,7 +333,7 @@ pub fn calculate_number_of_pages(
     println!("DEBUG metadata: {:?}", metadata);
 
     let json = json!(metadata);
-    let metadata_path = Path::new(SAVED_BOOKS_PATH)
+    let metadata_path = get_saved_books_dir()
         .join(Path::new(path).file_stem().unwrap().to_str().unwrap())
         .join("metadata.json");
 
@@ -362,7 +357,7 @@ pub fn get_number_of_pages(path: &str) -> usize {
     if let Some(number_of_pages) = result {
         number_of_pages.parse::<usize>().unwrap_or_default()
     } else {
-        calculate_number_of_pages(path, 8, 12).unwrap_or_default().0
+        calculate_number_of_pages(path, 8, MYENV.lock().unwrap().font.size).unwrap_or_default().0
     }
 }
 
@@ -371,7 +366,7 @@ pub fn get_number_of_pages(path: &str) -> usize {
 pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
     let metadata = get_metadata_of_book(path);
 
-    let result = metadata.get("pages_per_chapter");
+    let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from_f64(MYENV.lock().unwrap().font.size).to_string()).as_str());
     if let Some(pages_per_chapter) = result {
         let vec_as_str = pages_per_chapter.to_string();
         vec_as_str
@@ -387,7 +382,7 @@ pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
             })
             .collect()
     } else {
-        calculate_number_of_pages(path, 8, 12).unwrap_or_default().1
+        calculate_number_of_pages(path, 8, MYENV.lock().unwrap().font.size).unwrap_or_default().1
     }
 }
 
@@ -412,7 +407,7 @@ pub fn split_chapter_in_vec<S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>
     opt_text: S,
     chapter_number: U,
     number_of_lines: usize,
-    font_size: usize,
+    font_size: f64,
     width: f32,
     height: f32,
 ) -> Vec<Rc<String>> {
@@ -425,8 +420,8 @@ pub fn split_chapter_in_vec<S: Into<Option<Rc<String>>>, U: Into<Option<usize>>>
 
     //through font-size, we can calculate the number N of lines that fit in the page
     //split text in paragraphs long N lines
-    let wf = (width / (12 as f32)) as usize;
-    let hf = (height / (12 as f32)) as usize;
+    let wf = (width / (font_size as f32)) as usize;
+    let hf = (height / (font_size as f32)) as usize;
 
     let wfhf = wf * hf;
 

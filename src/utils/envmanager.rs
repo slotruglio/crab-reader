@@ -3,25 +3,24 @@ use serde_json;
 
 #[derive(Debug)]
 pub struct MyEnv {
-	pub theme: String,
-	pub font_color: Color,
-	pub font: FontDescriptor,
-	pub books_path: String,
-	pub edits_path: String,
-	pub bookmarks_path: String,
+    pub theme: String,
+    pub font_color: Color,
+    pub font: FontDescriptor,
+    pub books_path: String,
+    pub edits_path: String,
+    pub bookmarks_path: String,
 }
 
 impl MyEnv {
-	pub fn new() -> Self {
-
-		let mut new_env: Self = Self {
-			theme: "dark".to_string(),
-			font_color: Color::rgb8(0, 0, 0),
-			font: FontDescriptor::new(FontFamily::SYSTEM_UI),
-			books_path: "".to_string(),
-			edits_path: "".to_string(),
-			bookmarks_path: "".to_string(),
-		};
+    pub fn new() -> Self {
+        let mut new_env: Self = Self {
+            theme: "dark".to_string(),
+            font_color: Color::rgb8(0, 0, 0),
+            font: FontDescriptor::new(FontFamily::SYSTEM_UI),
+            books_path: "".to_string(),
+            edits_path: "".to_string(),
+            bookmarks_path: "".to_string(),
+        };
 
         //Take the JSON, turn it into a MAP
         let json = std::fs::read_to_string("env.json").unwrap();
@@ -48,13 +47,28 @@ impl MyEnv {
         ))
         .with_size(font_size_numeric);
 
-		//SET books_path, edits_path, bookmarks_path
-		new_env.books_path = json.get("books_path").unwrap().as_str().unwrap().to_string();
-		new_env.edits_path = json.get("edits_path").unwrap().as_str().unwrap().to_string();
-		new_env.bookmarks_path = json.get("bookmarks_path").unwrap().as_str().unwrap().to_string();
+        //SET books_path, edits_path, bookmarks_path
+        new_env.books_path = json
+            .get("books_path")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+        new_env.edits_path = json
+            .get("edits_path")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+        new_env.bookmarks_path = json
+            .get("bookmarks_path")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
 
-		return new_env;
-	}
+        return new_env;
+    }
 
     #[allow(dead_code)]
     pub fn save_to_env(&mut self) {
@@ -181,6 +195,50 @@ impl MyEnv {
             return "large".to_string();
         } else {
             return "medium".to_string();
+        }
+    }
+}
+
+pub enum FontSize {
+    SMALL,
+    MEDIUM,
+    LARGE,
+}
+impl FontSize {
+    pub fn to_f64(&self) -> f64 {
+        match self {
+            FontSize::SMALL => 12.0,
+            FontSize::MEDIUM => 16.0,
+            FontSize::LARGE => 20.0,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            FontSize::SMALL => "small".to_string(),
+            FontSize::MEDIUM => "medium".to_string(),
+            FontSize::LARGE => "large".to_string(),
+        }
+    }
+
+    pub fn from_string(value: String) -> FontSize {
+        match value.as_str() {
+            "small" => FontSize::SMALL,
+            "medium" => FontSize::MEDIUM,
+            "large" => FontSize::LARGE,
+            _ => FontSize::MEDIUM,
+        }
+    }
+
+    pub fn from_f64(value: f64) -> FontSize {
+        if value == 12.0 {
+            return FontSize::SMALL;
+        } else if value == 16.0 {
+            return FontSize::MEDIUM;
+        } else if value == 20.0 {
+            return FontSize::LARGE;
+        } else {
+            return FontSize::MEDIUM;
         }
     }
 }

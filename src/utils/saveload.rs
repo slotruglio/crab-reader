@@ -7,8 +7,9 @@ use std::{
 
 use serde_json::{json, Value};
 
-const CONFIG_PATH: &str = "conf/books_saved.json";
-const SAVED_BOOKS_PATH: &str = "saved_books/";
+use crate::{MYENV, utils::dir_manager::{get_savedata_path, get_saved_books_dir}};
+
+use super::envmanager::FontSize;
 
 pub enum FileExtension {
     TXT,
@@ -16,57 +17,69 @@ pub enum FileExtension {
     EPUB,
 }
 
-// todo: add path as parameter
 // waiting for implementation of this env var
 
 /// function to save page of chapter of currently opened book
-pub fn save_page_of_chapter<T: Into<String> + Clone>(
+pub fn save_data<T: Into<String> + Clone>(
     book_path: T,
     chapter: usize,
     page: usize,
+    content: T,
+    font_size: FontSize,
+    edited: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+
     println!(
-        "DEBUG saving data: {} {} {}",
+        "DEBUG saving data: {} {} {} {} {}",
         chapter,
         page,
-        book_path.clone().into()
+        book_path.clone().into(),
+        font_size.to_string(),
+        edited
     );
-    let (tx, rx) = channel();
 
-    let thread = std::thread::spawn(move || {
-        let mut json = json!({});
-        if let Ok(opened_file) = File::open(CONFIG_PATH) {
-            println!("DEBUG file exists");
-            let reader = BufReader::new(opened_file);
-            if let Ok(content) = serde_json::from_reader(reader) {
-                json = content
-            };
-        } else {
-            println!("DEBUG file doesn't exist");
-            create_dir_all(Path::new(CONFIG_PATH).parent().unwrap()).unwrap();
-        }
-        tx.send(json).unwrap();
-    });
-
-    let value = json!({"chapter":chapter, "page":page});
-
-    if let Ok(()) = thread.join() {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(CONFIG_PATH)?;
-
-        let mut json = rx.recv().unwrap();
-
-        json[book_path.into()] = value;
-
-        serde_json::to_writer_pretty(file, &json)?;
-        drop(rx);
-        Ok(())
+    // check if exists a savedata file
+    let savedata_path = get_savedata_path();
+    let mut json = json!({});
+    if let Ok(opened_file) = File::open(savedata_path.clone()) {
+        println!("DEBUG file exists");
+        let reader = BufReader::new(opened_file);
+        if let Ok(content) = serde_json::from_reader(reader) {
+            json = content
+        };
     } else {
-        Err("Error while saving data".into())
+        println!("DEBUG file doesn't exist");
+        create_dir_all(savedata_path.parent().unwrap()).unwrap();
     }
+
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_savedata_path())?;
+
+    let mut set = json[book_path.clone().into()]["edited_chapters"].as_array().unwrap_or(&vec![]).iter().map(|x| x.as_u64().unwrap() as usize).collect::<Vec<usize>>();
+    println!("DEBUG set before push: {:?}", set);
+    if edited {
+        if !set.contains(&chapter) {
+            set.push(chapter);
+            println!("DEBUG set after push: {:?}", set);
+        }
+    }
+    let value = json!(
+        {
+            "chapter":chapter,
+            "page":page,
+            "font_size":font_size.to_string(),
+            "edited_chapters": set,
+            "content":content.into()
+        }
+    );
+
+    json[book_path.into()] = value;
+    serde_json::to_writer_pretty(file, &json)?;
+
+    Ok(())
 }
 
 pub fn remove_savedata_of_book<T: Into<String> + Clone>(
@@ -76,7 +89,7 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(
 
     let thread = std::thread::spawn(move || {
         let mut json = json!({});
-        if let Ok(opened_file) = File::open(CONFIG_PATH) {
+        if let Ok(opened_file) = File::open(get_savedata_path()) {
             println!("DEBUG file exists");
             let reader = BufReader::new(opened_file);
             if let Ok(content) = serde_json::from_reader(reader) {
@@ -92,7 +105,7 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(
             let file = OpenOptions::new()
                 .write(true)
                 .truncate(true)
-                .open(CONFIG_PATH)?;
+                .open(get_savedata_path())?;
 
             json.as_object_mut().unwrap().remove(&book_path.into());
             serde_json::to_writer_pretty(file, &json)?;
@@ -105,43 +118,52 @@ pub fn remove_savedata_of_book<T: Into<String> + Clone>(
 }
 
 pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
-    if std::path::Path::new(CONFIG_PATH).exists() {
-        std::fs::remove_file(CONFIG_PATH)?
+    let config_path = get_savedata_path();
+    if config_path.exists() {
+        std::fs::remove_file(config_path)?
     }
     Ok(())
 }
 
 /// function to load the last read page of a chapter given the path of the book
-pub fn get_page_of_chapter<T: Into<String> + Clone>(
+pub fn load_data<T: Into<String> + Clone>(
     book_path: T,
-) -> Result<(usize, usize), Box<dyn std::error::Error>> {
+) -> Result<(usize, usize, f64), Box<dyn std::error::Error>> {
     let mut chapter = 1;
     let mut page = 0;
+    let mut font_size = FontSize::MEDIUM.to_f64();
 
-    if let Ok(file) = File::open(CONFIG_PATH) {
+    if let Ok(file) = File::open(get_savedata_path()) {
         let reader = BufReader::new(file);
         let json: Value = serde_json::from_reader(reader)?;
 
         if let Some(value) = json.get(book_path.clone().into()) {
-            let chapter_value = value.get("chapter").and_then(|v| v.as_u64());
-            let page_value = value.get("page").and_then(|v| v.as_u64());
+            let saved_chapter_value = value
+                .get("chapter").and_then(|v| v.as_u64());
+            let saved_page_value = value
+                .get("page").and_then(|v| v.as_u64());
+            let saved_font_size = value
+                .get("font_size").and_then(|v| v.as_str());
 
-            if chapter_value.is_some() && page_value.is_some() {
-                chapter = chapter_value.unwrap() as usize;
-                page = page_value.unwrap() as usize;
+            if saved_chapter_value.is_some() && saved_page_value.is_some() && saved_font_size.is_some() {
+                chapter = saved_chapter_value.unwrap() as usize;
+                page = saved_page_value.unwrap() as usize;
+                font_size = FontSize::from_string(saved_font_size.unwrap().to_string()).to_f64();
             } else {
                 chapter = 1;
                 page = 0;
+                font_size = FontSize::MEDIUM.to_f64();
             }
         };
     }
     println!(
-        "DEBUG reading data: {} {} {}",
+        "DEBUG reading data: {} {} {} {}",
         &chapter,
         &page,
-        book_path.into()
+        book_path.into(),
+        font_size
     );
-    Ok((chapter, page))
+    Ok((chapter, page, font_size))
 }
 
 pub fn get_chapter(
@@ -164,7 +186,7 @@ pub fn get_chapter_bytes(
         FileExtension::EPUB => "epub",
     };
 
-    let filename = Path::new(SAVED_BOOKS_PATH)
+    let filename = get_saved_books_dir()
         .join(&folder_name.into())
         .join(format!("page_{}.{}", chapter, ext));
     println!("filename from where get page: {:?}", filename);
@@ -172,6 +194,7 @@ pub fn get_chapter_bytes(
     std::fs::read(filename).map_err(|e| e.to_string())
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -598,3 +621,5 @@ mod tests {
         assert_eq!(std::path::Path::new(CONFIG_PATH).exists(), false);
     }
 }
+
+*/

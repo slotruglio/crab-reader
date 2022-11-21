@@ -1,15 +1,13 @@
 use components::book::{Book, BookReading, GUIBook};
 use components::book_details::BookDetails;
 use components::cover_library::CoverLibrary;
-use components::display_mode_button::{DisplayMode, DisplayModeButton};
 use components::library::GUILibrary;
 use components::listing_library::ListLibrary;
-use components::mockup::{MockupLibrary, SortBy};
+use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 use components::rbtn::RoundedButton;
-use components::reader_view::{
-    build_dual_view, build_dual_view_edit, build_single_view, build_single_view_edit,
-};
-use druid::widget::{Button, Controller, Either, Flex, Label, Scroll, ViewSwitcher};
+use components::reader_btns::ReaderBtn;
+use components::reader_view::{sidebar_widget, ReaderView};
+use druid::widget::{Either, Flex, Label, Scroll, ViewSwitcher};
 use druid::{
     AppDelegate, AppLauncher, Color, Data, Env, EventCtx, Handled, Lens, PlatformError, Selector,
     Widget, WidgetExt, WindowDesc, FileSpec, Command, Target
@@ -40,20 +38,26 @@ static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 #[derive(Clone, Data, Lens)]
 pub struct ReadingState {
-    single_view: Option<bool>,
-    is_editing: Option<bool>,
+    single_view: bool,
+    is_editing: bool,
+    pages_btn_style: u8,
+    sidebar_open: bool,
     text_0: String,
     text_1: String,
 }
 
 impl ReadingState {
-    fn enable<S: Into<Option<Rc<String>>>>(&mut self, text: S) {
-        self.single_view = Some(true);
-        self.is_editing = Some(false);
+    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S) {
+        self.single_view = true;
+        self.is_editing = false;
+        self.pages_btn_style = 0;
+        self.sidebar_open = false;
     }
     fn disable(&mut self) {
-        self.single_view = None;
-        self.is_editing = None;
+        self.single_view = false;
+        self.is_editing = false;
+        self.pages_btn_style = 0;
+        self.sidebar_open = false;
         self.text_0 = String::default();
         self.text_1 = String::default();
     }
@@ -62,16 +66,24 @@ impl ReadingState {
 impl Default for ReadingState {
     fn default() -> Self {
         Self {
-            single_view: None,
-            is_editing: None,
+            single_view: true,
+            is_editing: false,
+            pages_btn_style: 0,
+            sidebar_open: false,
             text_0: String::default(),
             text_1: String::default(),
         }
     }
 }
 
+#[derive(Clone, PartialEq, Data)]
+pub enum DisplayMode {
+    Cover,
+    List,
+}
+
 #[derive(Clone, Data, Lens)]
-struct CrabReaderState {
+pub struct CrabReaderState {
     user: UserState,
     library: Library,
     display_mode: DisplayMode,
@@ -108,7 +120,6 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
     BookDetails::new()
         .background(Color::GRAY)
         .rounded(10.0)
-        .expand_width()
         .lens(CrabReaderState::library)
 }
 
@@ -208,30 +219,10 @@ fn picker_sort_by() -> impl Widget<Library> {
         .expand_width()
 }
 
-struct FilterController;
-
-impl<W: Widget<Library>> Controller<MockupLibrary<Book>, W> for FilterController {
-    fn event(
-        &mut self,
-        child: &mut W,
-        ctx: &mut EventCtx,
-        event: &druid::Event,
-        data: &mut MockupLibrary<Book>,
-        env: &Env,
-    ) {
-        let filter = data.get_filter_text_input();
-        if filter != *data.get_filter_string() {
-            data.set_filter_string(filter);
-        }
-        child.event(ctx, event, data, env)
-    }
-}
-
 fn picker_filter_by() -> impl Widget<Library> {
     let text_edit = druid::widget::TextBox::new()
         .with_placeholder("Filter by")
-        .lens(Library::filter_text_input)
-        .controller(FilterController)
+        .lens(LibraryFilterLens)
         .fix_width(500.0);
     Flex::row()
         .with_child(Label::new("Filter by"))
@@ -269,16 +260,31 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_child(view_either)
         .padding(15.0);
     let scroll = Scroll::new(left_panel).vertical();
-
-    let right_panel = Scroll::new(book_details_panel()).vertical().padding(5.0);
+    let right_panel = Scroll::new(book_details_panel()).vertical();
     let right_col = Flex::column()
         .with_child(
-            DisplayModeButton
-                .padding(10.0)
-                .expand_width()
-                .lens(CrabReaderState::display_mode),
+            RoundedButton::dynamic(
+                |data: &CrabReaderState, _env: &Env| match data.display_mode {
+                    DisplayMode::List => "Passa a visualizzazione a lista".into(),
+                    DisplayMode::Cover => "Passa a visualiazione a copertine".into(),
+                },
+            )
+            .with_color(Color::rgb8(70, 70, 70))
+            .with_hot_color(Color::rgb8(50, 50, 50))
+            .with_active_color(Color::rgb8(20, 20, 20))
+            .with_text_size(24.0)
+            .with_text_color(Color::WHITE)
+            .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+                data.display_mode = match data.display_mode {
+                    DisplayMode::List => DisplayMode::Cover,
+                    DisplayMode::Cover => DisplayMode::List,
+                };
+                ctx.request_update();
+            })
+            .padding((0.0, 20.0)),
         )
-        .with_flex_child(right_panel, 1.0);
+        .with_flex_child(right_panel, 1.0)
+        .padding(10.0);
 
     let inner = Flex::row()
         .with_flex_child(scroll, 2.0)
@@ -316,13 +322,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let title = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         data.library
             .get_selected_book()
-            .unwrap()
-            .get_title()
-            .to_string()
+            .map_or("Titolo libro non trovato".into(), |book| book.get_title())
     })
-    .with_text_size(32.0)
-    .padding(10.0)
-    .center();
+    .with_text_size(24.0);
 
     let current_chapter = Label::dynamic(|data: &CrabReaderState, _env: &_| {
         format!(
@@ -335,39 +337,19 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         )
     })
     .with_text_size(16.0)
-    .padding(10.0)
     .center();
 
-    let text = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.single_view.unwrap(),
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            build_single_view_edit(),
-            build_single_view(),
-        ),
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
-            build_dual_view_edit(),
-            build_dual_view(),
-        ),
-    )
-    .fix_size(800.0, 450.0);
+    let sidebar = sidebar_widget();
+    let text = Flex::row()
+        .with_flex_child(sidebar, 1.0)
+        .with_flex_child(ReaderView::dynamic_view(), 4.0);
 
-    let leave_btn = Button::new("Go back to Browsing")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading = false;
-        })
-        .fix_height(64.0)
-        .center();
+    let leave_btn = Flex::row()
+        .with_child(ReaderBtn::Leave.button())
+        .align_left();
 
     // todo() switch to change single view and double view
     // this is a mock to test layout
-    let views_btn = Button::new("Single/Double View")
-        .on_click(|_, data: &mut CrabReaderState, _| {
-            data.reading_state.single_view = Some(!data.reading_state.single_view.unwrap())
-        })
-        .fix_height(64.0)
-        .center();
 
     let ocr_btn = Button::new("OCR")
         .on_click(|event_ctx, _: &mut CrabReaderState, _| {
@@ -454,7 +436,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             .get_cumulative_current_page_number();
         let odd = page_number % 2;
 
-        if data.reading_state.single_view.unwrap() {
+        if data.reading_state.single_view {
             format!("Page {}", page_number.to_string())
         } else {
             if odd == 0 {
@@ -472,63 +454,50 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             }
         }
     })
-    .with_text_size(12.0)
-    .padding(10.0)
-    .center();
+    .with_text_size(12.0);
 
     let header_btns = Flex::row()
         .with_child(ocr_btn)
         .with_child(edit_btn)
+        .with_spacer(10.0)
         .with_child(views_btn)
-        .center();
+        .align_right();
 
     let header = Flex::row()
-        .with_child(leave_btn)
-        .with_default_spacer()
-        .with_flex_child(title, 1.0)
-        .with_default_spacer()
-        .with_child(header_btns)
-        .center();
+        .with_flex_child(leave_btn, 1.0)
+        .with_flex_child(header_btns, 1.0);
 
     let footer = Either::new(
-        |data: &CrabReaderState, _env| data.reading_state.is_editing.unwrap(),
+        |data: &CrabReaderState, _env| data.reading_state.is_editing,
         Flex::row()
             .with_child(undo_changes_btn)
-            .with_child(save_changes_btn)
-            .center(),
+            .with_default_spacer()
+            .with_child(save_changes_btn),
         Flex::row()
             .with_child(back_btn)
+            .with_spacer(10.0)
             .with_child(current_page)
-            .with_child(next_btn)
-            .center(),
-    );
+            .with_spacer(10.0)
+            .with_child(next_btn),
+    )
+    .center();
 
-    let flex = Flex::column()
+    let ui = Flex::column()
         .with_child(header)
+        .with_child(title)
         .with_child(current_chapter)
-        .with_spacer(5.0)
+        .with_spacer(20.0)
         .with_child(text)
         .with_flex_spacer(5.0)
         .with_child(footer)
-        .with_spacer(5.0);
+        .padding(15.0);
 
-    flex
+    ui
 }
 
-struct DumbDelegate;
+struct ReadModeDelegate;
 
-impl AppDelegate<CrabReaderState> for DumbDelegate {
-    fn event(
-        &mut self,
-        _: &mut druid::DelegateCtx,
-        _: druid::WindowId,
-        event: druid::Event,
-        _: &mut CrabReaderState,
-        _: &Env,
-    ) -> Option<druid::Event> {
-        Some(event)
-    }
-
+impl AppDelegate<CrabReaderState> for ReadModeDelegate {
     fn command(
         &mut self,
         _: &mut druid::DelegateCtx,
@@ -539,7 +508,6 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
     ) -> Handled {
         match cmd {
             notif if notif.is(ENTERING_READING_MODE) => {
-                println!("Entering reading mode!");
                 data.reading = true;
                 data.reading_state.enable(
                     data.library
@@ -547,11 +515,9 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
                         .unwrap()
                         .get_page_of_chapter(),
                 );
-
                 Handled::Yes
             }
             notif if notif.is(LEAVING_READING_MODE) => {
-                println!("Leaving reading mode!");
                 data.reading = false;
                 data.reading_state.disable();
 
@@ -590,24 +556,6 @@ impl AppDelegate<CrabReaderState> for DumbDelegate {
             _ => Handled::No,
         }
     }
-
-    fn window_added(
-        &mut self,
-        _: druid::WindowId,
-        _: &mut CrabReaderState,
-        _: &Env,
-        _: &mut druid::DelegateCtx,
-    ) {
-    }
-
-    fn window_removed(
-        &mut self,
-        _: druid::WindowId,
-        _: &mut CrabReaderState,
-        _: &Env,
-        _: &mut druid::DelegateCtx,
-    ) {
-    }
 }
 
 fn main() -> Result<(), PlatformError> {
@@ -618,7 +566,7 @@ fn main() -> Result<(), PlatformError> {
             .title("CrabReader")
             .window_size((1280.0, 720.0)),
     )
-    .delegate(DumbDelegate)
+    .delegate(ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
 }

@@ -1,3 +1,0 @@
-- Fare lo split dei paragrafi in pezzi da 1024 UTF(8|16) anzichè in base a \n\n
-- Modificare i reading state in modo da usare bool anzichè option<bool>
-    - Eventualmente anche avere una nomenclatura consistente, tipo is_editing/is_single_view o editing/single_view
