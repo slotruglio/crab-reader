@@ -1,4 +1,4 @@
-use super::button_functions;
+use super::button_functions::{self, go_next, go_prev};
 use crate::{
     components::{
         book::{BookManagement, BookReading, GUIBook},
@@ -96,6 +96,7 @@ fn handle_arrow_right(
     }
 
     if data.reading {
+        go_next(data);
         return;
     }
 
@@ -128,14 +129,7 @@ fn handle_arrow_left(
     }
 
     if data.reading {
-        // let book = data.library.get_selected_book_mut().unwrap();
-        // button_functions::change_page(
-        // ctx,
-        // book,
-        // data.reading_state.is_editing,
-        // data.reading_state.single_view,
-        // false,
-        // )
+        go_prev(data);
         return;
     }
 
