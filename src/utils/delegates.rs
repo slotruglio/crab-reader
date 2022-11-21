@@ -157,11 +157,6 @@ fn handle_arrow_right(
         return;
     }
 
-    let nbooks = data.library.number_of_books();
-    if nbooks == 0 {
-        return;
-    }
-
     let Some(idx) = data.library.next_book_idx() else {
         return;
     };
