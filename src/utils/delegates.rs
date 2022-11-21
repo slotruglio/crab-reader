@@ -6,8 +6,8 @@ use crate::{
     components::{
         mockup::SortBy,
     },
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE, 
-    utils::ocrmanager, traits::{gui::{GUIBook, GUILibrary}, reader::{BookReading, BookManagement}},
+    utils::ocrmanager,
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE, traits::{gui::{GUILibrary, GUIBook}, reader::{BookReading, BookManagement}},
 };
 
 pub struct ReadModeDelegate;
@@ -40,28 +40,43 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             notif if notif.is(OPEN_FILE) => {
                 println!("Opening file!");
                 let file = cmd.get_unchecked(OPEN_FILE);
-            
+
                 //get file path
                 let path = file.path();
-            
+
                 let selected_book_path = data.library.get_selected_book().unwrap().get_path();
-                
+
                 //split by slash, get last element, split by dot, get first element
-                let folder_name = selected_book_path.split("/").last().unwrap().split(".").next().unwrap();
-            
+                let folder_name = selected_book_path
+                    .split("/")
+                    .last()
+                    .unwrap()
+                    .split(".")
+                    .next()
+                    .unwrap();
+
                 //call ocr on the img path
-                let ocr_result = ocrmanager::get_ebook_page(folder_name.to_string(), path.to_str().unwrap().to_string());
-            
+                let ocr_result = ocrmanager::get_ebook_page(
+                    folder_name.to_string(),
+                    path.to_str().unwrap().to_string(),
+                );
+
                 match ocr_result {
                     Some(ocr_result) => {
                         //move to the found page
-                        data.library.get_selected_book_mut().unwrap().set_chapter_number(ocr_result.0, true);
-                        data.library.get_selected_book_mut().unwrap().set_chapter_current_page_number(ocr_result.1);
+                        data.library
+                            .get_selected_book_mut()
+                            .unwrap()
+                            .set_chapter_number(ocr_result.0, true);
+                        data.library
+                            .get_selected_book_mut()
+                            .unwrap()
+                            .set_chapter_current_page_number(ocr_result.1);
                     }
                     None => {
                         println!("ERROR: OCR page not found");
                     }
-                }    
+                }
                 Handled::Yes
             }
             _ => Handled::No,
@@ -79,6 +94,11 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
         match &event {
             Event::KeyDown(key_event) => {
                 let key = key_event.code;
+
+                if !key_event.mods.ctrl() {
+                    return Some(event);
+                };
+
                 match key {
                     Code::Escape => {
                         handle_esc(ctx, window_id, key_event, data, env);
@@ -116,6 +136,10 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         handle_t(ctx, window_id, key_event, data, env);
                         None
                     }
+                    Code::KeyU => {
+                        handle_u(ctx, window_id, key_event, data, env);
+                        None
+                    }
                     _ => Some(event),
                 }
             }
@@ -137,11 +161,6 @@ fn handle_arrow_right(
 
     if data.reading {
         go_next(data);
-        return;
-    }
-
-    let nbooks = data.library.number_of_books();
-    if nbooks == 0 {
         return;
     }
 
@@ -262,14 +281,7 @@ fn handle_f(
         return;
     }
 
-    let ctl_down = event.mods.ctrl();
-
-    if ctl_down {
-        data.library.toggle_fav_filter();
-    } else if let Some(book) = data.library.get_selected_book_mut() {
-        let fav = book.is_favorite();
-        book.set_favorite(!fav);
-    }
+    data.library.toggle_fav_filter();
 }
 
 fn handle_p(
@@ -342,4 +354,25 @@ fn handle_t(
     };
 
     data.library.sort_by(new_sort);
+}
+
+fn handle_u(
+    _ctx: &mut druid::DelegateCtx,
+    _window_id: druid::WindowId,
+    _event: &KeyEvent,
+    data: &mut CrabReaderState,
+    _env: &Env,
+) {
+    if data.reading_state.is_editing {
+        return;
+    }
+
+    if data.reading {
+        return;
+    }
+
+    if let Some(selected_book) = data.library.get_selected_book_mut() {
+        let fav = selected_book.is_favorite();
+        selected_book.set_favorite(!fav);
+    }
 }
