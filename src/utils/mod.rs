@@ -1,11 +1,12 @@
 pub mod button_functions;
+pub mod colors;
+pub mod ctx_menu;
 pub mod delegates;
 pub mod dir_manager;
 pub mod envmanager;
 pub mod epub_utils;
 pub mod fonts;
+pub mod library;
 pub mod ocrmanager;
 pub mod saveload;
 pub mod text_descriptor;
-pub mod colors;
-pub mod library;

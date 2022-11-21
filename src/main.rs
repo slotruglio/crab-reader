@@ -1,28 +1,26 @@
-use clap::{arg, command, Parser};
 use crate::models::book::Book;
-use components::book::book_details::BookDetails;
 use crate::utils::colors;
+use clap::{arg, command, Parser};
+use components::book::book_details::BookDetails;
+use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
 use components::library::cover_library::CoverLibrary;
 use components::library::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
-use components::buttons::{
-    rbtn::RoundedButton, 
-    reader_btns::ReaderBtn
+use components::views::reader_view::{
+    current_chapter_widget, sidebar_right_widget, sidebar_widget, ReaderView,
 };
-use components::views::reader_view::{sidebar_widget, ReaderView, current_chapter_widget, sidebar_right_widget};
-use druid::widget::{Container, Either, Flex, Label, Scroll, ViewSwitcher, SizedBox};
+use druid::widget::{Container, Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
     AppLauncher, Data, Env, Key, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc,
 };
 
 use once_cell::sync::Lazy;
-use traits::gui::{GUIBook, GUILibrary};
 use std::rc::Rc;
 use std::sync::Mutex;
-use utils::delegates;
+use traits::gui::{GUIBook, GUILibrary};
 use utils::envmanager::MyEnv;
 use utils::fonts::Font;
-
+use utils::{ctx_menu, delegates};
 
 mod components;
 mod models;
@@ -402,13 +400,13 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 }
 
 fn main() -> Result<(), PlatformError> {
-
     let crab_state = CrabReaderState::default();
     let args = CommandLineArgs::parse();
     AppLauncher::with_window(
         WindowDesc::new(get_viewswitcher)
             .title("CrabReader")
-            .window_size((1280.0, 720.0)),
+            .window_size((1280.0, 720.0))
+            .menu(ctx_menu::main_window()),
     )
     .configure_env(move |env, _| {
         let shadows = args.cover_shadows;
