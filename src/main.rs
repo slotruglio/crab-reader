@@ -157,7 +157,7 @@ fn filter_fav_btn() -> impl Widget<Library> {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
-        .toggleable()
+        .with_toggle(|data: &Library, _env: &Env| data.only_fav())
         .padding(5.0)
 }
 

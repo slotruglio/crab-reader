@@ -14,7 +14,7 @@ pub struct RoundedButton<T> {
     status: ButtonStatus,
     on_click: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,
     disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
-    toggle: Toggle,
+    toggle_condition: Box<dyn Fn(&T, &Env) -> bool>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -23,13 +23,6 @@ enum ButtonStatus {
     Hot,
     Active,
     Disabled,
-}
-
-#[derive(PartialEq)]
-enum Toggle {
-    On,
-    Off,
-    None,
 }
 
 impl<T: Data> RoundedButton<T> {
@@ -43,7 +36,7 @@ impl<T: Data> RoundedButton<T> {
             status: ButtonStatus::Normal,
             on_click: Box::new(|_, _, _| {}),
             disable_condition: Box::new(|_, _| false),
-            toggle: Toggle::None,
+            toggle_condition: Box::new(|_, _| false),
         }
         .with_text_color(colors::TEXT_WHITE)
     }
@@ -108,8 +101,8 @@ impl<T: Data> RoundedButton<T> {
         self
     }
 
-    pub fn toggleable(mut self) -> Self {
-        self.toggle = Toggle::Off;
+    pub fn with_toggle(mut self, closure: impl Fn(&T, &Env) -> bool + 'static) -> Self {
+        self.toggle_condition = Box::new(closure);
         self
     }
 }
@@ -125,14 +118,6 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
                 }
                 self.status = ButtonStatus::Active;
                 (self.on_click)(ctx, data, env);
-                self.toggle = match self.toggle {
-                    Toggle::On => {
-                        self.status = ButtonStatus::Hot;
-                        Toggle::Off
-                    }
-                    Toggle::Off => Toggle::On,
-                    Toggle::None => Toggle::None,
-                };
             }
             Event::MouseUp(_) => {
                 if self.is_disabled() {
@@ -214,15 +199,17 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &T, env: &Env) {
         let rrect = ctx.size().to_rect().to_rounded_rect(5.0);
 
-        let color = match (&self.toggle, &self.status) {
-            (_, ButtonStatus::Active) => &self.active_color,
-            (Toggle::On, _) => &self.active_color,
-            (Toggle::None, ButtonStatus::Hot) => &self.hot_color,
-            (Toggle::Off, ButtonStatus::Hot) => &self.hot_color,
-            (Toggle::None, ButtonStatus::Normal) => &self.color,
-            (Toggle::Off, ButtonStatus::Normal) => &self.color,
-            _ => &self.color,
+        let mut color = match &self.status {
+            ButtonStatus::Active => &self.active_color,
+            ButtonStatus::Hot => &self.hot_color,
+            ButtonStatus::Normal => &self.color,
+            ButtonStatus::Disabled => &self.color,
         };
+
+        if (self.toggle_condition)(data, env) {
+            color = &self.active_color;
+        }
+
         ctx.fill(rrect, color);
 
         let label_origin = ctx.size().to_rect().center() - self.label_size.to_vec2() / 2.0;
