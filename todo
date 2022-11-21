@@ -1,7 +1,3 @@
-- Key Controls (Cocco)
-    - Integrare next page/prev page di Sam (Sam)
-
-- Sistemare sto porcoddio di default text color (Gab)
 - Mettere qualcosa per poter utilizzare l'OCR (Gab)
     - Colonna a destra del testo
         - Fisico -> Virtuale (OCR)
@@ -45,3 +41,5 @@ SVOLTE:
 - Flex footer in read mode (Sam)
 - Caching of cover images + enable/disable shadows via CLI (Cocco)
 - Sistemare flex read/edit (Cocco)
+- Key Controls (Cocco)
+- Sistemare sto [REDACTED] di default text color (Gab)
