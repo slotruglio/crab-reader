@@ -43,3 +43,6 @@ SVOLTE:
 - Sistemare flex read/edit (Cocco)
 - Key Controls (Cocco)
 - Sistemare sto [REDACTED] di default text color (Gab)
+
+
+- DOPO CHE SI FA UN OCR E CI SI SPOSTA ALLA PAGINA, IL NUMERO DI PAGINA NON VIENE AGGIORNATO (Se esco e rientro mi ritroverò alla pagina precedente)
