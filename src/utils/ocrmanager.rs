@@ -102,12 +102,6 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 
     let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, 800.0, 300.0);
 
-    //add the number of pages of the chapter to the vector chapters_pages_number
-    // {
-    //     let mut chapters_pages_number = chapters_pages_number.lock().unwrap();
-    //     chapters_pages_number[chapter_to_examine] = chapter_pages.len();    
-    // }
-
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
 
