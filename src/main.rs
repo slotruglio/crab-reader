@@ -98,6 +98,8 @@ pub struct CrabReaderState {
     display_mode: DisplayMode,
     reading: bool,
     reading_state: ReadingState,
+    ocr: bool,
+    ocr_inverse: bool
 }
 
 impl Default for CrabReaderState {
@@ -107,6 +109,8 @@ impl Default for CrabReaderState {
             display_mode: DisplayMode::Cover,
             reading: false,
             reading_state: ReadingState::default(),
+            ocr: false,
+            ocr_inverse: false
         }
     }
 }
@@ -353,6 +357,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
     let undo_changes_btn = ReaderBtn::Undo.button();
     let save_changes_btn = ReaderBtn::Save.button();
     let ocr_btn = ReaderBtn::Ocr.button();
+    let ocr_inverse_btn = ReaderBtn::OcrInverse.button();
 
     let current_page = ReaderBtn::PageNumberSwitch.button();
 
@@ -366,6 +371,8 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(views_btn)
         .with_spacer(10.0)
         .with_child(ocr_btn)
+        .with_spacer(10.0)
+        .with_child(ocr_inverse_btn)
         .align_right();
 
     let header = Flex::row()

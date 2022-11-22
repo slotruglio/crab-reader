@@ -29,6 +29,7 @@ pub enum ReaderBtn {
     PageNumberSwitch,
     ChaptersList,
     Ocr,
+    OcrInverse,
 }
 
 enum PageCounterStyle {
@@ -99,6 +100,7 @@ impl ReaderBtn {
             ReaderBtn::PageNumberSwitch => pages_number_btn(),
             ReaderBtn::ChaptersList => chapters_list_btn(),
             ReaderBtn::Ocr => ocr_btn(),
+            ReaderBtn::OcrInverse => ocr_inverse_btn(),
         }
     }
 }
@@ -243,7 +245,28 @@ pub fn chapter_label(number: usize) -> Align<CrabReaderState> {
 
 pub fn ocr_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("OCR")
-        .with_on_click(|ctx, _: &mut CrabReaderState, _| {
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+
+            data.ocr = true;
+
+            //Trigger a FILE PICKER
+            let cmd = Command::new(
+                SHOW_OPEN_PANEL,
+                FileDialogOptions::new().allowed_types(vec![FileSpec::JPG, FileSpec::PNG]),
+                Target::Auto,
+            );
+
+            ctx.submit_command(cmd);
+        })
+        .with_text_size(24.0)
+}
+
+pub fn ocr_inverse_btn() -> RoundedButton<CrabReaderState> {
+    RoundedButton::from_text("OCR INVERSE")
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+
+            data.ocr_inverse = true;
+
             //Trigger a FILE PICKER
             let cmd = Command::new(
                 SHOW_OPEN_PANEL,
