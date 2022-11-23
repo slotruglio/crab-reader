@@ -1,13 +1,18 @@
-use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
+use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent};
 use std::rc::Rc;
 
-use super::button_functions::{self, go_next, go_prev};
+use super::{
+    button_functions::{self, go_next, go_prev},
+    colors::SWITCH_THEME,
+};
 use crate::{
-    components::{
-        mockup::SortBy,
+    components::mockup::SortBy,
+    traits::{
+        gui::{GUIBook, GUILibrary},
+        reader::{BookManagement, BookReading},
     },
     utils::ocrmanager,
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE, traits::{gui::{GUILibrary, GUIBook}, reader::{BookReading, BookManagement}},
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
 
 pub struct ReadModeDelegate;
@@ -76,6 +81,12 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     None => {
                         println!("ERROR: OCR page not found");
                     }
+                }
+                Handled::Yes
+            }
+            cmd if cmd.is(SWITCH_THEME) => {
+                if let Some(theme) = cmd.get(SWITCH_THEME) {
+                    data.theme = theme.clone();
                 }
                 Handled::Yes
             }

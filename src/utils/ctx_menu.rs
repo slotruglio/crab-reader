@@ -1,6 +1,8 @@
 use druid::{Command, LocalizedString, MenuDesc, MenuItem, Selector, Target};
 
-use crate::CrabReaderState;
+use crate::{components::mockup::TOGGLE_SHADOWS, CrabReaderState};
+
+use super::colors::{CrabTheme, SWITCH_THEME};
 
 const DUMB_SELECTOR: Selector<()> = Selector::new("dumb.selector");
 
@@ -57,9 +59,21 @@ pub fn main_window() -> MenuDesc<CrabReaderState> {
 */
 
 fn theme() -> MenuDesc<CrabReaderState> {
-    let light = entry("Chiaro");
-    let dark = entry("Scuro").selected();
-    let sepia = entry("Seppia");
+    let light = MenuItem::new(
+        loc_str("Chiaro"),
+        Command::new(SWITCH_THEME.into(), CrabTheme::Light, Target::Auto),
+    );
+
+    let sepia = MenuItem::new(
+        loc_str("Sepia"),
+        Command::new(SWITCH_THEME.into(), CrabTheme::Sepia, Target::Auto),
+    );
+
+    let dark = MenuItem::new(
+        loc_str("Scuro"),
+        Command::new(SWITCH_THEME.into(), CrabTheme::Dark, Target::Auto),
+    );
+
     MenuDesc::new(loc_str("Tema"))
         .append(light)
         .append(dark)
@@ -67,7 +81,8 @@ fn theme() -> MenuDesc<CrabReaderState> {
 }
 
 fn shadows() -> MenuDesc<CrabReaderState> {
-    let shadows_on = entry("Abilita ombre").selected();
+    let cmd = Command::new(TOGGLE_SHADOWS, (), Target::Auto);
+    let shadows_on = MenuItem::new(loc_str("Abilita/disabilita ombre"), cmd);
     MenuDesc::new(loc_str("Ombre")).append(shadows_on)
 }
 
