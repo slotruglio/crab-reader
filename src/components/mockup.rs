@@ -1,6 +1,8 @@
 use derivative::Derivative;
-use druid::{im::Vector, Data, Lens};
 use druid::image::io::Reader as ImageReader;
+use druid::Selector;
+use druid::{im::Vector, Data, Lens};
+use epub::doc::EpubDoc;
 use std::{
     io::Cursor,
     path::PathBuf,
@@ -11,14 +13,14 @@ use std::{
     },
 };
 use threadpool::ThreadPool;
-use epub::doc::EpubDoc;
 
-use crate::{utils::{
-    dir_manager::{get_epub_dir, get_saved_books_dir},
-    epub_utils,
-    },
-    traits::gui::{GUIBook, GUILibrary},
+use crate::{
     models::book::Book,
+    traits::gui::{GUIBook, GUILibrary},
+    utils::{
+        dir_manager::{get_epub_dir, get_saved_books_dir},
+        epub_utils,
+    },
 };
 
 pub struct LibraryFilterLens;
@@ -49,6 +51,7 @@ pub struct MockupLibrary<B: GUIBook + Data> {
     #[data(ignore)]
     #[derivative(PartialEq = "ignore")]
     cover_loader: Arc<CoverLoader>,
+    pub do_paint_shadows: bool,
 }
 
 impl MockupLibrary<Book> {
@@ -61,6 +64,7 @@ impl MockupLibrary<Book> {
             visible_books: 0,
             cover_loader: Arc::from(CoverLoader::default()),
             filter_fav: false,
+            do_paint_shadows: false,
         };
 
         if let Ok(paths) = lib.epub_paths() {
@@ -356,3 +360,5 @@ impl Default for CoverLoader {
         }
     }
 }
+
+pub const TOGGLE_SHADOWS: Selector<()> = Selector::new("cover-library.toggle-shadows");
