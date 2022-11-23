@@ -9,7 +9,9 @@ use components::views::reader_view::{
     current_chapter_widget, sidebar_right_widget, sidebar_widget, ReaderView,
 };
 use druid::widget::{Container, Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
-use druid::{AppLauncher, Data, Env, Lens, PlatformError, Selector, Widget, WidgetExt, WindowDesc};
+use druid::{
+    AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc,
+};
 
 use once_cell::sync::Lazy;
 use std::rc::Rc;
@@ -284,7 +286,9 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .with_default_spacer()
         .with_child(view_either)
         .padding(15.0);
-    let scroll = Scroll::new(left_panel).vertical();
+    let scroll = Scroll::new(left_panel)
+        .vertical()
+        .align_vertical(UnitPoint::TOP);
     let right_panel = Scroll::new(book_details_panel()).vertical();
     let right_col = Flex::column()
         .with_child(
