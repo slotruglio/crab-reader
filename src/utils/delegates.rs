@@ -1,13 +1,18 @@
-use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
+use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent};
 use std::rc::Rc;
 
-use super::button_functions::{self, go_next, go_prev};
+use super::{
+    button_functions::{self, go_next, go_prev},
+    colors::SWITCH_THEME,
+};
 use crate::{
-    components::{
-        mockup::SortBy,
+    components::mockup::SortBy,
+    traits::{
+        gui::{GUIBook, GUILibrary},
+        reader::{BookManagement, BookReading},
     },
     utils::ocrmanager,
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE, traits::{gui::{GUILibrary, GUIBook}, reader::{BookReading, BookManagement}},
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
 
 pub struct ReadModeDelegate;
@@ -38,7 +43,6 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 Handled::Yes
             }
             notif if notif.is(OPEN_FILE) => {
-
                 println!("Opening file!");
 
                 if data.ocr {
@@ -81,23 +85,35 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         }
                     }
                     data.ocr = false;
-                }
-                else if data.ocr_inverse {
-                    let actual_ebook_page = data.library.get_selected_book().unwrap().get_page_of_chapter();
+                } else if data.ocr_inverse {
+                    let actual_ebook_page = data
+                        .library
+                        .get_selected_book()
+                        .unwrap()
+                        .get_page_of_chapter();
 
-                    let actual_ebook_page_number = data.library.get_selected_book().unwrap().get_cumulative_current_page_number();
+                    let actual_ebook_page_number = data
+                        .library
+                        .get_selected_book()
+                        .unwrap()
+                        .get_cumulative_current_page_number();
 
                     let num = ocrmanager::get_physical_page(
-                        "tmp_imgs/first_page.png".to_string(), 
-                        data.library.get_selected_book().unwrap().get_chapter_number(), 
-                        actual_ebook_page, actual_ebook_page_number
+                        "tmp_imgs/first_page.png".to_string(),
+                        "tmp_imgs/first_page.png".to_string(),
+                        actual_ebook_page,
+                        actual_ebook_page_number,
                     );
 
                     data.ocr_inverse = false;
-
-                
                 }
 
+                Handled::Yes
+            }
+            cmd if cmd.is(SWITCH_THEME) => {
+                if let Some(theme) = cmd.get(SWITCH_THEME) {
+                    data.theme = theme.clone();
+                }
                 Handled::Yes
             }
             _ => Handled::No,

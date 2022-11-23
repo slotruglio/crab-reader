@@ -1,16 +1,13 @@
 use druid::{
-    widget::Label, Affine, Color, Cursor::NotAllowed, Data, Env, Event, EventCtx,
+    widget::Label, Affine, Color, Cursor::NotAllowed, Data, Env, Event, EventCtx, KeyOrValue,
     LifeCycle::HotChanged, RenderContext, Size, Widget,
 };
 
-use crate::utils::colors;
+use crate::utils::colors::{self};
 
 pub struct RoundedButton<T> {
     label: Label<T>,
     label_size: Size,
-    color: Color,
-    hot_color: Color,
-    active_color: Color,
     status: ButtonStatus,
     on_click: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,
     disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
@@ -28,17 +25,15 @@ enum ButtonStatus {
 impl<T: Data> RoundedButton<T> {
     fn new(label: Label<T>) -> Self {
         Self {
-            label: label.with_line_break_mode(druid::widget::LineBreaking::WordWrap),
+            label: label
+                .with_line_break_mode(druid::widget::LineBreaking::WordWrap)
+                .with_text_color(colors::ON_PRIMARY),
             label_size: Size::ZERO,
-            color: colors::NORMAL_GRAY,
-            hot_color: colors::HOT_GRAY,
-            active_color: colors::ACTIVE_GRAY,
             status: ButtonStatus::Normal,
             on_click: Box::new(|_, _, _| {}),
             disable_condition: Box::new(|_, _| false),
             toggle_condition: Box::new(|_, _| false),
         }
-        .with_text_color(colors::TEXT_WHITE)
     }
 
     pub fn dynamic(closure: impl Fn(&T, &Env) -> String + 'static) -> Self {
@@ -56,24 +51,6 @@ impl<T: Data> RoundedButton<T> {
         self
     }
 
-    #[allow(dead_code)]
-    pub fn with_hot_color(mut self, color: impl Into<Color>) -> Self {
-        self.hot_color = color.into();
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_color(mut self, color: impl Into<Color>) -> Self {
-        self.color = color.into();
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_active_color(mut self, color: impl Into<Color>) -> Self {
-        self.active_color = color.into();
-        self
-    }
-
     fn is_disabled(&self) -> bool {
         self.status == ButtonStatus::Disabled
     }
@@ -86,7 +63,7 @@ impl<T: Data> RoundedButton<T> {
         self
     }
 
-    pub fn with_text_color(mut self, color: impl Into<Color>) -> Self {
+    pub fn with_text_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
         self.label.set_text_color(color.into());
         self
     }
@@ -200,17 +177,17 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
         let rrect = ctx.size().to_rect().to_rounded_rect(5.0);
 
         let mut color = match &self.status {
-            ButtonStatus::Active => &self.active_color,
-            ButtonStatus::Hot => &self.hot_color,
-            ButtonStatus::Normal => &self.color,
-            ButtonStatus::Disabled => &self.color,
+            ButtonStatus::Active => env.get(colors::PRIMARY_VARIANT),
+            ButtonStatus::Hot => env.get(colors::PRIMARY_ACCENT),
+            ButtonStatus::Normal => env.get(colors::PRIMARY),
+            ButtonStatus::Disabled => env.get(colors::PRIMARY_VARIANT).with_alpha(0.5),
         };
 
         if (self.toggle_condition)(data, env) {
-            color = &self.active_color;
+            color = env.get(colors::PRIMARY_VARIANT)
         }
 
-        ctx.fill(rrect, color);
+        ctx.fill(rrect, &color);
 
         let label_origin = ctx.size().to_rect().center() - self.label_size.to_vec2() / 2.0;
         ctx.with_save(|ctx| {

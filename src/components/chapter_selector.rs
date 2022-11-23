@@ -1,12 +1,10 @@
-use druid::{
-    widget::Label, Affine, Data, RenderContext, Size, Widget, WidgetPod,
-};
+use druid::{widget::Label, Affine, Data, RenderContext, Size, Widget, WidgetPod};
 
 use crate::{
-    utils::{button_functions::change_chapter, colors}, 
-    Library, 
-    traits::reader::BookReading,
     traits::gui::GUILibrary,
+    traits::reader::BookReading,
+    utils::{button_functions::change_chapter, colors},
+    Library,
 };
 
 pub struct ChapterSelector {
@@ -33,8 +31,7 @@ impl ChapterSelector {
 
 impl ChapterSelectorItem {
     pub fn new(idx: usize) -> Self {
-        let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1))
-            .with_text_color(colors::TEXT_WHITE);
+        let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1));
         let boxed = Box::new(label);
 
         Self {
@@ -202,11 +199,11 @@ impl Widget<Library> for ChapterSelectorItem {
         let dh = self.idx as f64 * h;
 
         let color = if self.idx == data.get_selected_book().unwrap().get_chapter_number() {
-            colors::ACTIVE_GRAY
+            env.get(colors::PRIMARY_VARIANT)
         } else if self.hot {
-            colors::HOT_GRAY
+            env.get(colors::PRIMARY_ACCENT)
         } else {
-            colors::BG_GRAY
+            env.get(colors::PRIMARY)
         };
 
         ctx.with_save(|ctx| {
