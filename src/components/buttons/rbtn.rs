@@ -105,6 +105,11 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
             }
             _ => {}
         }
+
+        if self.status == ButtonStatus::Active && !ctx.is_hot() {
+            self.status = ButtonStatus::Normal;
+            ctx.request_paint();
+        }
     }
 
     fn lifecycle(
