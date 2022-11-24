@@ -5,8 +5,8 @@ use druid::{
 };
 
 use crate::{
-    utils::{fonts, library::SELECTED_BOOK_SELECTOR, colors},
-    traits::gui::GUIBook
+    traits::gui::GUIBook,
+    utils::{colors, fonts, library::SELECTED_BOOK_SELECTOR},
 };
 
 pub struct BookListing<T> {
@@ -20,7 +20,6 @@ impl<T: GUIBook> BookListing<T> {
     pub fn new() -> Self {
         let title_label = Label::dynamic(|data: &T, _| format!("{}", data.get_title().to_string()))
             .with_font(fonts::Font::default().md().bold().get())
-            .with_text_color(colors::TEXT_WHITE)
             .with_line_break_mode(LineBreaking::WordWrap);
 
         let page_cnt_label = Label::dynamic(|data: &T, _| {
@@ -31,7 +30,6 @@ impl<T: GUIBook> BookListing<T> {
             )
         })
         .with_font(fonts::Font::default().sm().get())
-        .with_text_color(colors::TEXT_WHITE)
         .with_line_break_mode(LineBreaking::WordWrap);
 
         let star_label =
@@ -43,16 +41,6 @@ impl<T: GUIBook> BookListing<T> {
             title_label: WidgetPod::new(title_label),
             page_cnt_label: WidgetPod::new(page_cnt_label),
             star: WidgetPod::new(star_label),
-        }
-    }
-
-    fn get_bg_color(&self, data: &impl GUIBook) -> Color {
-        if data.is_selected() {
-            colors::BG_GRAY
-        } else if self.is_hot {
-            colors::HOT_GRAY
-        } else {
-            colors::NORMAL_GRAY
         }
     }
 }
@@ -143,7 +131,14 @@ impl<B: GUIBook + Data> Widget<B> for BookListing<B> {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
-        let color = self.get_bg_color(data);
+        let color = if data.is_selected() {
+            env.get(colors::PRIMARY_VARIANT)
+        } else if self.is_hot {
+            env.get(colors::PRIMARY_ACCENT)
+        } else {
+            env.get(colors::PRIMARY)
+        };
+
         let rect = ctx.size().to_rect().to_rounded_rect(10.0);
         ctx.fill(rect, &color);
 

@@ -39,22 +39,17 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usiz
     //Setup condition variable holding a usize: this will allow us to save the page number of the best match
     let pair: Arc<(Mutex<Option<(usize,usize)>>, Condvar)> = Arc::new((Mutex::new(Some((0,0))), Condvar::new()));
 
-    //This will contain the pages of each chapter, to calculate the global page number
-    //USELESS - TOREMOVE
-    let chapters_pages_numbers = Arc::new(Mutex::new(vec![0; chapters_number]));
-
     //For each chapter..
     for i in 0..chapters_number {
         let tx = tx.clone();
 
         let book_path_clone = book_path.clone();
         let text_clone = text.clone();
-        let chapters_pages_numbers_clone = chapters_pages_numbers.clone();
 
         //..create a thread that will calculate the similarity between the physical page and the chapter pages
         //NOTE: the thread pool will aggregate these functions in 4 threads (see pool initialization)
         pool.execute(move || {
-            let result = compute_similarity(book_path_clone, text_clone, i, chapters_pages_numbers_clone.clone());
+            let result = compute_similarity(book_path_clone, text_clone, i);
             if result.is_some() {
                 tx.send(result.unwrap()).expect("Error in sending msg");
             }
@@ -75,13 +70,6 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usiz
 
         //If a found page is found in "duration" seconds..
         if let Ok(found_page) = rx.recv_timeout(duration) {
-            //Calculate the global page number
-            // let mut pages_sum = 0;
-            // for i in 0..found_page.chapter_number {
-            //     pages_sum += chapters_pages_numbers.lock().unwrap()[i];
-            // }
-            // pages_sum += found_page.chapter_page_number;
-
             //Save the chapter and page number
             to_return = Some((found_page.chapter_number, found_page.chapter_page_number));
         }
@@ -110,15 +98,9 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usiz
 
 //This function, given a chapter, gets its pages and iterates through them.
 //For each page, it computes the similarity with the given text: if it's higher than 0.85, the page is returned
-fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize, chapters_pages_number: Arc<Mutex<Vec<usize>>>) -> Option<Page> {
+fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize) -> Option<Page> {
 
     let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, 800.0, 300.0);
-
-    //add the number of pages of the chapter to the vector chapters_pages_number
-    // {
-    //     let mut chapters_pages_number = chapters_pages_number.lock().unwrap();
-    //     chapters_pages_number[chapter_to_examine] = chapter_pages.len();    
-    // }
 
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
@@ -160,7 +142,6 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 //This method needs to be completed and tested
 pub fn get_physical_page(first_physical_page_path: String, second_physical_page_path: String, actual_ebook_page: String, actual_ebook_page_number: usize) -> usize {
 
-    todo!();
 
     //OCR PHASE: Load the LEPTESS model, get the two physical pages texts
     let mut lt = leptess::LepTess::new(None, "eng").unwrap();
@@ -172,6 +153,12 @@ pub fn get_physical_page(first_physical_page_path: String, second_physical_page_
     //get the number of characters of the first PHYSICAL page
     let first_text_chars = first_text.chars().count();
 
+    //get the number of characters of the second PHYSICAL page
+    let second_text_chars = second_text.chars().count();
+
+    //mean
+    let mean = (first_text_chars + second_text_chars) / 2;
+
     //get the number of characters of the current EBOOK page
     let actual_ebook_page_chars = actual_ebook_page.chars().count();
 
@@ -179,7 +166,17 @@ pub fn get_physical_page(first_physical_page_path: String, second_physical_page_
     //We'll get the total amount of characters in the ebook until the actual page
     //Divide this quantity by the number of chars contained in a single physical page
     //We'll get the page number of the physical page we're looking for
-    let physical_page_number = (actual_ebook_page_chars * actual_ebook_page_number) / first_text_chars;
+    let physical_page_number = (actual_ebook_page_chars * actual_ebook_page_number) / mean;
+
+
+    //print all variables
+    println!("first_text_chars: {}", first_text_chars);
+    println!("second_text_chars: {}", second_text_chars);
+    println!("mean: {}", mean);
+    println!("actual_ebook_page_chars: {}", actual_ebook_page_chars);
+    println!("actual_ebook_page_number: {}", actual_ebook_page_number);
+    println!("physical_page_number: {}", physical_page_number);
+    
 
     return physical_page_number;
 

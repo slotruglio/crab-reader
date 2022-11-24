@@ -4,13 +4,14 @@ use druid::{
 };
 
 use crate::{
-    CrabReaderState, 
-    ReadingState,
-    MYENV,
+    components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector},
     traits::{
         gui::{GUIBook, GUILibrary},
+        note::NoteManagement,
         reader::BookReading,
     },
+    utils::colors,
+    CrabReaderState, ReadingState, MYENV,
 };
 
 pub enum ReaderView {
@@ -49,6 +50,7 @@ impl ReaderView {
                 ReaderView::Dual.get_view(),
             ),
         )
+        .background(colors::BACKGROUND)
         .center()
         .expand()
     }
@@ -63,7 +65,7 @@ fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<Crab
                 .unwrap()
                 .get_page_of_chapter()
         })
-        .with_text_color(font_color)
+        .with_text_color(colors::ON_BACKGROUND)
         .with_font(font)
         .with_text_alignment(TextAlignment::Justified)
         .with_line_break_mode(LineBreaking::WordWrap),
@@ -76,7 +78,7 @@ fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<Crab
 // single page view for text editing
 fn single_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
     let tb = TextBox::multiline()
-        .with_text_color(font_color)
+        .with_text_color(colors::ON_BACKGROUND)
         .with_font(font)
         .with_placeholder("Text editing is not yet implemented")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_0))
@@ -93,7 +95,7 @@ fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabRe
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
                     data.library.get_selected_book().unwrap().get_dual_pages().0
                 })
-                .with_text_color(font_color.clone())
+                .with_text_color(colors::ON_BACKGROUND)
                 .with_font(font.clone())
                 .with_text_alignment(TextAlignment::Justified)
                 .with_line_break_mode(LineBreaking::WordWrap),
@@ -107,7 +109,7 @@ fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabRe
                 Label::dynamic(|data: &CrabReaderState, _env: &_| {
                     data.library.get_selected_book().unwrap().get_dual_pages().1
                 })
-                .with_text_color(font_color)
+                .with_text_color(colors::ON_BACKGROUND)
                 .with_font(font)
                 .with_text_alignment(TextAlignment::Justified)
                 .with_line_break_mode(LineBreaking::WordWrap)
@@ -122,13 +124,13 @@ fn dual_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabRe
 // dual page view for text editing
 fn dual_view_edit_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
     let text_box_page_0 = TextBox::multiline()
-        .with_text_color(font_color.clone())
+        .with_text_color(colors::ON_BACKGROUND)
         .with_font(font.clone())
         .with_placeholder("There is no page here... but you can add one!")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_0));
 
     let text_box_page_1 = TextBox::multiline()
-        .with_text_color(font_color)
+        .with_text_color(colors::ON_BACKGROUND)
         .with_font(font)
         .with_placeholder("There is no page here... but you can add one!")
         .lens(CrabReaderState::reading_state.then(ReadingState::text_1));
@@ -149,6 +151,7 @@ pub fn title_widget() -> impl Widget<CrabReaderState> {
             .get_title()
             .to_string()
     })
+    .with_text_color(colors::ON_BACKGROUND)
     .with_line_break_mode(LineBreaking::Clip)
     .with_text_size(32.0)
     .padding(10.0)
@@ -167,4 +170,5 @@ pub fn current_chapter_widget() -> Label<CrabReaderState> {
 
         format!("Chapter {}", display_number)
     })
+    .with_text_color(colors::ON_BACKGROUND)
 }

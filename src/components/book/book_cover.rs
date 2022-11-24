@@ -8,15 +8,10 @@ use druid::{
 };
 
 use crate::{
-    PAINT_BOOK_COVERS_SHADOWS,
+    components::library::cover_library::DO_PAINT_SHADOWS,
     traits::gui::GUIBook,
-    utils::{
-        library::SELECTED_BOOK_SELECTOR,
-        colors,
-        fonts,
-    },
+    utils::{colors, fonts, library::SELECTED_BOOK_SELECTOR},
 };
-
 
 pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 
@@ -62,10 +57,10 @@ impl<B: GUIBook> BookCover<B> {
         ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
     }
 
-    fn paint_cover(&mut self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
+    fn paint_cover(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
         let cover_data = data.get_cover_image();
         if cover_data.len() == 0 {
-            self.paint_default_cover(ctx, data);
+            self.paint_default_cover(ctx, data, env);
             self.paint_book_title(ctx, env, data);
             return;
         }
@@ -90,9 +85,9 @@ impl<B: GUIBook> BookCover<B> {
         }
     }
 
-    fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook) {
+    fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
         let round_factr = 20.0;
-        let color = self.get_bg_color(data);
+        let color = self.get_bg_color(data, env);
         let rect = ctx.size().to_rounded_rect(round_factr);
 
         ctx.paint_with_z_index(2, move |ctx| {
@@ -104,7 +99,7 @@ impl<B: GUIBook> BookCover<B> {
         let font = fonts::Font::default().sm().get();
         let mut layout = TextLayout::new();
         layout.set_text(data.get_title().to_string());
-        layout.set_text_color(colors::TEXT_WHITE);
+        layout.set_text_color(env.get(colors::ON_PRIMARY));
         layout.set_font(font);
         layout.set_wrap_width(ctx.size().width - 2.5);
         layout.rebuild_if_needed(ctx.text(), env);
@@ -122,13 +117,13 @@ impl<B: GUIBook> BookCover<B> {
         self.is_hot = is_hot;
     }
 
-    fn get_bg_color(&self, data: &impl GUIBook) -> Color {
+    fn get_bg_color(&self, data: &impl GUIBook, env: &Env) -> Color {
         if data.is_selected() {
-            colors::ACTIVE_GRAY
+            env.get(colors::PRIMARY_VARIANT)
         } else if self.is_hot {
-            colors::BG_GRAY
+            env.get(colors::PRIMARY_ACCENT)
         } else {
-            colors::NORMAL_GRAY
+            env.get(colors::PRIMARY)
         }
     }
 }
@@ -185,10 +180,10 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
-        if env.get(PAINT_BOOK_COVERS_SHADOWS) {
+        if env.get(DO_PAINT_SHADOWS) {
             self.paint_shadow(ctx);
         }
-        self.paint_cover(ctx, env, data);
+        self.paint_cover(ctx, data, env);
         self.star.paint(ctx, data, env);
     }
 }

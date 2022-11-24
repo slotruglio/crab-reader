@@ -1,22 +1,24 @@
 use druid::{
-    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, Size, UpdateCtx, Widget, WidgetPod,
+    BoxConstraints, Data, Env, Event, EventCtx, Key, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Point, RenderContext, Size, UpdateCtx, Widget, WidgetExt, WidgetPod,
 };
 
 use crate::{
-    Library, 
-    traits::gui::{GUIBook, GUILibrary},
-    models::book::Book,
-    utils::library::SELECTED_BOOK_SELECTOR,
     components::{
         book::book_cover::{BookCover, BOOK_WIDGET_SIZE},
+        mockup::TOGGLE_SHADOWS,
     },
-
+    models::book::Book,
+    traits::gui::{GUIBook, GUILibrary},
+    utils::{colors, library::SELECTED_BOOK_SELECTOR},
+    Library,
 };
 
 pub struct CoverLibrary {
     children: Vec<WidgetPod<Book, BookCover<Book>>>,
 }
+
+pub const DO_PAINT_SHADOWS: Key<bool> = Key::new("crabreader.do_paint_shadows");
 
 impl CoverLibrary {
     pub fn new() -> Self {
@@ -57,6 +59,11 @@ impl Widget<Library> for CoverLibrary {
                         data.unselect_current_book();
                     }
                     ctx.request_paint();
+                }
+            }
+            Event::Command(cmd) => {
+                if cmd.is(TOGGLE_SHADOWS) {
+                    data.do_paint_shadows = !data.do_paint_shadows;
                 }
             }
             _ => {}

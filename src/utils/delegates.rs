@@ -1,13 +1,18 @@
-use druid::{AppDelegate, Code, Env, Event, Handled, KeyEvent, commands::OPEN_FILE};
+use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent};
 use std::rc::Rc;
 
-use super::button_functions::{self, go_next, go_prev};
+use super::{
+    button_functions::{self, go_next, go_prev},
+    colors::SWITCH_THEME,
+};
 use crate::{
-    components::{
-        mockup::SortBy,
+    components::mockup::SortBy,
+    traits::{
+        gui::{GUIBook, GUILibrary},
+        reader::{BookManagement, BookReading},
     },
     utils::ocrmanager,
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE, traits::{gui::{GUILibrary, GUIBook}, reader::{BookReading, BookManagement}, note::NoteManagement},
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
 
 pub struct ReadModeDelegate;
@@ -40,43 +45,75 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             }
             notif if notif.is(OPEN_FILE) => {
                 println!("Opening file!");
-                let file = cmd.get_unchecked(OPEN_FILE);
 
-                //get file path
-                let path = file.path();
+                if data.ocr {
+                    let file = cmd.get_unchecked(OPEN_FILE);
 
-                let selected_book_path = data.library.get_selected_book().unwrap().get_path();
+                    //get file path
+                    let path = file.path();
 
-                //split by slash, get last element, split by dot, get first element
-                let folder_name = selected_book_path
-                    .split("/")
-                    .last()
-                    .unwrap()
-                    .split(".")
-                    .next()
-                    .unwrap();
+                    let selected_book_path = data.library.get_selected_book().unwrap().get_path();
 
-                //call ocr on the img path
-                let ocr_result = ocrmanager::get_ebook_page(
-                    folder_name.to_string(),
-                    path.to_str().unwrap().to_string(),
-                );
+                    //split by slash, get last element, split by dot, get first element
+                    let folder_name = selected_book_path
+                        .split("/")
+                        .last()
+                        .unwrap()
+                        .split(".")
+                        .next()
+                        .unwrap();
 
-                match ocr_result {
-                    Some(ocr_result) => {
-                        //move to the found page
-                        data.library
-                            .get_selected_book_mut()
-                            .unwrap()
-                            .set_chapter_number(ocr_result.0, true);
-                        data.library
-                            .get_selected_book_mut()
-                            .unwrap()
-                            .set_chapter_current_page_number(ocr_result.1);
+                    //call ocr on the img path
+                    let ocr_result = ocrmanager::get_ebook_page(
+                        folder_name.to_string(),
+                        path.to_str().unwrap().to_string(),
+                    );
+
+                    match ocr_result {
+                        Some(ocr_result) => {
+                            //move to the found page
+                            data.library
+                                .get_selected_book_mut()
+                                .unwrap()
+                                .set_chapter_number(ocr_result.0, true);
+                            data.library
+                                .get_selected_book_mut()
+                                .unwrap()
+                                .set_chapter_current_page_number(ocr_result.1);
+                        }
+                        None => {
+                            println!("ERROR: OCR page not found");
+                        }
                     }
-                    None => {
-                        println!("ERROR: OCR page not found");
-                    }
+                    data.ocr = false;
+                } else if data.ocr_inverse {
+                    let actual_ebook_page = data
+                        .library
+                        .get_selected_book()
+                        .unwrap()
+                        .get_page_of_chapter();
+
+                    let actual_ebook_page_number = data
+                        .library
+                        .get_selected_book()
+                        .unwrap()
+                        .get_cumulative_current_page_number();
+
+                    let num = ocrmanager::get_physical_page(
+                        "tmp_imgs/first_page.png".to_string(),
+                        "tmp_imgs/first_page.png".to_string(),
+                        actual_ebook_page,
+                        actual_ebook_page_number,
+                    );
+
+                    data.ocr_inverse = false;
+                }
+
+                Handled::Yes
+            }
+            cmd if cmd.is(SWITCH_THEME) => {
+                if let Some(theme) = cmd.get(SWITCH_THEME) {
+                    data.theme = theme.clone();
                 }
                 Handled::Yes
             }

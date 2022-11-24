@@ -5,11 +5,14 @@ use druid::{
 };
 
 use crate::{
-    components::{buttons::rbtn::RoundedButton,mockup::MockupLibrary,},
-    utils::{fonts,colors}, 
-    ENTERING_READING_MODE,
-    traits::{reader::BookManagement, gui::{GUIBook, GUILibrary}},
+    components::{buttons::rbtn::RoundedButton, mockup::MockupLibrary},
     models::book::Book,
+    traits::{
+        gui::{GUIBook, GUILibrary},
+        reader::BookManagement,
+    },
+    utils::{colors, fonts},
+    ENTERING_READING_MODE,
 };
 
 type Library = MockupLibrary<Book>;
@@ -23,11 +26,11 @@ impl BookDetails {
         let header_font = fonts::Font::default().lg().bold().get();
         let info_font = fonts::Font::default().sm().get();
 
-        let mut header_label = Label::new("Dettagli del libro")
-            .with_text_color(colors::TEXT_BLACK)
+        let header_label = Label::new("Dettagli del libro")
             .with_font(header_font)
-            .with_text_alignment(druid::TextAlignment::Start);
-        header_label.set_line_break_mode(LineBreaking::WordWrap);
+            .with_text_alignment(druid::TextAlignment::Start)
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .with_text_color(colors::ON_BACKGROUND);
 
         let title_label = Label::dynamic(|data: &Library, _| {
             data.get_selected_book()
@@ -35,8 +38,9 @@ impl BookDetails {
                     format!("Titolo: {}", book.get_title().to_string())
                 })
         })
-        .with_text_color(colors::TEXT_BLACK)
         .with_font(info_font.clone())
+        .with_text_color(colors::ON_BACKGROUND)
+        .with_line_break_mode(LineBreaking::WordWrap)
         .align_left()
         .padding(5.0);
 
@@ -46,8 +50,8 @@ impl BookDetails {
                     format!("Autore: {}", book.get_author().to_string())
                 })
         })
-        .with_text_color(colors::TEXT_BLACK)
         .with_font(info_font.clone())
+        .with_text_color(colors::ON_BACKGROUND)
         .align_left()
         .padding(5.0);
 
@@ -58,7 +62,7 @@ impl BookDetails {
                 })
         })
         .with_font(info_font.clone())
-        .with_text_color(colors::TEXT_BLACK)
+        .with_text_color(colors::ON_BACKGROUND)
         .align_left()
         .padding(5.0);
 
@@ -70,7 +74,7 @@ impl BookDetails {
                 })
         })
         .with_font(info_font.clone())
-        .with_text_color(colors::TEXT_BLACK)
+        .with_text_color(colors::ON_BACKGROUND)
         .align_left()
         .padding(5.0);
 
@@ -122,6 +126,7 @@ impl BookDetails {
             .with_child(lang_label)
             .with_child(completion_label)
             .with_child(btn_ctls)
+            .padding(10.0)
             .expand()
             .boxed();
         let inner = WidgetPod::new(widget);
