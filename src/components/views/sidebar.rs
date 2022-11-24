@@ -63,6 +63,7 @@ fn right_sidebar_widget() -> Flex<CrabReaderState> {
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book().unwrap().clone();
             let note = data.reading_state.notes.clone();
+            data.reading_state.notes = "".into();
             data.library.get_selected_book_mut().unwrap().get_notes_mut().add_note(&book, note);
         }).padding(5.0);
 
