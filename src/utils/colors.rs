@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use druid::{
-    theme::{BACKGROUND_DARK, BACKGROUND_LIGHT},
+    theme::{BACKGROUND_DARK, BACKGROUND_LIGHT, PLACEHOLDER_COLOR},
     Color, Data, Env, Key, Selector,
 };
 
@@ -103,4 +103,8 @@ pub fn update_theme(env: &mut Env, data: &CrabReaderState) {
     env.set(ON_BACKGROUND, theme.background_text.clone());
     env.set(BACKGROUND_DARK, theme.background.clone());
     env.set(BACKGROUND_LIGHT, theme.background.clone());
+    env.set(
+        PLACEHOLDER_COLOR,
+        theme.background_text.clone().with_alpha(0.6),
+    );
 }
