@@ -36,11 +36,11 @@ const LIGHT_COLOR_SET: ColorSetInner = ColorSetInner {
 };
 
 const SEPIA_COLOR_SET: ColorSetInner = ColorSetInner {
-    primary: Color::rgb8(0xe4, 0xe4, 0xe4),
-    primary_variant: Color::rgb8(0xca, 0xca, 0xca),
+    primary: Color::rgb8(0xd0, 0xd0, 0xd0),
+    primary_variant: Color::rgb8(0xa0, 0xa0, 0xa0),
     primary_text: Color::rgb8(0x00, 0x00, 0x00),
     primary_accent: Color::rgb8(0xf6, 0xf6, 0xf6),
-    secondary: Color::rgb8(0xf6, 0xf6, 0x20),
+    secondary: Color::rgb8(0xd6, 0xd6, 0x20),
     secondary_accent: Color::rgb8(0xf8, 0xf8, 0x55),
     secondary_variant: Color::rgb8(0xfe, 0xdd, 0x22),
     secondary_text: Color::rgb8(0x00, 0x00, 0x00),
@@ -50,6 +50,7 @@ const SEPIA_COLOR_SET: ColorSetInner = ColorSetInner {
 };
 
 const DARK_COLOR_SET: ColorSetInner = ColorSetInner {
+    primary_text: Color::rgb8(0x00, 0x00, 0x00),
     background_variant: Color::rgb8(0x30, 0x30, 0x30),
     background: Color::rgb8(0x50, 0x50, 0x50),
     background_text: Color::rgb8(0xff, 0xff, 0xff),
