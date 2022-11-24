@@ -1,12 +1,13 @@
 use druid::{
-    widget::Label, Affine, Color, Cursor::NotAllowed, Data, Env, Event, EventCtx, KeyOrValue,
-    LifeCycle::HotChanged, RenderContext, Size, Widget,
+    theme, widget::Label, Affine, Color, Cursor::NotAllowed, Data, Env, Event, EventCtx,
+    KeyOrValue, LifeCycle::HotChanged, Point, RenderContext, Size, TextAlignment, Widget,
+    WidgetPod,
 };
 
 use crate::utils::colors::{self};
 
 pub struct RoundedButton<T> {
-    label: Label<T>,
+    label: WidgetPod<T, Label<T>>,
     label_size: Size,
     status: ButtonStatus,
     on_click: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,
@@ -25,9 +26,11 @@ enum ButtonStatus {
 impl<T: Data> RoundedButton<T> {
     fn new(label: Label<T>) -> Self {
         Self {
-            label: label
-                .with_line_break_mode(druid::widget::LineBreaking::WordWrap)
-                .with_text_color(colors::ON_PRIMARY),
+            label: WidgetPod::new(
+                label
+                    .with_line_break_mode(druid::widget::LineBreaking::WordWrap)
+                    .with_text_color(colors::ON_PRIMARY),
+            ),
             label_size: Size::ZERO,
             status: ButtonStatus::Normal,
             on_click: Box::new(|_, _, _| {}),
@@ -47,7 +50,7 @@ impl<T: Data> RoundedButton<T> {
     }
 
     pub fn with_text_size(mut self, size: f64) -> Self {
-        self.label.set_text_size(size);
+        self.label.widget_mut().set_text_size(size);
         self
     }
 
@@ -64,7 +67,7 @@ impl<T: Data> RoundedButton<T> {
     }
 
     pub fn with_text_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
-        self.label.set_text_color(color.into());
+        self.label.widget_mut().set_text_color(color.into());
         self
     }
 
@@ -74,7 +77,7 @@ impl<T: Data> RoundedButton<T> {
     }
 
     pub fn with_font(mut self, font: impl Into<druid::FontDescriptor>) -> Self {
-        self.label.set_font(font.into());
+        self.label.widget_mut().set_font(font.into());
         self
     }
 
@@ -139,7 +142,7 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
     }
 
     fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
-        self.label.update(ctx, old_data, data, env);
+        self.label.update(ctx, data, env);
 
         let disable = (self.disable_condition)(data, env);
         if disable {
@@ -162,19 +165,28 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
         data: &T,
         env: &Env,
     ) -> druid::Size {
-        let label_size = self.label.layout(ctx, bc, data, env);
-        let mut w = label_size.width + 10.0;
-        let mut h = label_size.height + 10.0;
+        let xpad = env.get(theme::WIDGET_PADDING_HORIZONTAL);
+        let ypad = env.get(theme::WIDGET_PADDING_VERTICAL);
+        let lbc = bc.shrink((xpad, ypad)).loosen();
+        let label_size = self.label.layout(ctx, &lbc, data, env);
 
-        if bc.is_width_bounded() {
-            w = bc.max().width;
-        }
+        let w = if bc.is_width_bounded() {
+            bc.max().width
+        } else {
+            label_size.width + xpad
+        };
 
-        if bc.is_height_bounded() {
-            h = bc.max().height;
-        }
+        let h = if bc.is_height_bounded() {
+            bc.max().height
+        } else {
+            label_size.height + ypad
+        };
 
-        self.label_size = label_size;
+        // Non ho idea di perché quel -1 sia necessario...
+        let x_origin = label_size.width / 2.0 * -1.;
+        let y_origin = label_size.height / 2.0 * -1.;
+        let origin = Point::new(x_origin, y_origin);
+        self.label.set_origin(ctx, data, env, origin);
         (w, h).into()
     }
 
