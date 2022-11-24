@@ -4,10 +4,11 @@ use std::{
     sync::mpsc::channel, path::Path, str::FromStr, collections::HashMap,
 };
 
+use druid::im::{Vector};
 use rust_fuzzy_search::fuzzy_compare;
 use serde_json::{json, Value};
 
-use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir, get_books_notes_path}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}};
+use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir, get_books_notes_path}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}, models::note::Note};
 
 use super::{envmanager::FontSize, dir_manager::get_metadata_path};
 
@@ -311,17 +312,9 @@ pub fn get_chapter_bytes(
 pub fn save_note<T: Into<String> + Clone>(
     book_path: T,
     chapter: usize,
-    start_page: T,
+    page_text: T,
     note: T,
-) -> Result<(), Box<dyn std::error::Error>> {
-
-    println!(
-        "DEBUG saving note: {} {} {} {}",
-        chapter,
-        start_page.clone().into(),
-        book_path.clone().into(),
-        note.clone().into()
-    );
+) -> Result<String, Box<dyn std::error::Error>> {
 
     // check if exists a file
     let notes_path = get_books_notes_path();
@@ -337,10 +330,12 @@ pub fn save_note<T: Into<String> + Clone>(
         create_dir_all(notes_path.parent().unwrap()).unwrap();
     }
 
+    let text = page_text.into();
+    let to_take = if text.len() > 200 { text.len()/3 } else { text.len() };
     // json value for the note to save
     let value = json!(
         {
-            "start":start_page.into(),
+            "start": &text[..to_take],
             "note":note.into()
         }
     );
@@ -376,14 +371,14 @@ pub fn save_note<T: Into<String> + Clone>(
 
     serde_json::to_writer_pretty(file, &json)?;
 
-    Ok(())
+    Ok(text[..to_take].to_string())
 }
 
 /// function to load notes of a book
 pub fn load_notes<T: Into<String> + Clone>(
     book_path: T,
-) -> Result<HashMap<(usize, usize), String>, Box<dyn std::error::Error>> {
-    let mut map = HashMap::new();
+) -> Result<HashMap<(usize, usize), Vector<Note>>, Box<dyn std::error::Error>> {
+    let mut map: HashMap<(usize, usize), Vector<Note>> = HashMap::new();
 
     if let Ok(file) = File::open(get_books_notes_path()) {
         let reader = BufReader::new(file);
@@ -397,9 +392,12 @@ pub fn load_notes<T: Into<String> + Clone>(
                     for note in notes_array {
                         let start_page = note["start"].as_str().unwrap();
                         let note_text = note["note"].as_str().unwrap().to_string();
-
                         let page = search_page(book_path.clone().into(), chapter_number, start_page);
-                        map.insert((chapter_number, page), note_text);
+                        map.entry((chapter_number, page)).and_modify(
+                            |v| v.push_back(Note::new(start_page.into(), note_text.clone()))
+                        ).or_insert(
+                            Vector::from(vec![Note::new(start_page.into(), note_text)])
+                        );
                     }
                 }
             }
@@ -449,6 +447,54 @@ pub fn delete_note<T: Into<String> + Clone>(
                 notes_array.remove(index);
             }
         }
+    }
+
+    // open file to write
+    let file = OpenOptions::new()
+    .write(true)
+    .create(true)
+    .truncate(true)
+    .open(get_books_notes_path())?;
+
+    serde_json::to_writer_pretty(file, &json)?;
+
+    Ok(())
+}
+
+/// delete notes of book_path given chapter, and vec of start_page (string)
+pub fn delete_notes<T: Into<String> + Clone>(
+    book_path: T,
+    chapter: usize,
+    start_pages: Vec<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let Ok(file) = File::open(get_books_notes_path()) else {
+        return Ok(());
+    };
+
+    let reader = BufReader::new(file);
+    let mut json: Value = serde_json::from_reader(reader)?;
+    
+    // check if there is a book with that name and an array
+    let Some(book_array) = json[book_path.clone().into()].as_array_mut() else {
+        return Ok(());
+    };
+
+    for item in book_array {
+        let chapter_number = item["chapter"].as_u64().unwrap() as usize;
+        
+        if chapter_number != chapter {
+            continue;
+        }
+
+        let Some(notes_array) = item["notes"].as_array_mut() else {
+            return Ok(());
+        };
+
+        notes_array.retain(|note| {
+            !start_pages.iter().any(|start| {
+                note["start"].as_str().unwrap() == start
+            })
+        }); 
     }
 
     // open file to write

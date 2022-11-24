@@ -5,9 +5,9 @@ use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
 use components::library::cover_library::{CoverLibrary, DO_PAINT_SHADOWS};
 use components::library::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
-use components::views::reader_view::{
-    current_chapter_widget, sidebar_right_widget, sidebar_widget, ReaderView,
-};
+
+use components::views::reader_view::{ReaderView, current_chapter_widget};
+use components::views::sidebar::Sidebar;
 use druid::widget::{Container, Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
     AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc,
@@ -51,7 +51,7 @@ pub struct ReadingState {
 }
 
 impl ReadingState {
-    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S) {
+    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S, ) {
         self.single_view = true;
         self.is_editing = false;
         self.is_editing_notes = false;
@@ -354,9 +354,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let current_chapter = current_chapter_widget().with_text_size(16.0).center();
 
-    let sidebar = sidebar_widget();
+    let sidebar = Sidebar::LEFT.get();
 
-    let sidebar_rx = sidebar_right_widget();
+    let sidebar_rx = Sidebar::RIGHT.get();
 
     let text = Flex::row()
         .with_flex_child(sidebar, 1.0)

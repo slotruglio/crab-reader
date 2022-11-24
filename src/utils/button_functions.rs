@@ -6,7 +6,7 @@ use crate::{
     CrabReaderState, 
     traits::{
         gui::{GUIBook, GUILibrary}, 
-        reader::{BookReading, BookManagement}
+        reader::{BookReading, BookManagement}, note::NoteManagement
     },
 };
 use druid::EventCtx;
