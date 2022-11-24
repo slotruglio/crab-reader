@@ -45,13 +45,12 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             notif if notif.is(OPEN_FILE) => {
                 println!("Opening file!");
 
+                let path = cmd.get_unchecked(OPEN_FILE).path();
+                let selected_book_mut = data.library.get_selected_book_mut().unwrap();
+
                 if data.ocr {
-                    let file = cmd.get_unchecked(OPEN_FILE);
-
-                    //get file path
-                    let path = file.path();
-
-                    let selected_book_path = data.library.get_selected_book().unwrap().get_path();
+                    
+                    let selected_book_path = selected_book_mut.get_path();
 
                     //split by slash, get last element, split by dot, get first element
                     let folder_name = selected_book_path
@@ -71,14 +70,8 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     match ocr_result {
                         Some(ocr_result) => {
                             //move to the found page
-                            data.library
-                                .get_selected_book_mut()
-                                .unwrap()
-                                .set_chapter_number(ocr_result.0, true);
-                            data.library
-                                .get_selected_book_mut()
-                                .unwrap()
-                                .set_chapter_current_page_number(ocr_result.1);
+                            selected_book_mut.set_chapter_number(ocr_result.0, true);
+                            selected_book_mut.set_chapter_current_page_number(ocr_result.1);
                         }
                         None => {
                             println!("ERROR: OCR page not found");
@@ -86,21 +79,13 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     }
                     data.ocr = false;
                 } else if data.ocr_inverse {
-                    let actual_ebook_page = data
-                        .library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_page_of_chapter();
+                    let actual_ebook_page = selected_book_mut.get_page_of_chapter();
 
-                    let actual_ebook_page_number = data
-                        .library
-                        .get_selected_book()
-                        .unwrap()
-                        .get_cumulative_current_page_number();
+                    let actual_ebook_page_number = selected_book_mut.get_cumulative_current_page_number();
 
                     let num = ocrmanager::get_physical_page(
                         "tmp_imgs/first_page.png".to_string(),
-                        "tmp_imgs/first_page.png".to_string(),
+                        selected_book_mut.get_chapter_number(),
                         actual_ebook_page,
                         actual_ebook_page_number,
                     );
