@@ -1,6 +1,6 @@
 use druid::{
     widget::{Label, LineBreaking},
-    BoxConstraints, Color, Command, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    BoxConstraints, Command, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
     PaintCtx, RenderContext, Size, Target, UpdateCtx, Widget, WidgetPod,
 };
 
@@ -20,7 +20,8 @@ impl<T: GUIBook> BookListing<T> {
     pub fn new() -> Self {
         let title_label = Label::dynamic(|data: &T, _| format!("{}", data.get_title().to_string()))
             .with_font(fonts::Font::default().md().bold().get())
-            .with_line_break_mode(LineBreaking::WordWrap);
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .with_text_color(colors::ON_PRIMARY);
 
         let page_cnt_label = Label::dynamic(|data: &T, _| {
             format!(
@@ -30,7 +31,8 @@ impl<T: GUIBook> BookListing<T> {
             )
         })
         .with_font(fonts::Font::default().sm().get())
-        .with_line_break_mode(LineBreaking::WordWrap);
+        .with_line_break_mode(LineBreaking::WordWrap)
+        .with_text_color(colors::ON_PRIMARY);
 
         let star_label =
             Label::dynamic(|data: &T, _| if data.is_favorite() { "🌟" } else { "" }.into())
@@ -78,7 +80,7 @@ impl<B: GUIBook + Data> Widget<B> for BookListing<B> {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &B, data: &B, env: &Env) {
-        if !old_data.same(data) {
+        if !old_data.same(data) || ctx.env_changed() {
             self.title_label.update(ctx, data, env);
             self.page_cnt_label.update(ctx, data, env);
             self.star.update(ctx, data, env);

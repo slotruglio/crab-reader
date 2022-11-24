@@ -6,7 +6,7 @@ use components::library::cover_library::{CoverLibrary, DO_PAINT_SHADOWS};
 use components::library::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 
-use components::views::reader_view::{ReaderView, current_chapter_widget};
+use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
 use druid::widget::{Container, Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
@@ -51,7 +51,7 @@ pub struct ReadingState {
 }
 
 impl ReadingState {
-    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S, ) {
+    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S) {
         self.single_view = true;
         self.is_editing = false;
         self.is_editing_notes = false;
@@ -274,7 +274,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
     let view_either = Either::new(
         |data: &CrabReaderState, _env| data.display_mode == DisplayMode::List,
-        library_list.padding(5.0),
+        library_list.padding(10.0),
         library_cover,
     )
     .background(colors::BACKGROUND_VARIANT)
