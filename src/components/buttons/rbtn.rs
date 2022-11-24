@@ -13,6 +13,7 @@ pub struct RoundedButton<T> {
     on_click: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,
     disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
     toggle_condition: Box<dyn Fn(&T, &Env) -> bool>,
+    primary: bool,
 }
 
 #[derive(PartialEq, Clone)]
@@ -36,6 +37,7 @@ impl<T: Data> RoundedButton<T> {
             on_click: Box::new(|_, _, _| {}),
             disable_condition: Box::new(|_, _| false),
             toggle_condition: Box::new(|_, _| false),
+            primary: true,
         }
     }
 
@@ -83,6 +85,12 @@ impl<T: Data> RoundedButton<T> {
 
     pub fn with_toggle(mut self, closure: impl Fn(&T, &Env) -> bool + 'static) -> Self {
         self.toggle_condition = Box::new(closure);
+        self
+    }
+
+    pub fn secondary(mut self) -> Self {
+        self.primary = false;
+        self.label.widget_mut().set_text_color(colors::ON_SECONDARY);
         self
     }
 }
@@ -193,7 +201,7 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
     fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &T, env: &Env) {
         let rrect = ctx.size().to_rect().to_rounded_rect(5.0);
 
-        let mut color = match &self.status {
+        let mut pcolor = match &self.status {
             ButtonStatus::Active => env.get(colors::PRIMARY_VARIANT),
             ButtonStatus::Hot => env.get(colors::PRIMARY_ACCENT),
             ButtonStatus::Normal => env.get(colors::PRIMARY),
@@ -201,8 +209,21 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
         };
 
         if (self.toggle_condition)(data, env) {
-            color = env.get(colors::PRIMARY_VARIANT)
+            pcolor = env.get(colors::PRIMARY_VARIANT)
         }
+
+        let mut scolor = match &self.status {
+            ButtonStatus::Active => env.get(colors::SECONDARY_VARIANT),
+            ButtonStatus::Hot => env.get(colors::SECONDARY_ACCENT),
+            ButtonStatus::Normal => env.get(colors::SECONDARY),
+            ButtonStatus::Disabled => env.get(colors::SECONDARY_VARIANT).with_alpha(0.7),
+        };
+
+        if (self.toggle_condition)(data, env) {
+            scolor = env.get(colors::SECONDARY_VARIANT)
+        }
+
+        let color = if self.primary { pcolor } else { scolor };
 
         ctx.fill(rrect, &color);
 
