@@ -177,13 +177,14 @@ fn author_sorter_btn() -> impl Widget<Library> {
 
 fn filter_fav_btn() -> impl Widget<Library> {
     let emoji_font = Font::default().emoji().xs().get();
-    RoundedButton::from_text("🌟")
+    RoundedButton::from_text("❤")
         .with_text_size(18.0)
         .with_on_click(|_, data: &mut Library, _| {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
         .with_toggle(|data: &Library, _env: &Env| data.only_fav())
+        .secondary()
         .padding(5.0)
 }
 

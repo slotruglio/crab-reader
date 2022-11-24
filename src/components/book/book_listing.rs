@@ -35,7 +35,7 @@ impl<T: GUIBook> BookListing<T> {
         .with_text_color(colors::ON_PRIMARY);
 
         let star_label =
-            Label::dynamic(|data: &T, _| if data.is_favorite() { "🌟" } else { "" }.into())
+            Label::dynamic(|data: &T, _| if data.is_favorite() { "❤" } else { "" }.into())
                 .with_font(fonts::Font::default().md().emoji().get());
 
         Self {

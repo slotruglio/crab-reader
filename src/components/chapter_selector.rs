@@ -84,7 +84,7 @@ impl Widget<Library> for ChapterSelector {
         data: &Library,
         env: &druid::Env,
     ) {
-        if !data.same(old_data) {
+        if !data.same(old_data) || ctx.env_changed() {
             for child in self.children.iter_mut() {
                 child.update(ctx, old_data, data, env);
             }
