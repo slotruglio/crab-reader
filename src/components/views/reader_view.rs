@@ -1,10 +1,10 @@
 use druid::{
-    widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox},
+    widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox, RawLabel},
     Color, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
 };
 
 use crate::{
-    components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector},
+    components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, book::markdown_widget::SelectedPageLens, mockup::LibrarySelectedBookLens},
     traits::{
         gui::{GUIBook, GUILibrary},
         note::NoteManagement,
@@ -58,17 +58,27 @@ impl ReaderView {
 
 // single page view for text reader
 fn single_view_widget(font: FontDescriptor, font_color: Color) -> Container<CrabReaderState> {
-    let inner = Scroll::new(
-        Label::dynamic(|data: &CrabReaderState, _env: &_| {
-            data.library
-                .get_selected_book()
-                .unwrap()
-                .get_page_of_chapter()
-        })
+    let simple_label = Label::dynamic(|data: &CrabReaderState, _env: &_| {
+        data.library
+            .get_selected_book()
+            .unwrap()
+            .get_page_of_chapter()
+    })
+    .with_text_color(colors::ON_BACKGROUND)
+    //.with_font(font)
+    .with_text_alignment(TextAlignment::Justified)
+    .with_line_break_mode(LineBreaking::WordWrap);
+
+    let raw_label = RawLabel::new()
         .with_text_color(colors::ON_BACKGROUND)
-        .with_font(font)
+        //.with_font(font)
         .with_text_alignment(TextAlignment::Justified)
-        .with_line_break_mode(LineBreaking::WordWrap),
+        .with_line_break_mode(LineBreaking::WordWrap)
+        .lens(CrabReaderState::library.then(LibrarySelectedBookLens).then(SelectedPageLens))
+        .expand_width();
+    
+    let inner = Scroll::new(
+        raw_label,
     )
     .vertical();
 
