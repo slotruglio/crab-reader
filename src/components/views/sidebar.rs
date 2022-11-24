@@ -1,6 +1,6 @@
 use druid::{Widget, UnitPoint, widget::{Flex, Either, Scroll, TextBox, MainAxisAlignment}, LensExt, WidgetExt};
 
-use crate::{CrabReaderState, components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, note_widget::{get_notes_list}}, ReadingState, traits::{gui::GUILibrary, note::NoteManagement, reader::{BookReading, BookManagement}}};
+use crate::{CrabReaderState, components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, note_widget::{get_notes_list}}, ReadingState, traits::{gui::GUILibrary, note::NoteManagement, reader::{BookReading, BookManagement}}, utils::colors};
 
 pub enum Sidebar {
     LEFT,
@@ -54,6 +54,7 @@ fn right_sidebar_widget() -> Flex<CrabReaderState> {
 
     let tb = TextBox::multiline()
         .with_placeholder("Scrivi...")
+        .with_text_color(colors::ON_BACKGROUND)
         .lens(CrabReaderState::reading_state.then(ReadingState::notes))
         .expand_width();
     
