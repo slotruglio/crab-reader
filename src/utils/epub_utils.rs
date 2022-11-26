@@ -385,38 +385,56 @@ pub fn get_number_of_pages(path: &str) -> usize {
 
 // get number of pages per chapter where the index of the vector is the chapter number
 // and the tuple is the start and end indexes page of the chapter (start, end)
-pub fn get_start_end_pages_per_chapter(path: &str) -> Vec<(usize, usize)> {
-    let metadata = get_metadata_of_book(path);
-
+pub fn get_start_end_pages_per_chapter(path: &str, book_map: Option<HashMap<String,String>>) -> Vec<(usize, usize)> {
+    let metadata = match book_map {
+        Some(map) => map,
+        None => get_metadata_of_book(path),
+    };
+    
+    match get_indexes_from_local(metadata) {
+        Some(indexes) => indexes,
+        None => calculate_number_of_pages(
+            path,
+            8,
+            MYENV.lock().unwrap().font.size,
+        )
+        .unwrap_or_default()
+        .1,
+    }
+}
+/// internal method to get the start and end pages per chapter from the metadata 
+fn get_indexes_from_local(metadata: HashMap<String, String>) -> Option<Vec<(usize, usize)>> {
     let result = metadata.get(format!("pages_per_chapter_{}", FontSize::from(MYENV.lock().unwrap().font.size).to_string()).as_str());
     if let Some(pages_per_chapter) = result {
         let vec_as_str = pages_per_chapter.to_string();
-        vec_as_str
-            .trim_matches(|c| c == '[' || c == ']')
-            .split(',')
-            .map(|s| {
-                let start_end = s
-                    .trim_matches(|c| c == '(' || c == ')' || c == ' ')
-                    .split('-')
-                    .map(|s| s.parse::<usize>().unwrap_or_default())
-                    .collect::<Vec<usize>>();
-                (start_end[0], start_end[1])
-            })
-            .collect()
-    } else {
-        calculate_number_of_pages(path, 8, MYENV.lock().unwrap().font.size).unwrap_or_default().1
-    }
+        return Some(
+            vec_as_str
+                .trim_matches(|c| c == '[' || c == ']')
+                .split(',')
+                .map(|s| {
+                    let start_end = s
+                        .trim_matches(|c| c == '(' || c == ')' || c == ' ')
+                        .split('-')
+                        .map(|s| s.parse::<usize>().unwrap_or_default())
+                        .collect::<Vec<usize>>();
+                    (start_end[0], start_end[1])
+                })
+                .collect()
+        );
+    } 
+    None
 }
 
 // get the number of pages with respect to the total number of pages in the book
-pub fn get_cumulative_current_page_number(path: &str, chapter: usize, page: usize) -> usize {
-    let pages_per_chapter = get_start_end_pages_per_chapter(path);
+pub fn get_cumulative_current_page_number(path: &str, chapter: usize, page: usize, book_map: Option<HashMap<String,String>>) -> usize {
     if chapter > 0 {
-        pages_per_chapter[chapter].0 + page
-    } else {
-        page
+        let pages_per_chapter = get_start_end_pages_per_chapter(path, book_map);
+        return pages_per_chapter[chapter].0 + page;
     }
+
+    page
 }
+
 
 /// Function that split the text of the chapter
 /// into a vector of strings, each string is a paragraph

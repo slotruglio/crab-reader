@@ -109,14 +109,16 @@ impl Book {
             .map_or(1, |x| x.parse::<usize>().unwrap_or_default());
 
         let (chapter_number, current_page, _font_size) =
-            load_data(path_str, false).unwrap_or((1, 0, FontSize::MEDIUM.to_f64()));
+            load_data(path_str, false).unwrap_or((1, 0, FontSize::SMALL.to_f64()));
 
-        let number_of_pages = get_number_of_pages(path_str);
+        let number_of_pages = book_map
+            .get("total_pages")
+            .map_or(0, |x| x.parse::<usize>().unwrap_or_default());
 
         let cumulative_current_page =
-            get_cumulative_current_page_number(path_str, chapter_number, current_page);
+            get_cumulative_current_page_number(path_str, chapter_number, current_page, Some(book_map));
         
-        let notes = BookNotes::with_loading(path_str.into(), chapter_number, current_page);
+        let notes = BookNotes::default();
 
         Book {
             title: title.into(),
@@ -164,6 +166,7 @@ impl BookReading for Book {
             self.path.as_str(),
             chapter,
             self.current_page,
+            None,
         );
         self.notes.update_current(chapter, self.current_page);
     }
@@ -203,6 +206,7 @@ impl BookReading for Book {
             self.path.as_str(),
             self.chapter_number,
             page,
+            None
         );
         self.notes.update_current(self.chapter_number, page);
     }
@@ -324,6 +328,7 @@ impl BookManagement for Book {
                 self.path.as_str(),
                 self.chapter_number,
                 self.current_page,
+                None
             );
         }
     }
@@ -348,9 +353,14 @@ impl BookManagement for Book {
                     self.get_path().as_str(),
                     self.chapter_number,
                     self.current_page,
+                    None
                 );
             }
         }
+    }
+
+    fn load_notes(&mut self) {
+        self.notes = BookNotes::with_loading(self.path.to_string(), self.chapter_number, self.current_page);
     }
 
     fn set_favorite(&mut self, favorite: bool) {

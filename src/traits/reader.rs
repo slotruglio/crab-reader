@@ -58,6 +58,8 @@ pub trait BookManagement {
 
     fn set_favorite(&mut self, favorite: bool);
 
+    fn load_notes(&mut self);
+
     fn get_notes(&self) -> &BookNotes;
 
     fn get_notes_mut(&mut self) -> &mut BookNotes;

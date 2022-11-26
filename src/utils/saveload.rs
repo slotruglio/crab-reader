@@ -264,7 +264,7 @@ pub fn load_data<T: Into<String> + Clone>(
             let app_font_size = FontSize::from(MYENV.lock().unwrap().font.size);
             // check if the application font size (env) is different from the saved one
             if (app_font_size != font_size) || force_fuzzy {
-                println!("DEBUG font size is different");
+                println!("DEBUG font size is different {:?} {:?}", &font_size.to_string(), &app_font_size.to_string());
                 // need to "find" the last read page
                 page = search_page(book_path.clone(), chapter, content);
             }
