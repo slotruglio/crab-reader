@@ -46,7 +46,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             notif if notif.is(OPEN_FILE) => {
                 println!("Opening file!");
 
-                let path = cmd.get_unchecked(OPEN_FILE).path();
+                let file_path = cmd.get_unchecked(OPEN_FILE).path();
                 let selected_book_mut = data.library.get_selected_book_mut().unwrap();
 
                 if data.ocr {
@@ -65,7 +65,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     //call ocr on the img path
                     let ocr_result = ocrmanager::get_ebook_page(
                         folder_name.to_string(),
-                        path.to_str().unwrap().to_string(),
+                        file_path.to_str().unwrap().to_string(),
                     );
 
                     match ocr_result {
@@ -84,7 +84,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     let ebook_char_count = selected_book_mut.calculate_chars_until_current_page();
 
                     let num = ocrmanager::get_physical_page(
-                        "tmp_imgs/first_page.png".to_string(),
+                        file_path.to_str().unwrap().to_string(),
                         selected_book_mut.get_chapter_number(),
                         ebook_char_count
                     );
