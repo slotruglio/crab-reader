@@ -22,12 +22,14 @@ pub fn get_notes_list() -> impl Widget<CrabReaderState> {
             .with_text_size(8.0)
             .with_text_color(colors::ON_SECONDARY)
             .with_line_break_mode(LineBreaking::WordWrap)
-            .with_text_alignment(druid::TextAlignment::Start);
+            .with_text_alignment(druid::TextAlignment::Start)
+            .padding(2.0);
 
         let content = Label::new(|note: &Note, _env: &_| note.get_text().to_string())
             .with_line_break_mode(LineBreaking::WordWrap)
             .with_text_color(colors::ON_SECONDARY)
-            .with_text_alignment(druid::TextAlignment::Start);
+            .with_text_alignment(druid::TextAlignment::Start)
+            .padding(2.0);
 
         Container::new(
             Flex::column()
@@ -36,6 +38,7 @@ pub fn get_notes_list() -> impl Widget<CrabReaderState> {
                 .with_child(content)
                 .with_default_spacer()
         )
+        .expand_width()
         .background(colors::SECONDARY)
         .rounded(ROUND_FACTR)
     })
