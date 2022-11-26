@@ -20,7 +20,7 @@ pub struct ReadModeDelegate;
 impl AppDelegate<CrabReaderState> for ReadModeDelegate {
     fn command(
         &mut self,
-        test: &mut druid::DelegateCtx,
+        delegate_ctx: &mut druid::DelegateCtx,
         _: druid::Target,
         cmd: &druid::Command,
         data: &mut CrabReaderState,
@@ -93,6 +93,9 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     let message_label = Label::<CrabReaderState>::new("The page in the physical book is");
                     let num_label = Label::<CrabReaderState>::new(num.to_string());
 
+                    //get coordinates of the center of the monitor
+                    let monitor = &druid::Screen::get_monitors()[0];
+                    let coords = monitor.virtual_rect().center() - (150.0, 200.0);
 
                     //create a new window with these labels
                     let win_desc = WindowDesc::new(|| 
@@ -104,9 +107,10 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     )
                     .title("Scan result")
                     .window_size((300.0, 200.0))
-                    .resizable(false);
+                    .resizable(false)
+                    .set_position(coords);
 
-                    test.new_window(win_desc);
+                    delegate_ctx.new_window(win_desc);
 
                     data.ocr_inverse = false;
                 }
