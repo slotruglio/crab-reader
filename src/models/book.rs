@@ -111,9 +111,10 @@ impl Book {
         let (chapter_number, current_page, _font_size) =
             load_data(path_str, false).unwrap_or((1, 0, FontSize::SMALL.to_f64()));
 
-        let number_of_pages = book_map
-            .get("total_pages")
-            .map_or(0, |x| x.parse::<usize>().unwrap_or_default());
+        let number_of_pages = match book_map.get("total_pages") {
+            Some(x) => x.parse::<usize>().unwrap_or_default(),
+            None => calculate_number_of_pages(path_str, 8, MYENV.lock().unwrap().font.size).map_or(0, |(x, y)| x as usize),
+        };
 
         let cumulative_current_page =
             get_cumulative_current_page_number(path_str, chapter_number, current_page, Some(book_map));
