@@ -9,12 +9,10 @@
     - "Disabilitare" Cambio Lingua
 - Tipografia consistente (Cocco)
 - Icona dell'app (Gray)
-- Passare da Label a RichText per visualizzare il testo (Gab+Sam)
-    - Doloroso ma necessario
 - Genere del libro (Boh? Sam?)
     - Tramite richiesta HTTP? 
     - Se questo è fattibile, lo è anche una sinossi?
-- Note/Appunti del libro? (Sam)
+
 - I TEST
 
 SVOLTE:
@@ -35,3 +33,5 @@ SVOLTE:
 - Localizzazione (Nessuno, solo TODO)
 - Ombre ON/OFF via Context Menù (Cocco)
 - Gestione del tema (Cocco)
+- Note/Appunti del libro (Sam)
+- Passare da Label a RichText per visualizzare il testo (Sam)

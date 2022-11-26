@@ -355,12 +355,12 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let current_chapter = current_chapter_widget().with_text_size(16.0).center();
 
-    let sidebar = Sidebar::LEFT.get();
+    let sidebar_lx = Sidebar::LEFT.get();
 
     let sidebar_rx = Sidebar::RIGHT.get();
 
     let text = Flex::row()
-        .with_flex_child(sidebar, 1.0)
+        .with_flex_child(sidebar_lx, 1.0)
         .with_flex_spacer(0.2)
         .with_flex_child(ReaderView::dynamic_view(), 4.0)
         .with_flex_spacer(0.2)
@@ -370,14 +370,11 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .with_child(ReaderBtn::Leave.button())
         .align_left();
 
-    let views_btn = ReaderBtn::ViewsSwitch.button();
     let next_btn = ReaderBtn::NextPage.button();
     let back_btn = ReaderBtn::PrevPage.button();
     let edit_btn = ReaderBtn::Edit.button().align_right();
     let undo_changes_btn = ReaderBtn::Undo.button();
     let save_changes_btn = ReaderBtn::Save.button();
-    let ocr_btn = ReaderBtn::Ocr.button();
-    let ocr_inverse_btn = ReaderBtn::OcrInverse.button();
 
     let current_page = ReaderBtn::PageNumberSwitch.button();
 
@@ -387,12 +384,6 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 
     let header_btns = Flex::row()
         .with_child(edit_btn)
-        .with_spacer(10.0)
-        .with_child(views_btn)
-        .with_spacer(10.0)
-        .with_child(ocr_btn)
-        .with_spacer(10.0)
-        .with_child(ocr_inverse_btn)
         .align_right();
 
     let header = Flex::row()

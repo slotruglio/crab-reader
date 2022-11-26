@@ -107,7 +107,7 @@ impl ReaderBtn {
 
 // button that let to go in library view
 fn leave_btn() -> RoundedButton<CrabReaderState> {
-    RoundedButton::from_text("Torna a selezione libro")
+    RoundedButton::from_text("Vai indietro")
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             data.reading = false;
         })
@@ -204,7 +204,7 @@ fn views_btn() -> RoundedButton<CrabReaderState> {
     .disabled_if(|data: &CrabReaderState, _env: &_| {
         data.reading_state.is_editing
     })
-    .with_text_size(24.0)
+    .with_text_size(18.0)
 }
 
 // button that let to see page number with different views
@@ -244,7 +244,7 @@ pub fn chapter_label(number: usize) -> Align<CrabReaderState> {
 }
 
 pub fn ocr_btn() -> RoundedButton<CrabReaderState> {
-    RoundedButton::from_text("OCR")
+    RoundedButton::from_text("Sincronizza ebook 📷")
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
 
             data.ocr = true;
@@ -258,11 +258,10 @@ pub fn ocr_btn() -> RoundedButton<CrabReaderState> {
 
             ctx.submit_command(cmd);
         })
-        .with_text_size(24.0)
 }
 
 pub fn ocr_inverse_btn() -> RoundedButton<CrabReaderState> {
-    RoundedButton::from_text("OCR INVERSE")
+    RoundedButton::from_text("Ottieni pagina 📖")
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
 
             data.ocr_inverse = true;
@@ -276,5 +275,4 @@ pub fn ocr_inverse_btn() -> RoundedButton<CrabReaderState> {
 
             ctx.submit_command(cmd);
         })
-        .with_text_size(24.0)
 }

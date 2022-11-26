@@ -1,6 +1,8 @@
+use std::f32::consts::E;
+
 use druid::{Widget, UnitPoint, widget::{Flex, Either, Scroll, TextBox, MainAxisAlignment}, LensExt, WidgetExt};
 
-use crate::{CrabReaderState, components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, note_widget::{get_notes_list}}, ReadingState, traits::{gui::GUILibrary, note::NoteManagement, reader::{BookReading, BookManagement}}, utils::colors};
+use crate::{CrabReaderState, components::{buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn}, chapter_selector::ChapterSelector, note_widget::{get_notes_list}}, ReadingState, traits::{gui::GUILibrary, note::NoteManagement, reader::{BookReading, BookManagement}}, utils::colors};
 
 pub enum Sidebar {
     LEFT,
@@ -17,6 +19,8 @@ impl Sidebar {
 }
 
 fn left_sidebar_widget() -> Flex<CrabReaderState> {
+    let views_btn = ReaderBtn::ViewsSwitch.button();
+
     let btn = RoundedButton::dynamic(|data: &ReadingState, _env: &_| {
         if !data.sidebar_open {
             "Apri selezione capitoli".into()
@@ -43,14 +47,23 @@ fn left_sidebar_widget() -> Flex<CrabReaderState> {
     );
 
     Flex::column()
+        .with_child(views_btn)
+        .with_default_spacer()
         .with_child(btn)
         .with_default_spacer()
         .with_flex_child(sidebar, 1.0)
 }
 
 fn right_sidebar_widget() -> Flex<CrabReaderState> {
+    let ocr_btn = ReaderBtn::Ocr.button()
+        .expand_width();
+
+    let ocr_inverse_btn = ReaderBtn::OcrInverse.button()
+        .expand_width();
+
+
     // list of notes
-    let notes = Scroll::new(get_notes_list()).vertical();
+    let notes = Scroll::new(get_notes_list()).vertical().expand();
 
     let tb = TextBox::multiline()
         .with_placeholder("Scrivi...")
@@ -65,7 +78,7 @@ fn right_sidebar_widget() -> Flex<CrabReaderState> {
             let note = data.reading_state.notes.clone();
             data.reading_state.notes = "".into();
             data.library.get_selected_book_mut().unwrap().get_notes_mut().add_note(&book, note);
-        }).padding(5.0);
+        });
 
     let del_notes = RoundedButton::from_text("Elimina note")
         .disabled_if(|data: &CrabReaderState, _env: &_| data.library.get_selected_book().unwrap().get_notes().len() == 0)
@@ -76,16 +89,20 @@ fn right_sidebar_widget() -> Flex<CrabReaderState> {
             let page = book.get_current_page_number();
 
             data.library.get_selected_book_mut().unwrap().get_notes_mut().delete_notes(book_path, chapter, page);
-        }).padding(5.0);
+        });
     
     Flex::column()
-        .with_flex_child(notes,8.0)
-        .with_flex_spacer(2.0)
-        .with_child(tb)
-        .with_flex_spacer(1.0)
-        .with_child(add_note)
-        .with_child(del_notes)
         .must_fill_main_axis(true)
-        .main_axis_alignment(MainAxisAlignment::End)
+        .with_child(ocr_btn)
+        .with_default_spacer()
+        .with_child(ocr_inverse_btn)
+        .with_default_spacer()
+        .with_flex_child(notes,2.0)
+        .with_flex_spacer(1.0)
+        .with_child(tb)
+        .with_default_spacer()
+        .with_child(add_note)
+        .with_default_spacer()
+        .with_child(del_notes)
 
 }
