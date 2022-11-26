@@ -80,15 +80,13 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     }
                     data.ocr = false;
                 } else if data.ocr_inverse {
-                    let actual_ebook_page = selected_book_mut.get_page_of_chapter();
 
-                    let actual_ebook_page_number = selected_book_mut.get_cumulative_current_page_number();
+                    let ebook_char_count = selected_book_mut.calculate_chars_until_current_page();
 
                     let num = ocrmanager::get_physical_page(
                         "tmp_imgs/first_page.png".to_string(),
                         selected_book_mut.get_chapter_number(),
-                        actual_ebook_page,
-                        actual_ebook_page_number,
+                        ebook_char_count
                     );
 
                     data.ocr_inverse = false;

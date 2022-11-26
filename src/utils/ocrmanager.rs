@@ -140,40 +140,34 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 
 
 //This method needs to be completed and tested
-pub fn get_physical_page(first_physical_page_path: String, chapter_number: usize, actual_ebook_page: String, actual_ebook_page_number: usize) -> usize {
+pub fn get_physical_page(physical_page_path: String, chapter_number: usize, ebook_char_count: usize) -> usize {
 
 
     //OCR PHASE: Load the LEPTESS model, get the two physical pages texts
     let mut lt = leptess::LepTess::new(None, "eng").unwrap();
-    lt.set_image(first_physical_page_path).unwrap();
-    let first_text = lt.get_utf8_text().unwrap();
+    lt.set_image(physical_page_path).unwrap();
+    let physical_page_text = lt.get_utf8_text().unwrap();
 
     //get the number of characters of the first PHYSICAL page
-    let first_text_chars = first_text.chars().count();
+    let physical_page_chars = physical_page_text.chars().count();
 
-    todo!();
-
-    //Multiply the number of chars in the actual ebook page by the page number of the actual ebook page
-    //--> We'll get the total amount of characters in the ebook until the actual page
-    //Divide this quantity by the number of chars contained in a single physical page
+    //Divide the number of chars till now in the ebook by the number of chars contained in a single physical page
     //--> We'll get the page number of the physical page we're looking for
-    // let mut physical_page_number = ebook_char_count / first_text_chars;
+    let mut physical_page_number = ebook_char_count / physical_page_chars;
 
-    // //for each chapter, there is a page which has - typically - few chars with respect to the first physical page (last page of chapter)
-    // //So we need to subtract 1 from the physical page number each two chapters
-    // physical_page_number = physical_page_number -  chapter_number;
+    //For each chapter, there is a page which has - typically - very few chars with respect to the first physical page (last page of chapter)
+    //--> So we need to add 1 from the physical page number each chapter
+    //We also need to consider that the first page of each chapter typically has a header
+    //--> So we need to add 1 to the physical page number each chapter
+    physical_page_number = physical_page_number + (chapter_number*2);
 
-    // //NOTA: LA QUANTITà ACTUAL_EBOOK_PAGE * ACTUAL_EBOOK_PAGE_NUMBER è IMPRECISA perchè le pagine dell'ebook non sono tutte uguali
-    // //Da inserire un char counter man mano che leggiamo un ebook
+    //print all variables
+    println!("------------------------------------");
+    println!("first_text_chars: {}", physical_page_chars);
+    println!("cumulative: {} ", ebook_char_count);
+    println!("physical_page_number: {}", physical_page_number);
+    println!("------------------------------------");
 
-
-    // //print all variables
-    // println!("------------------------------------");
-    // println!("first_text_chars: {}", first_text_chars);
-    // println!("cumulative: {} ", ebook_char_count);
-    // println!("physical_page_number: {}", physical_page_number);
-    // println!("------------------------------------");
-
-    //return physical_page_number;
+    return physical_page_number;
 
 }
