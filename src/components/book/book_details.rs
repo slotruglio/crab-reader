@@ -81,7 +81,11 @@ impl BookDetails {
         let keep_reading_btn = RoundedButton::from_text("Continua a Leggere")
             .with_on_click(|ctx, library: &mut Library, _: &Env| {
                 let current_book = library.get_selected_book_mut().unwrap();
+                
+                // @cocco: thread?
                 current_book.load_chapter();
+                // @cocco: thread?
+                current_book.load_notes();
                 let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
                 ctx.submit_command(cmd.clone());
             })
