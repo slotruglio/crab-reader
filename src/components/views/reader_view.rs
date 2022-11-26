@@ -1,17 +1,16 @@
 use druid::{
-    widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox, RawLabel},
-    Color, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
+    widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox, RawLabel}, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
 };
 
 use crate::{
-    components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, book::markdown_widget::{SelectedPageLens, DualPage0Lens, DualPage1Lens}, mockup::LibrarySelectedBookLens},
+    components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, mockup::LibrarySelectedBookLens},
     traits::{
         gui::{GUIBook, GUILibrary},
         note::NoteManagement,
         reader::BookReading,
     },
     utils::colors,
-    CrabReaderState, ReadingState, MYENV,
+    CrabReaderState, ReadingState, MYENV, models::rich::custom_lens::{SelectedPageLens, DualPage0Lens, DualPage1Lens},
 };
 
 pub enum ReaderView {

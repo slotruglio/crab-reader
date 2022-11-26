@@ -1,7 +1,6 @@
 use crate::models::book::Book;
 use crate::utils::colors;
 use components::book::book_details::BookDetails;
-use components::book::text::rich_text::RichText;
 use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
 use components::library::cover_library::{CoverLibrary, DO_PAINT_SHADOWS};
 use components::library::listing_library::ListLibrary;
@@ -49,7 +48,6 @@ pub struct ReadingState {
     text_1: String,
     notes: String,
     is_editing_notes: bool,
-    rich_text: RichText
 }
 
 impl ReadingState {
@@ -83,7 +81,6 @@ impl Default for ReadingState {
             text_0: String::default(),
             text_1: String::default(),
             notes: String::default(),
-            rich_text: RichText::new("test".into())
         }
     }
 }
