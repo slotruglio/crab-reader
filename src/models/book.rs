@@ -1,5 +1,5 @@
-use std::{collections::HashMap, io::Cursor as ImageCursor, rc::Rc, string::String, sync::Arc};
-use druid::{im::Vector, image::io::Reader as ImageReader, text::RichText, Data, Lens};
+use std::{io::Cursor as ImageCursor, rc::Rc, string::String, sync::Arc, hash::Hash, collections::HashMap};
+use druid::{im::{Vector}, image::io::Reader as ImageReader, text::RichText, Data, Lens};
 use epub::doc::EpubDoc;
 
 use crate::{
@@ -18,6 +18,9 @@ use crate::{
         epub_utils, text_descriptor
     },
 };
+
+
+use super::note::{BookNotes, Note};
 
 
 
@@ -43,11 +46,33 @@ pub struct Book {
     description: Rc<String>,
     cover_img: Arc<Vec<u8>>,
     filtered_out: bool,
-    #[data(ignore)]
-    notes: HashMap<(usize, usize), String>
+    notes: BookNotes,
 }
 
 impl Book {
+    pub fn empty_book() -> Book {
+        let e: Rc<String> = String::from("").into();
+        Self {
+            chapter_number: 0,
+            current_page: 0,
+            number_of_pages: 0,
+            number_of_chapters: 0,
+            cumulative_current_page: 0,
+            idx: 0,
+            selected: false,
+            title: Rc::new(String::new()),
+            author: e.clone(),
+            lang: e.clone(),
+            path: e.clone(),
+            is_favorite: false,
+            chapter_text_split: vec![].into(),
+            description: e.clone(),
+            cover_img: vec![].into(),
+            filtered_out: true,
+            notes: BookNotes::default(),
+        }
+    }
+
     /// Method that instantiates a new Book from a epub file
     /// given its path
     pub fn new(path: impl Into<String>) -> Book {
@@ -91,8 +116,8 @@ impl Book {
         let cumulative_current_page =
             get_cumulative_current_page_number(path_str, chapter_number, current_page);
         
-        let notes = load_notes(path_str).unwrap_or_default();
-        println!("Notes: {:?}", notes);
+        let notes = BookNotes::with_loading(path_str.into(), chapter_number, current_page);
+
         Book {
             title: title.into(),
             author: author.into(),
@@ -140,6 +165,7 @@ impl BookReading for Book {
             chapter,
             self.current_page,
         );
+        self.notes.update_current(chapter, self.current_page);
     }
 
     fn get_last_page_number(&self) -> usize {
@@ -161,6 +187,7 @@ impl BookReading for Book {
             self.chapter_number,
             page,
         );
+        self.notes.update_current(self.chapter_number, page);
     }
 
     fn get_chapter_rich_text(&self) -> RichText {
@@ -365,6 +392,14 @@ impl BookManagement for Book {
             println!("DEBUG: failed to save favorite");
         }
     }
+
+    fn get_notes(&self) -> &BookNotes {
+        &self.notes
+    }
+
+    fn get_notes_mut(&mut self) -> &mut BookNotes {
+        &mut self.notes
+    }
 }
 
 impl GUIBook for Book {
@@ -493,37 +528,5 @@ impl GUIBook for Book {
 
     fn is_favorite(&self) -> bool {
         self.is_favorite
-    }
-}
-
-impl NoteManagement for Book {
-    // get all notes
-    fn get_notes(&self) -> HashMap<(usize, usize), String> {
-        self.notes.clone()
-    }
-    // get note for the current chapter
-    fn get_current_note(&self) -> Option<String> {
-        self.notes.get(&(self.chapter_number, self.current_page)).cloned()
-    }
-    // add/edit a note for the current chapter and page
-    fn edit_note(&mut self, note: String) {
-        self.notes.insert((self.chapter_number, self.current_page), note.clone());
-        let _ = save_note(self.path.to_string(), self.chapter_number, self.get_page_of_chapter(), note);
-    }
-    // delete a note for the current chapter and page
-    fn delete_note(&mut self) {
-        if delete_note(
-            self.path.to_string(),
-            self.chapter_number,
-            self.get_page_of_chapter(),
-        ).is_ok() {
-            self.notes.remove(&(self.chapter_number, self.current_page));
-        }
-    }
-    // delete all notes
-    fn delete_all_notes(&mut self) {
-        if delete_all_notes(self.path.to_string()).is_ok() {
-            self.notes.clear();
-        }
     }
 }

@@ -362,3 +362,21 @@ impl Default for CoverLoader {
 }
 
 pub const TOGGLE_SHADOWS: Selector<()> = Selector::new("cover-library.toggle-shadows");
+
+pub struct LibrarySelectedBookLens;
+
+impl<L: GUILibrary<B = Book>> Lens<L, Book> for LibrarySelectedBookLens {
+    fn with<V, F: FnOnce(&Book) -> V>(&self, data: &L, f: F) -> V {
+        let Some(book) = data.get_selected_book() else {
+            return f(&Book::empty_book());
+        };
+        f(book)
+    }
+
+    fn with_mut<V, F: FnOnce(&mut Book) -> V>(&self, data: &mut L, f: F) -> V {
+        let Some(book) = data.get_selected_book_mut() else {
+            return f(&mut Book::empty_book());
+        };
+        f(book)
+    }
+}

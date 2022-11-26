@@ -31,7 +31,8 @@ impl ChapterSelector {
 
 impl ChapterSelectorItem {
     pub fn new(idx: usize) -> Self {
-        let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1));
+        let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1))
+            .with_text_color(colors::ON_PRIMARY);
         let boxed = Box::new(label);
 
         Self {
@@ -83,7 +84,7 @@ impl Widget<Library> for ChapterSelector {
         data: &Library,
         env: &druid::Env,
     ) {
-        if !data.same(old_data) {
+        if !data.same(old_data) || ctx.env_changed() {
             for child in self.children.iter_mut() {
                 child.update(ctx, old_data, data, env);
             }

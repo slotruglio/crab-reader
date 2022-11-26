@@ -34,7 +34,8 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         .get_selected_book()
                         .unwrap()
                         .get_page_of_chapter(),
-                ));
+                ),
+            );
                 Handled::Yes
             }
             notif if notif.is(ENTERING_READING_MODE) => {

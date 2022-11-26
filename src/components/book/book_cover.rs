@@ -27,7 +27,7 @@ impl<B: GUIBook> BookCover<B> {
     pub fn new() -> Self {
         let star = Label::dynamic(|data: &B, _| {
             if data.is_favorite() {
-                "🌟".into()
+                "❤".into()
             } else {
                 "".into()
             }
@@ -164,7 +164,7 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &B, data: &B, env: &Env) {
-        if !data.same(old_data) {
+        if !data.same(old_data) || ctx.env_changed() {
             self.star.update(ctx, data, env);
         }
     }
