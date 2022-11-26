@@ -168,6 +168,23 @@ impl BookReading for Book {
         self.notes.update_current(chapter, self.current_page);
     }
 
+    fn calculate_chars_until_current_page(&self) -> usize {
+        let mut chars = 0;
+        for i in 0..self.chapter_number {
+            //get chapter text
+            let chapter_text = epub_utils::get_chapter_text(self.path.as_str(), i);
+            chars += chapter_text.len();
+        }
+
+        let chapter_text = epub_utils::get_chapter_text(self.path.as_str(), self.chapter_number);
+        let chapter_pages = epub_utils::split_chapter_in_vec("", chapter_text, self.chapter_number, 8, 16.0, 800.0, 300.0);
+        for i in 0..self.current_page {
+            chars += chapter_pages[i].len();
+        }
+
+        chars
+    }
+
     fn get_last_page_number(&self) -> usize {
         self.chapter_text_split.len() - 1 as usize
     }

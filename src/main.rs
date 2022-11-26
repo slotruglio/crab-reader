@@ -6,7 +6,7 @@ use components::library::cover_library::{CoverLibrary, DO_PAINT_SHADOWS};
 use components::library::listing_library::ListLibrary;
 use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 
-use components::views::reader_view::{ReaderView, current_chapter_widget};
+use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
 use druid::widget::{Container, Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
@@ -51,7 +51,7 @@ pub struct ReadingState {
 }
 
 impl ReadingState {
-    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S, ) {
+    fn enable<S: Into<Option<Rc<String>>>>(&mut self, _: S) {
         self.single_view = true;
         self.is_editing = false;
         self.is_editing_notes = false;
@@ -177,13 +177,14 @@ fn author_sorter_btn() -> impl Widget<Library> {
 
 fn filter_fav_btn() -> impl Widget<Library> {
     let emoji_font = Font::default().emoji().xs().get();
-    RoundedButton::from_text("🌟")
+    RoundedButton::from_text("❤")
         .with_text_size(18.0)
         .with_on_click(|_, data: &mut Library, _| {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
         .with_toggle(|data: &Library, _env: &Env| data.only_fav())
+        .secondary()
         .padding(5.0)
 }
 
@@ -274,7 +275,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
 
     let view_either = Either::new(
         |data: &CrabReaderState, _env| data.display_mode == DisplayMode::List,
-        library_list.padding(5.0),
+        library_list.padding(10.0),
         library_cover,
     )
     .background(colors::BACKGROUND_VARIANT)

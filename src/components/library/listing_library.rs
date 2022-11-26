@@ -92,7 +92,7 @@ where
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 if let Some(old_book) = old_data.get_book(idx) {
-                    if !book.same(old_book) {
+                    if !book.same(old_book) || ctx.env_changed() {
                         inner.update(ctx, book, env);
                     }
                 }

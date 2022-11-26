@@ -92,7 +92,7 @@ impl Widget<Library> for CoverLibrary {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(old_book) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {
-                    if !old_book.same(book) {
+                    if !old_book.same(book) || ctx.env_changed() {
                         inner.update(ctx, book, env);
                     }
                 }

@@ -1,7 +1,10 @@
 use std::ops::Deref;
 
 use druid::{
-    theme::{BACKGROUND_DARK, BACKGROUND_LIGHT},
+    theme::{
+        BACKGROUND_DARK, BACKGROUND_LIGHT, PLACEHOLDER_COLOR, SCROLLBAR_BORDER_COLOR,
+        SCROLLBAR_COLOR, SCROLLBAR_EDGE_WIDTH,
+    },
     Color, Data, Env, Key, Selector,
 };
 
@@ -36,11 +39,11 @@ const LIGHT_COLOR_SET: ColorSetInner = ColorSetInner {
 };
 
 const SEPIA_COLOR_SET: ColorSetInner = ColorSetInner {
-    primary: Color::rgb8(0xe4, 0xe4, 0xe4),
-    primary_variant: Color::rgb8(0xca, 0xca, 0xca),
+    primary: Color::rgb8(0xd0, 0xd0, 0xd0),
+    primary_variant: Color::rgb8(0xa0, 0xa0, 0xa0),
     primary_text: Color::rgb8(0x00, 0x00, 0x00),
     primary_accent: Color::rgb8(0xf6, 0xf6, 0xf6),
-    secondary: Color::rgb8(0xf6, 0xf6, 0x20),
+    secondary: Color::rgb8(0xd6, 0xd6, 0x20),
     secondary_accent: Color::rgb8(0xf8, 0xf8, 0x55),
     secondary_variant: Color::rgb8(0xfe, 0xdd, 0x22),
     secondary_text: Color::rgb8(0x00, 0x00, 0x00),
@@ -50,6 +53,7 @@ const SEPIA_COLOR_SET: ColorSetInner = ColorSetInner {
 };
 
 const DARK_COLOR_SET: ColorSetInner = ColorSetInner {
+    primary_text: Color::rgb8(0x00, 0x00, 0x00),
     background_variant: Color::rgb8(0x30, 0x30, 0x30),
     background: Color::rgb8(0x50, 0x50, 0x50),
     background_text: Color::rgb8(0xff, 0xff, 0xff),
@@ -103,4 +107,14 @@ pub fn update_theme(env: &mut Env, data: &CrabReaderState) {
     env.set(ON_BACKGROUND, theme.background_text.clone());
     env.set(BACKGROUND_DARK, theme.background.clone());
     env.set(BACKGROUND_LIGHT, theme.background.clone());
+    env.set(
+        PLACEHOLDER_COLOR,
+        theme.background_text.clone().with_alpha(0.6),
+    );
+    env.set(SCROLLBAR_COLOR, theme.primary.clone().with_alpha(0.6));
+    env.set(
+        SCROLLBAR_BORDER_COLOR,
+        theme.primary_variant.clone().with_alpha(0.6),
+    );
+    env.set(SCROLLBAR_EDGE_WIDTH, 2.0);
 }
