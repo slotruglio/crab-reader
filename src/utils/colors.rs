@@ -1,7 +1,10 @@
 use std::ops::Deref;
 
 use druid::{
-    theme::{BACKGROUND_DARK, BACKGROUND_LIGHT, PLACEHOLDER_COLOR},
+    theme::{
+        BACKGROUND_DARK, BACKGROUND_LIGHT, PLACEHOLDER_COLOR, SCROLLBAR_BORDER_COLOR,
+        SCROLLBAR_COLOR, SCROLLBAR_EDGE_WIDTH,
+    },
     Color, Data, Env, Key, Selector,
 };
 
@@ -108,4 +111,10 @@ pub fn update_theme(env: &mut Env, data: &CrabReaderState) {
         PLACEHOLDER_COLOR,
         theme.background_text.clone().with_alpha(0.6),
     );
+    env.set(SCROLLBAR_COLOR, theme.primary.clone().with_alpha(0.6));
+    env.set(
+        SCROLLBAR_BORDER_COLOR,
+        theme.primary_variant.clone().with_alpha(0.6),
+    );
+    env.set(SCROLLBAR_EDGE_WIDTH, 2.0);
 }

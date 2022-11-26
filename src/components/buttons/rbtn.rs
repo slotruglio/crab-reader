@@ -150,7 +150,10 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
             _ => {}
         }
 
-        if self.status == ButtonStatus::Active && !ctx.is_hot() {
+        if self.status != ButtonStatus::Active && ctx.is_hot() {
+            self.status = ButtonStatus::Hot;
+            ctx.request_paint();
+        } else if self.status != ButtonStatus::Active && !ctx.is_hot() {
             self.status = ButtonStatus::Normal;
             ctx.request_paint();
         }
@@ -167,15 +170,6 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
 
         match event {
             HotChanged(_) => {
-                if self.is_disabled() || &self.status == &ButtonStatus::Active {
-                    return;
-                }
-
-                if ctx.is_hot() {
-                    self.status = ButtonStatus::Hot;
-                } else {
-                    self.status = ButtonStatus::Normal;
-                }
                 ctx.request_paint();
             }
             _ => {}
