@@ -1,4 +1,4 @@
-use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent};
+use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc, widget::{Label, Flex, Align}};
 use std::rc::Rc;
 
 use super::{
@@ -20,7 +20,7 @@ pub struct ReadModeDelegate;
 impl AppDelegate<CrabReaderState> for ReadModeDelegate {
     fn command(
         &mut self,
-        _: &mut druid::DelegateCtx,
+        test: &mut druid::DelegateCtx,
         _: druid::Target,
         cmd: &druid::Command,
         data: &mut CrabReaderState,
@@ -88,6 +88,25 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         selected_book_mut.get_chapter_number(),
                         ebook_char_count
                     );
+
+                    //create two labels
+                    let message_label = Label::<CrabReaderState>::new("The page in the physical book is");
+                    let num_label = Label::<CrabReaderState>::new(num.to_string());
+
+
+                    //create a new window with these labels
+                    let win_desc = WindowDesc::new(|| 
+                        Align::centered(
+                            Flex::column()
+                                .with_child(message_label)
+                                .with_child(num_label)
+                        )
+                    )
+                    .title("Scan result")
+                    .window_size((300.0, 200.0))
+                    .resizable(false);
+
+                    test.new_window(win_desc);
 
                     data.ocr_inverse = false;
                 }
