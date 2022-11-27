@@ -14,6 +14,7 @@ use std::{
 };
 use threadpool::ThreadPool;
 
+use crate::utils::thread_loader::{ThreadLoader, ThreadResult};
 use crate::{
     models::book::Book,
     traits::gui::{GUIBook, GUILibrary},
@@ -50,7 +51,7 @@ pub struct MockupLibrary<B: GUIBook + Data> {
     visible_books: usize,
     #[data(ignore)]
     #[derivative(PartialEq = "ignore")]
-    cover_loader: Arc<CoverLoader>,
+    cover_loader: Arc<ThreadLoader<Vec<u8>>>,
     pub do_paint_shadows: bool,
 }
 
@@ -62,7 +63,7 @@ impl MockupLibrary<Book> {
             sorted_by: SortBy::Title,
             filter_by: String::default().into(),
             visible_books: 0,
-            cover_loader: Arc::from(CoverLoader::default()),
+            cover_loader: ThreadLoader::default().into(),
             filter_fav: false,
             do_paint_shadows: false,
         };
@@ -179,8 +180,8 @@ impl GUILibrary for MockupLibrary<Book> {
 
     fn schedule_cover_loading(&mut self, path: impl Into<String>, idx: usize) {
         let path = path.into();
-        let tx = self.cover_loader.tx.clone();
-        self.cover_loader.pool.execute(move || {
+        let tx = self.cover_loader.tx();
+        self.cover_loader.execute(move || {
             let mut epub = EpubDoc::new(path).map_err(|e| e.to_string()).unwrap();
             let cover = epub.get_cover().map_err(|e| e.to_string()).unwrap();
             let reader = ImageReader::new(Cursor::new(cover))
@@ -190,25 +191,19 @@ impl GUILibrary for MockupLibrary<Book> {
             let image = reader.decode().map_err(|e| e.to_string()).unwrap();
             let thumbnail = image.thumbnail_exact(150, 250);
             let rgb = thumbnail.to_rgb8().to_vec();
-            let cr = CoverResult {
-                idx,
-                cover: Some(rgb),
-            };
-            if let Ok(_) = tx.send(cr) {
-                ()
-            }
+            let result = ThreadResult::new(rgb, idx);
+            tx.send(result).expect("Error sending result cover");
         });
     }
 
     fn check_covers_loaded(&mut self) -> bool {
         let mut loaded = false;
-        while let Ok(cr) = self.cover_loader.rx.try_recv() {
-            let book = self.get_book_mut(cr.idx);
+        while let Some(result) = self.cover_loader.try_recv() {
+            let book = self.get_book_mut(result.idx());
             if let Some(book) = book {
-                if let Some(cover) = cr.cover {
-                    book.set_cover_image(cover);
-                    loaded = true;
-                }
+                let cover = result.value();
+                book.set_cover_image(cover);
+                loaded = true;
             }
         }
         loaded
