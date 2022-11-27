@@ -29,8 +29,8 @@ impl CoverLibrary {
     }
 }
 
-impl Widget<Library> for CoverLibrary {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
+impl Widget<Library<Book>> for CoverLibrary {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library<Book>, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book_mut(idx) {
                 inner.event(ctx, event, book, env);
@@ -62,7 +62,13 @@ impl Widget<Library> for CoverLibrary {
         }
     }
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
+    fn lifecycle(
+        &mut self,
+        ctx: &mut LifeCycleCtx,
+        event: &LifeCycle,
+        data: &Library<Book>,
+        env: &Env,
+    ) {
         while self.children.len() < data.number_of_books() {
             self.add_child();
             ctx.children_changed();
@@ -75,7 +81,13 @@ impl Widget<Library> for CoverLibrary {
         }
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
+    fn update(
+        &mut self,
+        ctx: &mut UpdateCtx,
+        old_data: &Library<Book>,
+        data: &Library<Book>,
+        env: &Env,
+    ) {
         if old_data.get_sort_order() != data.get_sort_order() {
             self.children.clear();
             ctx.children_changed();
@@ -96,7 +108,7 @@ impl Widget<Library> for CoverLibrary {
         &mut self,
         ctx: &mut LayoutCtx,
         bc: &BoxConstraints,
-        data: &Library,
+        data: &Library<Book>,
         env: &Env,
     ) -> Size {
         let book_w = BOOK_WIDGET_SIZE.width;
@@ -138,7 +150,7 @@ impl Widget<Library> for CoverLibrary {
         (w, h).into()
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library<Book>, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 inner.paint(ctx, book, env);

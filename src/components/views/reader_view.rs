@@ -1,16 +1,17 @@
 use druid::{
-    widget::{Container, Either, Flex, Label, LineBreaking, Scroll, TextBox, RawLabel}, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
+    widget::{Container, Either, Flex, Label, LineBreaking, RawLabel, Scroll, TextBox},
+    FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
 };
 
 use crate::{
-    components::{buttons::rbtn::RoundedButton, chapter_selector::ChapterSelector, mockup::LibrarySelectedBookLens},
+    models::library::LibrarySelectedBookLens,
+    models::rich::custom_lens::{DualPage0Lens, DualPage1Lens, SelectedPageLens},
     traits::{
         gui::{GUIBook, GUILibrary},
-        note::NoteManagement,
         reader::BookReading,
     },
     utils::colors,
-    CrabReaderState, ReadingState, MYENV, models::rich::custom_lens::{SelectedPageLens, DualPage0Lens, DualPage1Lens},
+    CrabReaderState, ReadingState, MYENV,
 };
 
 pub enum ReaderView {
@@ -57,19 +58,19 @@ impl ReaderView {
 
 // single page view for text reader
 fn single_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
-
     let raw_label = RawLabel::new()
         .with_text_color(colors::ON_BACKGROUND)
         .with_font(font)
         .with_text_alignment(TextAlignment::Justified)
         .with_line_break_mode(LineBreaking::WordWrap)
-        .lens(CrabReaderState::library.then(LibrarySelectedBookLens).then(SelectedPageLens))
+        .lens(
+            CrabReaderState::library
+                .then(LibrarySelectedBookLens)
+                .then(SelectedPageLens),
+        )
         .expand_width();
-    
-    let inner = Scroll::new(
-        raw_label,
-    )
-    .vertical();
+
+    let inner = Scroll::new(raw_label).vertical();
 
     Container::new(inner)
 }
@@ -93,7 +94,11 @@ fn dual_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
         .with_font(font.clone())
         .with_text_alignment(TextAlignment::Justified)
         .with_line_break_mode(LineBreaking::WordWrap)
-        .lens(CrabReaderState::library.then(LibrarySelectedBookLens).then(DualPage0Lens))
+        .lens(
+            CrabReaderState::library
+                .then(LibrarySelectedBookLens)
+                .then(DualPage0Lens),
+        )
         .expand_width();
 
     let page_1 = RawLabel::new()
@@ -101,21 +106,17 @@ fn dual_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
         .with_font(font)
         .with_text_alignment(TextAlignment::Justified)
         .with_line_break_mode(LineBreaking::WordWrap)
-        .lens(CrabReaderState::library.then(LibrarySelectedBookLens).then(DualPage1Lens))
+        .lens(
+            CrabReaderState::library
+                .then(LibrarySelectedBookLens)
+                .then(DualPage1Lens),
+        )
         .expand_width();
 
     let inner = Flex::row()
-        .with_flex_child(
-            Scroll::new(page_0)
-            .vertical(),
-            1.0,
-        )
+        .with_flex_child(Scroll::new(page_0).vertical(), 1.0)
         .with_flex_spacer(0.1)
-        .with_flex_child(
-            Scroll::new(page_1)
-            .vertical(),
-            1.0,
-        );
+        .with_flex_child(Scroll::new(page_1).vertical(), 1.0);
     Container::new(inner)
 }
 

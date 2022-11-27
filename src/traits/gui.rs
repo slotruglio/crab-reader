@@ -1,8 +1,6 @@
-use std::sync::Arc;
+use crate::models::library::SortBy;
 use druid::Data;
-
-use crate::components::mockup::SortBy;
-
+use std::sync::Arc;
 
 pub trait GUIBook: PartialEq + Data {
     /// Returns the title

@@ -10,7 +10,7 @@ use super::{
     colors::SWITCH_THEME,
 };
 use crate::{
-    components::mockup::SortBy,
+    models::library::SortBy,
     traits::{
         gui::{GUIBook, GUILibrary},
         reader::{BookManagement, BookReading},
@@ -313,7 +313,7 @@ fn handle_enter(
 fn handle_f(
     _ctx: &mut druid::DelegateCtx,
     _window_id: druid::WindowId,
-    event: &KeyEvent,
+    _: &KeyEvent,
     data: &mut CrabReaderState,
     _env: &Env,
 ) {

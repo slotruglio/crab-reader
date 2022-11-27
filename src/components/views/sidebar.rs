@@ -1,12 +1,26 @@
-use std::f32::consts::E;
+use druid::{
+    widget::{Either, Flex, Scroll, TextBox},
+    LensExt, UnitPoint, Widget, WidgetExt,
+};
 
-use druid::{Widget, UnitPoint, widget::{Flex, Either, Scroll, TextBox, MainAxisAlignment}, LensExt, WidgetExt};
-
-use crate::{CrabReaderState, components::{buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn}, chapter_selector::ChapterSelector, note_widget::{get_notes_list}}, ReadingState, traits::{gui::GUILibrary, note::NoteManagement, reader::{BookReading, BookManagement}}, utils::colors};
+use crate::{
+    components::{
+        buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn},
+        chapter_selector::ChapterSelector,
+        note_widget::get_notes_list,
+    },
+    traits::{
+        gui::GUILibrary,
+        note::NoteManagement,
+        reader::{BookManagement, BookReading},
+    },
+    utils::colors,
+    CrabReaderState, ReadingState,
+};
 
 pub enum Sidebar {
     LEFT,
-    RIGHT
+    RIGHT,
 }
 
 impl Sidebar {
@@ -55,12 +69,9 @@ fn left_sidebar_widget() -> Flex<CrabReaderState> {
 }
 
 fn right_sidebar_widget() -> Flex<CrabReaderState> {
-    let ocr_btn = ReaderBtn::Ocr.button()
-        .expand_width();
+    let ocr_btn = ReaderBtn::Ocr.button().expand_width();
 
-    let ocr_inverse_btn = ReaderBtn::OcrInverse.button()
-        .expand_width();
-
+    let ocr_inverse_btn = ReaderBtn::OcrInverse.button().expand_width();
 
     // list of notes
     let notes = Scroll::new(get_notes_list()).vertical().expand();
@@ -70,39 +81,50 @@ fn right_sidebar_widget() -> Flex<CrabReaderState> {
         .with_text_color(colors::ON_BACKGROUND)
         .lens(CrabReaderState::reading_state.then(ReadingState::notes))
         .expand_width();
-    
+
     let add_note = RoundedButton::from_text("Aggiungi nota")
-        .disabled_if(|data: &CrabReaderState, _env: &_| data.library.get_selected_book().unwrap().get_notes().len() > 0)
+        .disabled_if(|data: &CrabReaderState, _env: &_| {
+            data.library.get_selected_book().unwrap().get_notes().len() > 0
+        })
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book().unwrap().clone();
             let note = data.reading_state.notes.clone();
             data.reading_state.notes = "".into();
-            data.library.get_selected_book_mut().unwrap().get_notes_mut().add_note(&book, note);
+            data.library
+                .get_selected_book_mut()
+                .unwrap()
+                .get_notes_mut()
+                .add_note(&book, note);
         });
 
     let del_notes = RoundedButton::from_text("Elimina note")
-        .disabled_if(|data: &CrabReaderState, _env: &_| data.library.get_selected_book().unwrap().get_notes().len() == 0)
+        .disabled_if(|data: &CrabReaderState, _env: &_| {
+            data.library.get_selected_book().unwrap().get_notes().len() == 0
+        })
         .with_on_click(|_, data: &mut CrabReaderState, _| {
             let book = data.library.get_selected_book().unwrap();
             let book_path = book.get_path().clone();
             let chapter = book.get_chapter_number();
             let page = book.get_current_page_number();
 
-            data.library.get_selected_book_mut().unwrap().get_notes_mut().delete_notes(book_path, chapter, page);
+            data.library
+                .get_selected_book_mut()
+                .unwrap()
+                .get_notes_mut()
+                .delete_notes(book_path, chapter, page);
         });
-    
+
     Flex::column()
         .must_fill_main_axis(true)
         .with_child(ocr_btn)
         .with_default_spacer()
         .with_child(ocr_inverse_btn)
         .with_default_spacer()
-        .with_flex_child(notes,2.0)
+        .with_flex_child(notes, 2.0)
         .with_flex_spacer(1.0)
         .with_child(tb)
         .with_default_spacer()
         .with_child(add_note)
         .with_default_spacer()
         .with_child(del_notes)
-
 }

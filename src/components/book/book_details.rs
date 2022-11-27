@@ -5,20 +5,18 @@ use druid::{
 };
 
 use crate::{
-    components::{buttons::rbtn::RoundedButton, mockup::MockupLibrary},
+    components::buttons::rbtn::RoundedButton,
     models::book::Book,
     traits::{
         gui::{GUIBook, GUILibrary},
         reader::BookManagement,
     },
     utils::{colors, fonts},
-    ENTERING_READING_MODE,
+    Library, ENTERING_READING_MODE,
 };
 
-type Library = MockupLibrary<Book>;
-
 pub struct BookDetails {
-    inner: WidgetPod<Library, Box<dyn Widget<Library>>>,
+    inner: WidgetPod<Library<Book>, Box<dyn Widget<Library<Book>>>>,
 }
 
 impl BookDetails {
@@ -32,7 +30,7 @@ impl BookDetails {
             .with_line_break_mode(LineBreaking::WordWrap)
             .with_text_color(colors::ON_BACKGROUND);
 
-        let title_label = Label::dynamic(|data: &Library, _| {
+        let title_label = Label::dynamic(|data: &Library<Book>, _| {
             data.get_selected_book()
                 .map_or("Nessun libro selezionato".into(), |book| {
                     format!("Titolo: {}", book.get_title().to_string())
@@ -44,7 +42,7 @@ impl BookDetails {
         .align_left()
         .padding(5.0);
 
-        let author_label = Label::dynamic(|data: &Library, _| {
+        let author_label = Label::dynamic(|data: &Library<Book>, _| {
             data.get_selected_book()
                 .map_or("Nessun libro selezionato".into(), |book| {
                     format!("Autore: {}", book.get_author().to_string())
@@ -55,7 +53,7 @@ impl BookDetails {
         .align_left()
         .padding(5.0);
 
-        let lang_label = Label::dynamic(|data: &Library, _| {
+        let lang_label = Label::dynamic(|data: &Library<Book>, _| {
             data.get_selected_book()
                 .map_or("Nessun libro selezionato".into(), |book: &Book| {
                     format!("Lingua: {}", lang_parser(&book.get_lang()))
@@ -66,7 +64,7 @@ impl BookDetails {
         .align_left()
         .padding(5.0);
 
-        let completion_label = Label::dynamic(|data: &Library, _| {
+        let completion_label = Label::dynamic(|data: &Library<Book>, _| {
             data.get_selected_book()
                 .map_or("Nessun libro selezionato".into(), |book: &Book| {
                     let perc = book.get_perc_read();
@@ -79,9 +77,9 @@ impl BookDetails {
         .padding(5.0);
 
         let keep_reading_btn = RoundedButton::from_text("Continua a Leggere")
-            .with_on_click(|ctx, library: &mut Library, _: &Env| {
+            .with_on_click(|ctx, library: &mut Library<Book>, _: &Env| {
                 let current_book = library.get_selected_book_mut().unwrap();
-                
+
                 // @cocco: thread?
                 current_book.load_chapter();
                 // @cocco: thread?
@@ -91,7 +89,7 @@ impl BookDetails {
             })
             .with_text_size(14.0);
 
-        let add_fav_btn = RoundedButton::dynamic(|data: &Library, _| {
+        let add_fav_btn = RoundedButton::dynamic(|data: &Library<Book>, _| {
             if let Some(book) = data.get_selected_book() {
                 if book.is_favorite() {
                     "Rimuovi dai preferiti".into()
@@ -102,7 +100,7 @@ impl BookDetails {
                 "Aggiungi ai preferiti".into()
             }
         })
-        .with_on_click(|_: &mut EventCtx, library: &mut Library, _: &Env| {
+        .with_on_click(|_: &mut EventCtx, library: &mut Library<Book>, _: &Env| {
             if let Some(book) = library.get_selected_book_mut() {
                 let fav = book.is_favorite();
                 book.set_favorite(!fav);
@@ -139,16 +137,28 @@ impl BookDetails {
     }
 }
 
-impl Widget<Library> for BookDetails {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library, env: &Env) {
+impl Widget<Library<Book>> for BookDetails {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library<Book>, env: &Env) {
         self.inner.event(ctx, event, data, env);
     }
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Library, env: &Env) {
+    fn lifecycle(
+        &mut self,
+        ctx: &mut LifeCycleCtx,
+        event: &LifeCycle,
+        data: &Library<Book>,
+        env: &Env,
+    ) {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Library, data: &Library, env: &Env) {
+    fn update(
+        &mut self,
+        ctx: &mut UpdateCtx,
+        old_data: &Library<Book>,
+        data: &Library<Book>,
+        env: &Env,
+    ) {
         if !old_data.same(data) {
             self.inner.update(ctx, data, env);
         }
@@ -158,7 +168,7 @@ impl Widget<Library> for BookDetails {
         &mut self,
         ctx: &mut LayoutCtx,
         bc: &BoxConstraints,
-        data: &Library,
+        data: &Library<Book>,
         env: &Env,
     ) -> Size {
         if let Some(_) = data.get_selected_book() {
@@ -168,7 +178,7 @@ impl Widget<Library> for BookDetails {
         }
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library, env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &Library<Book>, env: &Env) {
         self.inner.paint(ctx, data, env);
     }
 }

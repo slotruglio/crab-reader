@@ -2,9 +2,9 @@ use crate::models::book::Book;
 use crate::utils::colors;
 use components::book::book_details::BookDetails;
 use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
-use components::library::cover_library::{CoverLibrary, DO_PAINT_SHADOWS};
+use components::library::cover_library::CoverLibrary;
 use components::library::listing_library::ListLibrary;
-use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
+use models::library::{Library, LibraryFilterLens, SortBy};
 
 use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
@@ -26,7 +26,6 @@ mod components;
 mod models;
 mod traits;
 mod utils;
-type Library = MockupLibrary<Book>;
 
 pub const ENTERING_READING_MODE: Selector<()> = Selector::new("reading-mode.on");
 pub const LEAVING_READING_MODE: Selector<()> = Selector::new("reading-mode.off");
@@ -93,7 +92,7 @@ pub enum DisplayMode {
 
 #[derive(Clone, Data, Lens)]
 pub struct CrabReaderState {
-    library: Library,
+    library: Library<Book>,
     display_mode: DisplayMode,
     reading: bool,
     reading_state: ReadingState,
@@ -125,8 +124,8 @@ fn book_details_panel() -> impl Widget<CrabReaderState> {
         .lens(CrabReaderState::library)
 }
 
-fn title_sorter_btn() -> impl Widget<Library> {
-    RoundedButton::dynamic(|data: &Library, _env: &Env| {
+fn title_sorter_btn() -> impl Widget<Library<Book>> {
+    RoundedButton::dynamic(|data: &Library<Book>, _env: &Env| {
         let arrow = match data.get_sort_order() {
             SortBy::Title => DOWN_ARROW,
             SortBy::TitleRev => UP_ARROW,
@@ -135,7 +134,7 @@ fn title_sorter_btn() -> impl Widget<Library> {
         format!("Titolo{}", arrow)
     })
     .with_text_size(18.0)
-    .with_on_click(|ctx, data: &mut Library, _: &Env| {
+    .with_on_click(|ctx, data: &mut Library<Book>, _: &Env| {
         let sort = data.get_sort_order();
         if sort == SortBy::Title {
             data.sort_by(SortBy::TitleRev);
@@ -144,15 +143,15 @@ fn title_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
-    .with_toggle(|data: &Library, _env: &Env| {
+    .with_toggle(|data: &Library<Book>, _env: &Env| {
         let order = data.get_sort_order();
         order == SortBy::Title || order == SortBy::TitleRev
     })
     .padding(5.0)
 }
 
-fn author_sorter_btn() -> impl Widget<Library> {
-    RoundedButton::dynamic(|data: &Library, _env: &Env| {
+fn author_sorter_btn() -> impl Widget<Library<Book>> {
+    RoundedButton::dynamic(|data: &Library<Book>, _env: &Env| {
         let arrow = match data.get_sort_order() {
             SortBy::Author => DOWN_ARROW,
             SortBy::AuthorRev => UP_ARROW,
@@ -161,7 +160,7 @@ fn author_sorter_btn() -> impl Widget<Library> {
         format!("Autore{}", arrow)
     })
     .with_text_size(18.0)
-    .with_on_click(|ctx, data: &mut Library, _| {
+    .with_on_click(|ctx, data: &mut Library<Book>, _| {
         let sort = data.get_sort_order();
         if sort == SortBy::Author {
             data.sort_by(SortBy::AuthorRev);
@@ -170,28 +169,28 @@ fn author_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
-    .with_toggle(|data: &Library, _env: &Env| {
+    .with_toggle(|data: &Library<Book>, _env: &Env| {
         let order = data.get_sort_order();
         order == SortBy::Author || order == SortBy::AuthorRev
     })
     .padding(5.0)
 }
 
-fn filter_fav_btn() -> impl Widget<Library> {
+fn filter_fav_btn() -> impl Widget<Library<Book>> {
     let emoji_font = Font::default().emoji().xs().get();
     RoundedButton::from_text("❤")
         .with_text_size(18.0)
-        .with_on_click(|_, data: &mut Library, _| {
+        .with_on_click(|_, data: &mut Library<Book>, _| {
             data.toggle_fav_filter();
         })
         .with_font(emoji_font)
-        .with_toggle(|data: &Library, _env: &Env| data.only_fav())
+        .with_toggle(|data: &Library<Book>, _env: &Env| data.only_fav())
         .secondary()
         .padding(5.0)
 }
 
-fn completion_sorter_btn() -> impl Widget<Library> {
-    RoundedButton::dynamic(|data: &Library, _env: &Env| {
+fn completion_sorter_btn() -> impl Widget<Library<Book>> {
+    RoundedButton::dynamic(|data: &Library<Book>, _env: &Env| {
         let arrow = match data.get_sort_order() {
             SortBy::PercRead => DOWN_ARROW,
             SortBy::PercReadRev => UP_ARROW,
@@ -200,7 +199,7 @@ fn completion_sorter_btn() -> impl Widget<Library> {
         format!("Progresso{}", arrow)
     })
     .with_text_size(18.0)
-    .with_on_click(|ctx, data: &mut Library, _| {
+    .with_on_click(|ctx, data: &mut Library<Book>, _| {
         let sort = data.get_sort_order();
         if sort == SortBy::PercRead {
             data.sort_by(SortBy::PercReadRev);
@@ -209,14 +208,14 @@ fn completion_sorter_btn() -> impl Widget<Library> {
         }
         ctx.request_update();
     })
-    .with_toggle(|data: &Library, _env: &Env| {
+    .with_toggle(|data: &Library<Book>, _env: &Env| {
         let sort = data.get_sort_order();
         sort == SortBy::PercRead || sort == SortBy::PercReadRev
     })
     .padding(5.0)
 }
 
-fn picker_sort_by() -> impl Widget<Library> {
+fn picker_sort_by() -> impl Widget<Library<Book>> {
     let label = Label::new("Ordina")
         .with_text_color(colors::ON_BACKGROUND)
         .center()
@@ -233,7 +232,7 @@ fn picker_sort_by() -> impl Widget<Library> {
         .expand_width()
 }
 
-fn picker_filter_by() -> impl Widget<Library> {
+fn picker_filter_by() -> impl Widget<Library<Book>> {
     let text_edit = druid::widget::TextBox::new()
         .with_text_size(18.0)
         .with_placeholder("Titolo, autore, genere...")
@@ -255,7 +254,7 @@ fn picker_filter_by() -> impl Widget<Library> {
         .expand_width()
 }
 
-fn picker_controller() -> impl Widget<Library> {
+fn picker_controller() -> impl Widget<Library<Book>> {
     let sort_by = picker_sort_by();
     let filter_by = picker_filter_by();
     Flex::column()
@@ -381,9 +380,7 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
         .width(180.0)
         .height(30.0);
 
-    let header_btns = Flex::row()
-        .with_child(edit_btn)
-        .align_right();
+    let header_btns = Flex::row().with_child(edit_btn).align_right();
 
     let header = Flex::row()
         .with_flex_child(leave_btn, 1.0)

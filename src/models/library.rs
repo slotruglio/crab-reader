@@ -1,5 +1,4 @@
 use derivative::Derivative;
-use druid::Selector;
 use druid::{im::Vector, Data, Lens};
 use epub::doc::EpubDoc;
 use image::io::Reader as ImageReader;
@@ -26,12 +25,12 @@ use crate::{
 
 pub struct LibraryFilterLens;
 
-impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
-    fn with<V, F: FnOnce(&String) -> V>(&self, data: &MockupLibrary<Book>, f: F) -> V {
+impl Lens<Library<Book>, String> for LibraryFilterLens {
+    fn with<V, F: FnOnce(&String) -> V>(&self, data: &Library<Book>, f: F) -> V {
         f(&data.filter_by)
     }
 
-    fn with_mut<V, F: FnOnce(&mut String) -> V>(&self, data: &mut MockupLibrary<Book>, f: F) -> V {
+    fn with_mut<V, F: FnOnce(&mut String) -> V>(&self, data: &mut Library<Book>, f: F) -> V {
         let mut filter = data.filter_by.to_string();
         let res = f(&mut filter);
         data.filter_by = filter.into();
@@ -42,7 +41,7 @@ impl Lens<MockupLibrary<Book>, String> for LibraryFilterLens {
 
 #[derive(Clone, Derivative, Lens, Data)]
 #[derivative(PartialEq)]
-pub struct MockupLibrary<B: GUIBook + Data> {
+pub struct Library<B: GUIBook + Data> {
     books: Vector<B>,
     selected_book: Option<usize>,
     sorted_by: SortBy,
@@ -55,7 +54,7 @@ pub struct MockupLibrary<B: GUIBook + Data> {
     pub do_paint_shadows: bool,
 }
 
-impl MockupLibrary<Book> {
+impl Library<Book> {
     pub fn new() -> Self {
         let mut lib = Self {
             books: Vector::new(),
@@ -108,7 +107,7 @@ impl MockupLibrary<Book> {
     }
 }
 
-impl GUILibrary for MockupLibrary<Book> {
+impl GUILibrary for Library<Book> {
     type B = Book;
     fn add_book(&mut self, path: impl Into<String>) {
         let path: String = path.into();
@@ -256,7 +255,7 @@ pub enum SortBy {
     PercReadRev,
 }
 
-impl MockupLibrary<Book> {
+impl Library<Book> {
     pub fn sort_by(&mut self, by: SortBy) {
         if self.sorted_by == by {
             return;

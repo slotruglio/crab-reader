@@ -1,8 +1,8 @@
 use druid::{widget::Label, Affine, Data, RenderContext, Size, Widget, WidgetPod};
 
 use crate::{
-    traits::gui::GUILibrary,
-    traits::reader::BookReading,
+    models::book::Book,
+    traits::{gui::GUILibrary, reader::BookReading},
     utils::{button_functions::change_chapter, colors},
     Library,
 };
@@ -13,7 +13,7 @@ pub struct ChapterSelector {
 
 struct ChapterSelectorItem {
     idx: usize,
-    inner: WidgetPod<Library, Box<dyn Widget<Library>>>,
+    inner: WidgetPod<Library<Book>, Box<dyn Widget<Library<Book>>>>,
     pod_size: Size,
     hot: bool,
 }
@@ -31,8 +31,9 @@ impl ChapterSelector {
 
 impl ChapterSelectorItem {
     pub fn new(idx: usize) -> Self {
-        let label = Label::dynamic(move |_: &Library, _env: &_| format!("Capitolo {}", idx + 1))
-            .with_text_color(colors::ON_PRIMARY);
+        let label =
+            Label::dynamic(move |_: &Library<Book>, _env: &_| format!("Capitolo {}", idx + 1))
+                .with_text_color(colors::ON_PRIMARY);
         let boxed = Box::new(label);
 
         Self {
@@ -44,12 +45,12 @@ impl ChapterSelectorItem {
     }
 }
 
-impl Widget<Library> for ChapterSelector {
+impl Widget<Library<Book>> for ChapterSelector {
     fn event(
         &mut self,
         ctx: &mut druid::EventCtx,
         event: &druid::Event,
-        data: &mut Library,
+        data: &mut Library<Book>,
         env: &druid::Env,
     ) {
         for child in self.children.iter_mut() {
@@ -62,7 +63,7 @@ impl Widget<Library> for ChapterSelector {
         &mut self,
         ctx: &mut druid::LifeCycleCtx,
         event: &druid::LifeCycle,
-        data: &Library,
+        data: &Library<Book>,
         env: &druid::Env,
     ) {
         let book = data.get_selected_book().unwrap();
@@ -80,8 +81,8 @@ impl Widget<Library> for ChapterSelector {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        old_data: &Library,
-        data: &Library,
+        old_data: &Library<Book>,
+        data: &Library<Book>,
         env: &druid::Env,
     ) {
         if !data.same(old_data) || ctx.env_changed() {
@@ -95,7 +96,7 @@ impl Widget<Library> for ChapterSelector {
         &mut self,
         ctx: &mut druid::LayoutCtx,
         bc: &druid::BoxConstraints,
-        data: &Library,
+        data: &Library<Book>,
         env: &druid::Env,
     ) -> druid::Size {
         let mut h = 0.0;
@@ -121,19 +122,19 @@ impl Widget<Library> for ChapterSelector {
         (w, h).into()
     }
 
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
+    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library<Book>, env: &druid::Env) {
         for child in self.children.iter_mut() {
             child.paint(ctx, data, env);
         }
     }
 }
 
-impl Widget<Library> for ChapterSelectorItem {
+impl Widget<Library<Book>> for ChapterSelectorItem {
     fn event(
         &mut self,
         ctx: &mut druid::EventCtx,
         event: &druid::Event,
-        data: &mut Library,
+        data: &mut Library<Book>,
         env: &druid::Env,
     ) {
         self.inner.event(ctx, event, data, env);
@@ -160,7 +161,7 @@ impl Widget<Library> for ChapterSelectorItem {
         &mut self,
         ctx: &mut druid::LifeCycleCtx,
         event: &druid::LifeCycle,
-        data: &Library,
+        data: &Library<Book>,
         env: &druid::Env,
     ) {
         self.inner.lifecycle(ctx, event, data, env);
@@ -169,8 +170,8 @@ impl Widget<Library> for ChapterSelectorItem {
     fn update(
         &mut self,
         ctx: &mut druid::UpdateCtx,
-        _: &Library,
-        data: &Library,
+        _: &Library<Book>,
+        data: &Library<Book>,
         env: &druid::Env,
     ) {
         self.inner.update(ctx, data, env);
@@ -180,7 +181,7 @@ impl Widget<Library> for ChapterSelectorItem {
         &mut self,
         ctx: &mut druid::LayoutCtx,
         bc: &druid::BoxConstraints,
-        data: &Library,
+        data: &Library<Book>,
         env: &druid::Env,
     ) -> druid::Size {
         let size = self.inner.layout(ctx, bc, data, env);
@@ -192,7 +193,7 @@ impl Widget<Library> for ChapterSelectorItem {
         (w, size.height).into()
     }
 
-    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library, env: &druid::Env) {
+    fn paint(&mut self, ctx: &mut druid::PaintCtx, data: &Library<Book>, env: &druid::Env) {
         // todo: chiedre a Sam un metodo per avere il chapter attualmete in lettura
         // ( è possibile solo tramite library )
         let rect = self.pod_size.to_rect();
