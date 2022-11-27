@@ -8,7 +8,7 @@ use components::mockup::{LibraryFilterLens, MockupLibrary, SortBy};
 
 use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
-use druid::widget::{Container, Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
+use druid::widget::{Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
     AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc,
 };
@@ -99,7 +99,8 @@ pub struct CrabReaderState {
     reading_state: ReadingState,
     ocr: bool,
     ocr_inverse: bool,
-    theme: CrabTheme,
+    pub theme: CrabTheme,
+    pub paint_shadows: bool,
 }
 
 impl Default for CrabReaderState {
@@ -112,6 +113,7 @@ impl Default for CrabReaderState {
             ocr: false,
             ocr_inverse: false,
             theme: CrabTheme::Light,
+            paint_shadows: false,
         }
     }
 }
@@ -264,9 +266,6 @@ fn picker_controller() -> impl Widget<Library> {
 
 fn build_ui() -> impl Widget<CrabReaderState> {
     let library_cover = CoverLibrary::new()
-        .env_scope(|env, data| {
-            env.set(DO_PAINT_SHADOWS, data.do_paint_shadows);
-        })
         .background(colors::BACKGROUND_VARIANT)
         .rounded(ROUND_FACTR)
         .lens(CrabReaderState::library);
@@ -422,10 +421,10 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
     AppLauncher::with_window(
-        WindowDesc::new(|| get_viewswitcher().env_scope(|env, data| update_theme(env, data)))
+        WindowDesc::new(get_viewswitcher().env_scope(|env, data| update_theme(env, data)))
             .title("CrabReader")
             .window_size((1280.0, 720.0))
-            .menu(ctx_menu::main_window()),
+            .menu(|_, _, _| ctx_menu::main_window()),
     )
     .delegate(delegates::ReadModeDelegate)
     .launch(crab_state)?;

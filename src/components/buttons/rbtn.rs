@@ -13,6 +13,7 @@ pub struct RoundedButton<T> {
     disable_condition: Box<dyn Fn(&T, &Env) -> bool>,
     toggle_condition: Box<dyn Fn(&T, &Env) -> bool>,
     primary: bool,
+    hot: bool,
 }
 
 #[derive(PartialEq, Clone)]
@@ -37,6 +38,7 @@ impl<T: Data> RoundedButton<T> {
             disable_condition: Box::new(|_, _| false),
             toggle_condition: Box::new(|_, _| false),
             primary: true,
+            hot: false,
         }
     }
 
@@ -101,29 +103,21 @@ impl<T: Data> RoundedButton<T> {
         }
     }
 
-    fn get_fill_color_primary(&self, _: &mut druid::PaintCtx, data: &T, env: &Env) -> Color {
-        if (self.toggle_condition)(data, env) {
-            return env.get(colors::PRIMARY_VARIANT);
-        }
-
+    fn get_fill_color_primary(&self, _: &mut druid::PaintCtx, _: &T, env: &Env) -> Color {
         match self.status {
+            ButtonStatus::Disabled => env.get(colors::PRIMARY_VARIANT).with_alpha(0.5),
             ButtonStatus::Active => env.get(colors::PRIMARY_VARIANT),
             ButtonStatus::Hot => env.get(colors::PRIMARY_ACCENT),
             ButtonStatus::Normal => env.get(colors::PRIMARY),
-            ButtonStatus::Disabled => env.get(colors::PRIMARY_VARIANT).with_alpha(0.5),
         }
     }
 
-    fn get_fill_color_secondary(&self, _: &mut druid::PaintCtx, data: &T, env: &Env) -> Color {
-        if (self.toggle_condition)(data, env) {
-            return env.get(colors::SECONDARY_VARIANT);
-        }
-
+    fn get_fill_color_secondary(&self, _: &mut druid::PaintCtx, _: &T, env: &Env) -> Color {
         match self.status {
+            ButtonStatus::Disabled => env.get(colors::SECONDARY_VARIANT).with_alpha(0.5),
             ButtonStatus::Active => env.get(colors::SECONDARY_VARIANT),
             ButtonStatus::Hot => env.get(colors::SECONDARY_ACCENT),
             ButtonStatus::Normal => env.get(colors::SECONDARY),
-            ButtonStatus::Disabled => env.get(colors::SECONDARY_VARIANT).with_alpha(0.7),
         }
     }
 }
@@ -131,6 +125,7 @@ impl<T: Data> RoundedButton<T> {
 impl<T: Data> Widget<T> for RoundedButton<T> {
     fn event(&mut self, ctx: &mut druid::EventCtx, event: &druid::Event, data: &mut T, env: &Env) {
         self.label.event(ctx, event, data, env);
+        self.hot = ctx.is_hot();
 
         match event {
             Event::MouseDown(_) => {
@@ -144,19 +139,12 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
                 if self.is_disabled() {
                     return;
                 }
-                self.status = ButtonStatus::Hot;
-                ctx.request_paint();
+                self.status = ButtonStatus::Normal;
             }
             _ => {}
         }
 
-        if self.status != ButtonStatus::Active && ctx.is_hot() {
-            self.status = ButtonStatus::Hot;
-            ctx.request_paint();
-        } else if self.status != ButtonStatus::Active && !ctx.is_hot() {
-            self.status = ButtonStatus::Normal;
-            ctx.request_paint();
-        }
+        ctx.request_update();
     }
 
     fn lifecycle(
@@ -167,30 +155,42 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
         env: &Env,
     ) {
         self.label.lifecycle(ctx, event, data, env);
-
         match event {
             HotChanged(_) => {
-                ctx.request_paint();
+                ctx.request_layout();
             }
             _ => {}
         }
     }
 
-    fn update(&mut self, ctx: &mut druid::UpdateCtx, _: &T, data: &T, env: &Env) {
+    fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
         self.label.update(ctx, data, env);
 
-        let disable = (self.disable_condition)(data, env);
-        if disable {
-            self.status = ButtonStatus::Disabled;
-            ctx.set_cursor(&NotAllowed);
-        } else if &self.status == &ButtonStatus::Active {
-            // nop
-        } else if ctx.is_hot() {
-            self.status = ButtonStatus::Hot;
-        } else {
-            self.status = ButtonStatus::Normal;
-            ctx.clear_cursor();
-        };
+        let old_status = self.status.clone();
+
+        if !old_data.same(data) {
+            let disable = (self.disable_condition)(data, env);
+            let toggle = (self.toggle_condition)(data, env);
+
+            if disable {
+                self.status = ButtonStatus::Disabled;
+                ctx.set_cursor(&NotAllowed);
+            } else if toggle {
+                self.status = ButtonStatus::Active;
+            }
+        }
+
+        if self.status == ButtonStatus::Normal || self.status == ButtonStatus::Hot {
+            if self.hot {
+                self.status = ButtonStatus::Hot;
+            } else {
+                self.status = ButtonStatus::Normal;
+            }
+        }
+
+        if self.status != old_status {
+            ctx.request_paint();
+        }
     }
 
     fn layout(
@@ -236,9 +236,5 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
             ctx.transform(Affine::translate(label_origin.to_vec2()));
             self.label.paint(ctx, data, env);
         });
-
-        if self.is_disabled() {
-            ctx.fill(rrect, &Color::rgba8(0, 0, 0, 80));
-        }
     }
 }

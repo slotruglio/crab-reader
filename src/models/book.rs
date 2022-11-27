@@ -1,28 +1,33 @@
-use std::{io::Cursor as ImageCursor, rc::Rc, string::String, sync::Arc, hash::Hash, collections::HashMap};
-use druid::{im::{Vector}, image::io::Reader as ImageReader, text::RichText, Data, Lens};
+use druid::{im::Vector, Data, Lens};
 use epub::doc::EpubDoc;
-
-use crate::{
-    MYENV,
-    traits::{gui::GUIBook, reader::{BookReading, BookManagement}, note::NoteManagement},
-    utils::{
-        envmanager::FontSize, 
-        epub_utils::{
-        calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
-        get_number_of_pages, split_chapter_in_vec
-        },
-        saveload::{
-            load_data, remove_edited_chapter, save_favorite, 
-            load_notes, save_note, delete_note, delete_all_notes
-        },
-        epub_utils, text_descriptor
-    },
+use image::io::Reader as ImageReader;
+use std::{
+    collections::HashMap, hash::Hash, io::Cursor as ImageCursor, rc::Rc, string::String, sync::Arc,
 };
 
+use crate::{
+    traits::{
+        gui::GUIBook,
+        note::NoteManagement,
+        reader::{BookManagement, BookReading},
+    },
+    utils::{
+        envmanager::FontSize,
+        epub_utils,
+        epub_utils::{
+            calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
+            get_number_of_pages, split_chapter_in_vec,
+        },
+        saveload::{
+            delete_all_notes, delete_note, load_data, load_notes, remove_edited_chapter,
+            save_favorite, save_note,
+        },
+        text_descriptor,
+    },
+    MYENV,
+};
 
 use super::note::{BookNotes, Note};
-
-
 
 const NUMBER_OF_LINES: usize = 8;
 
@@ -113,13 +118,18 @@ impl Book {
 
         let number_of_pages = match book_map.get("total_pages") {
             Some(x) => x.parse::<usize>().unwrap_or_default(),
-            None => calculate_number_of_pages(path_str, 8, MYENV.lock().unwrap().font.size).map_or(0, |(x, _)| x as usize),
+            None => calculate_number_of_pages(path_str, 8, MYENV.lock().unwrap().font.size)
+                .map_or(0, |(x, _)| x as usize),
         };
 
-        let cumulative_current_page =
-            get_cumulative_current_page_number(path_str, chapter_number, current_page, Some(book_map));
-        
-        let notes = BookNotes::default();
+        let cumulative_current_page = get_cumulative_current_page_number(
+            path_str,
+            chapter_number,
+            current_page,
+            Some(book_map),
+        );
+
+        let notes = BookNotes::with_loading(path_str.into(), chapter_number, current_page);
 
         Book {
             title: title.into(),
@@ -181,7 +191,15 @@ impl BookReading for Book {
         }
 
         let chapter_text = epub_utils::get_chapter_text(self.path.as_str(), self.chapter_number);
-        let chapter_pages = epub_utils::split_chapter_in_vec("", chapter_text, self.chapter_number, 8, 16.0, 800.0, 300.0);
+        let chapter_pages = epub_utils::split_chapter_in_vec(
+            "",
+            chapter_text,
+            self.chapter_number,
+            8,
+            16.0,
+            800.0,
+            300.0,
+        );
         for i in 0..self.current_page {
             chars += chapter_pages[i].len();
         }
@@ -207,7 +225,7 @@ impl BookReading for Book {
             self.path.as_str(),
             self.chapter_number,
             page,
-            None
+            None,
         );
         self.notes.update_current(self.chapter_number, page);
     }
@@ -329,7 +347,7 @@ impl BookManagement for Book {
                 self.path.as_str(),
                 self.chapter_number,
                 self.current_page,
-                None
+                None,
             );
         }
     }
@@ -354,14 +372,18 @@ impl BookManagement for Book {
                     self.get_path().as_str(),
                     self.chapter_number,
                     self.current_page,
-                    None
+                    None,
                 );
             }
         }
     }
 
     fn load_notes(&mut self) {
-        self.notes = BookNotes::with_loading(self.path.to_string(), self.chapter_number, self.current_page);
+        self.notes = BookNotes::with_loading(
+            self.path.to_string(),
+            self.chapter_number,
+            self.current_page,
+        );
     }
 
     fn set_favorite(&mut self, favorite: bool) {

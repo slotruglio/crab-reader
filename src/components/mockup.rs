@@ -1,8 +1,8 @@
 use derivative::Derivative;
-use druid::image::io::Reader as ImageReader;
 use druid::Selector;
 use druid::{im::Vector, Data, Lens};
 use epub::doc::EpubDoc;
+use image::io::Reader as ImageReader;
 use std::{
     io::Cursor,
     path::PathBuf,
@@ -360,8 +360,6 @@ impl Default for CoverLoader {
         }
     }
 }
-
-pub const TOGGLE_SHADOWS: Selector<()> = Selector::new("cover-library.toggle-shadows");
 
 pub struct LibrarySelectedBookLens;
 

@@ -1,4 +1,8 @@
-use druid::{commands::OPEN_FILE, AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc, widget::{Label, Flex, Align}};
+use druid::{
+    commands::OPEN_FILE,
+    widget::{Align, Flex, Label},
+    AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc,
+};
 use std::rc::Rc;
 
 use super::{
@@ -34,8 +38,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         .get_selected_book()
                         .unwrap()
                         .get_page_of_chapter(),
-                ),
-            );
+                ));
                 Handled::Yes
             }
             notif if notif.is(ENTERING_READING_MODE) => {
@@ -50,7 +53,6 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 let selected_book_mut = data.library.get_selected_book_mut().unwrap();
 
                 if data.ocr {
-                    
                     let selected_book_path = selected_book_mut.get_path();
 
                     //split by slash, get last element, split by dot, get first element
@@ -80,17 +82,17 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     }
                     data.ocr = false;
                 } else if data.ocr_inverse {
-
                     let ebook_char_count = selected_book_mut.calculate_chars_until_current_page();
 
                     let num = ocrmanager::get_physical_page(
                         file_path.to_str().unwrap().to_string(),
                         selected_book_mut.get_chapter_number(),
-                        ebook_char_count
+                        ebook_char_count,
                     );
 
                     //create two labels
-                    let message_label = Label::<CrabReaderState>::new("The page in the physical book is");
+                    let message_label =
+                        Label::<CrabReaderState>::new("The page in the physical book is");
                     let num_label = Label::<CrabReaderState>::new(num.to_string());
 
                     //get coordinates of the center of the monitor
@@ -98,13 +100,11 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     let coords = monitor.virtual_rect().center() - (150.0, 200.0);
 
                     //create a new window with these labels
-                    let win_desc = WindowDesc::new(|| 
-                        Align::centered(
-                            Flex::column()
-                                .with_child(message_label)
-                                .with_child(num_label)
-                        )
-                    )
+                    let win_desc = WindowDesc::new(Align::centered(
+                        Flex::column()
+                            .with_child(message_label)
+                            .with_child(num_label),
+                    ))
                     .title("Scan result")
                     .window_size((300.0, 200.0))
                     .resizable(false)

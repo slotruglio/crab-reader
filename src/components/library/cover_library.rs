@@ -1,16 +1,13 @@
 use druid::{
     BoxConstraints, Data, Env, Event, EventCtx, Key, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, RenderContext, Size, UpdateCtx, Widget, WidgetExt, WidgetPod,
+    Point, Size, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::{
-    components::{
-        book::book_cover::{BookCover, BOOK_WIDGET_SIZE},
-        mockup::TOGGLE_SHADOWS,
-    },
+    components::book::book_cover::{BookCover, BOOK_WIDGET_SIZE},
     models::book::Book,
     traits::gui::{GUIBook, GUILibrary},
-    utils::{colors, library::SELECTED_BOOK_SELECTOR},
+    utils::library::SELECTED_BOOK_SELECTOR,
     Library,
 };
 
@@ -59,11 +56,6 @@ impl Widget<Library> for CoverLibrary {
                         data.unselect_current_book();
                     }
                     ctx.request_paint();
-                }
-            }
-            Event::Command(cmd) => {
-                if cmd.is(TOGGLE_SHADOWS) {
-                    data.do_paint_shadows = !data.do_paint_shadows;
                 }
             }
             _ => {}

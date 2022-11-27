@@ -8,7 +8,7 @@ use druid::{
     Color, Data, Env, Key, Selector,
 };
 
-use crate::CrabReaderState;
+use crate::{components::library::cover_library::DO_PAINT_SHADOWS, CrabReaderState};
 
 pub struct ColorSetInner {
     primary: Color,
@@ -117,4 +117,5 @@ pub fn update_theme(env: &mut Env, data: &CrabReaderState) {
         theme.primary_variant.clone().with_alpha(0.6),
     );
     env.set(SCROLLBAR_EDGE_WIDTH, 2.0);
+    env.set(DO_PAINT_SHADOWS, data.paint_shadows)
 }

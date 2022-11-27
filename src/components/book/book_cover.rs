@@ -2,7 +2,7 @@ use druid::{
     piet::{ImageFormat, InterpolationMode, PietImage},
     widget::Label,
     BoxConstraints, Color, Command,
-    Cursor::OpenHand,
+    Cursor::Pointer,
     Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
     Size, Target, TextLayout, UpdateCtx, Widget, WidgetPod,
 };
@@ -133,7 +133,7 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
         self.star.event(ctx, event, data, env);
 
         if ctx.is_hot() {
-            ctx.set_cursor(&OpenHand);
+            ctx.set_cursor(&Pointer);
         } else {
             ctx.clear_cursor();
         }
