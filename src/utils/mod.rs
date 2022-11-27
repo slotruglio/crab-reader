@@ -8,6 +8,7 @@ pub mod epub_utils;
 pub mod fonts;
 pub mod library;
 pub mod ocrmanager;
+pub mod rich_text_fn;
 pub mod saveload;
 pub mod text_descriptor;
-pub mod rich_text_fn;
+pub mod thread_loader;
