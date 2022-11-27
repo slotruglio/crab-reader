@@ -161,35 +161,30 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
             }
             _ => {}
         }
-    }
 
-    fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
-        self.label.update(ctx, data, env);
-
+        let disable = (self.disable_condition)(data, env);
+        let toggle = (self.toggle_condition)(data, env);
         let old_status = self.status.clone();
 
-        if !old_data.same(data) {
-            let disable = (self.disable_condition)(data, env);
-            let toggle = (self.toggle_condition)(data, env);
-
-            if disable {
-                self.status = ButtonStatus::Disabled;
-                ctx.set_cursor(&NotAllowed);
-            } else if toggle {
-                self.status = ButtonStatus::Active;
-            }
-        }
-
-        if self.status == ButtonStatus::Normal || self.status == ButtonStatus::Hot {
-            if self.hot {
-                self.status = ButtonStatus::Hot;
-            } else {
-                self.status = ButtonStatus::Normal;
-            }
+        if disable {
+            self.status = ButtonStatus::Disabled;
+        } else if toggle {
+            self.status = ButtonStatus::Active;
+        } else if self.hot {
+            self.status = ButtonStatus::Hot;
+        } else {
+            self.status = ButtonStatus::Normal;
         }
 
         if self.status != old_status {
             ctx.request_paint();
+        }
+    }
+
+    fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
+        self.label.update(ctx, data, env);
+        if self.status == ButtonStatus::Disabled {
+            ctx.set_cursor(&NotAllowed);
         }
     }
 
