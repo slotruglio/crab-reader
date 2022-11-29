@@ -14,13 +14,13 @@ use druid::{
 };
 
 use once_cell::sync::Lazy;
-use utils::saveload::copy_book_in_folder;
 use std::rc::Rc;
 use std::sync::Mutex;
 use traits::gui::{GUIBook, GUILibrary};
 use utils::colors::{update_theme, CrabTheme};
 use utils::envmanager::MyEnv;
 use utils::fonts::Font;
+use utils::saveload::copy_book_in_folder;
 use utils::{ctx_menu, delegates};
 
 mod components;
@@ -265,11 +265,10 @@ fn picker_controller() -> impl Widget<Library<Book>> {
 }
 
 fn build_ui() -> impl Widget<CrabReaderState> {
-
     let add_btn = RoundedButton::from_text("Aggiungi libro")
         .with_text_size(18.0)
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            let str = "/Users/slotruglio/pds/crab-reader/epubs/vasari_le_vite_dei_piu_eccellenti_pittori_etc.epub";
+            let str = "/home/cocco/Documenti/progetto-pds/crab-reader/epubs/Al cuore dell'Italia - Giulia Pompili, Valerio Valenti.epub";
             data.library.add_book(str);
             if let Ok(_) = copy_book_in_folder(&str.to_string()) {
                 println!("Copied book in folder");

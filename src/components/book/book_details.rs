@@ -121,15 +121,14 @@ impl BookDetails {
             .with_on_click(|ctx, library: &mut Library<Book>, _: &Env| {
                 if let Some(book) = library.get_selected_book() {
                     // remove book from epubs and saved_books
-                    if let Ok(_ ) = delete_book(&book.get_path(), &book.get_title()){
+                    if let Ok(_) = delete_book(&book.get_path()) {
                         // remove book from library
                         library.remove_book(book.get_index());
                         println!("Eliminato libro");
-                        ctx.request_update();
+                        ctx.children_changed();
                     } else {
                         println!("Errore eliminazione libro");
                     }
-
                 }
             })
             .with_text_color(colors::ON_PRIMARY)

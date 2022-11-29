@@ -1,6 +1,8 @@
 use druid::{
-    widget::{Container, Either, Flex, Label, LineBreaking, RawLabel, Scroll, TextBox},
-    FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
+    widget::{
+        Container, Either, Flex, Label, LineBreaking, RawLabel, Scroll, TextBox, ViewSwitcher,
+    },
+    Data, Env, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
 };
 
 use crate::{
@@ -14,6 +16,7 @@ use crate::{
     CrabReaderState, ReadingState, MYENV,
 };
 
+#[derive(Clone, PartialEq, Data)]
 pub enum ReaderView {
     Single,
     SingleEdit,
@@ -22,37 +25,37 @@ pub enum ReaderView {
 }
 
 impl ReaderView {
-    pub fn get_view(&self) -> impl Widget<CrabReaderState> {
+    pub fn get_view(&self) -> Box<dyn Widget<CrabReaderState>> {
         let myenv = MYENV.lock().unwrap();
         let font = myenv.font.clone();
         let font_color = myenv.font_color.clone();
 
         match self {
             ReaderView::Single => single_view_widget(font),
-            ReaderView::SingleEdit => single_view_edit_widget(font), // single_view_edit_widget(font, font_color),
+            ReaderView::SingleEdit => single_view_edit_widget(font),
             ReaderView::Dual => dual_view_widget(font),
             ReaderView::DualEdit => dual_view_edit_widget(font),
         }
+        .boxed()
     }
 
     /// Returns a widget with the correct widget to show page(s) in reading or edit mode
     pub fn dynamic_view() -> impl Widget<CrabReaderState> {
-        Either::new(
-            |data: &CrabReaderState, _env| data.reading_state.single_view,
-            Either::new(
-                |data: &CrabReaderState, _env| data.reading_state.is_editing,
-                ReaderView::SingleEdit.get_view(),
-                ReaderView::Single.get_view(),
-            ),
-            Either::new(
-                |data: &CrabReaderState, _env| data.reading_state.is_editing,
-                ReaderView::DualEdit.get_view(),
-                ReaderView::Dual.get_view(),
-            ),
-        )
-        .background(colors::BACKGROUND)
-        .center()
-        .expand()
+        let child_picker = |data: &CrabReaderState, _env: &_| match (
+            data.reading_state.single_view,
+            data.reading_state.is_editing,
+        ) {
+            (true, true) => ReaderView::SingleEdit,
+            (true, false) => ReaderView::Single,
+            (false, true) => ReaderView::DualEdit,
+            (false, false) => ReaderView::Dual,
+        };
+
+        let child_builder = |view: &ReaderView, _data: &CrabReaderState, env: &Env| view.get_view();
+        ViewSwitcher::new(child_picker, child_builder)
+            .background(colors::BACKGROUND)
+            .center()
+            .expand()
     }
 }
 

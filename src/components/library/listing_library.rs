@@ -66,12 +66,20 @@ where
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &L, env: &Env) {
+        if self.children.len() > data.number_of_books() {
+            self.children.truncate(data.number_of_books());
+        }
+
         while data.number_of_books() > self.children.len() {
             self.add_child();
+            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if !event.should_propagate_to_hidden() && !inner.is_initialized() {
+                    continue;
+                }
                 inner.lifecycle(ctx, event, book, env);
             }
         }
@@ -80,10 +88,12 @@ where
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &L, data: &L, env: &Env) {
         if data.get_sort_order() != old_data.get_sort_order() {
             self.children.clear();
+            ctx.children_changed();
         }
 
         if data.only_fav() != old_data.only_fav() {
             self.children.clear();
+            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
