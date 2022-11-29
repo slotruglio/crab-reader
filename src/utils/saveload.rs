@@ -540,6 +540,32 @@ pub fn delete_all_notes<T: Into<String> + Clone>(
     Ok(())
 }
 
+
+pub fn delete_book(book_path: &String, title: &String) -> Result<(), Box<dyn std::error::Error>> {
+    // delete book from file
+    if Path::new(book_path).exists() {
+        // remove from saved_books
+        let saved_book = get_saved_books_dir().join(title);
+        std::fs::remove_dir_all(saved_book)?;
+        
+        // remove from epubs dir
+        std::fs::remove_file(book_path)?;
+    }  
+
+    Ok(())
+}
+
+pub fn copy_book_in_folder(from: &String) -> Result<(), Box<dyn std::error::Error>> {
+    let path = Path::new(from);
+    if !path.exists() {
+        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found")));
+    }
+
+    let to = get_epub_dir().join(path.file_name().unwrap());
+    std::fs::copy(from, to)?;
+    Ok(())
+}
+
 /*
 #[cfg(test)]
 mod tests {

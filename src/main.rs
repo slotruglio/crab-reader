@@ -14,6 +14,7 @@ use druid::{
 };
 
 use once_cell::sync::Lazy;
+use utils::saveload::copy_book_in_folder;
 use std::rc::Rc;
 use std::sync::Mutex;
 use traits::gui::{GUIBook, GUILibrary};
@@ -264,6 +265,22 @@ fn picker_controller() -> impl Widget<Library<Book>> {
 }
 
 fn build_ui() -> impl Widget<CrabReaderState> {
+
+    let add_btn = RoundedButton::from_text("Aggiungi libro")
+        .with_text_size(18.0)
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+            let str = "/Users/slotruglio/pds/crab-reader/epubs/vasari_le_vite_dei_piu_eccellenti_pittori_etc.epub";
+            data.library.add_book(str);
+            if let Ok(_) = copy_book_in_folder(&str.to_string()) {
+                println!("Copied book in folder");
+            } else {
+                println!("Error copying book in folder");
+            }
+            ctx.request_update();
+        })
+        .with_text_color(colors::ON_PRIMARY)
+        .padding(5.0);
+
     let library_cover = CoverLibrary::new()
         .background(colors::BACKGROUND_VARIANT)
         .rounded(ROUND_FACTR)
@@ -290,6 +307,9 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .align_vertical(UnitPoint::TOP);
     let right_panel = Scroll::new(book_details_panel()).vertical();
     let right_col = Flex::column()
+        .must_fill_main_axis(true)
+        .with_child(add_btn)
+        .with_default_spacer()
         .with_child(
             RoundedButton::dynamic(
                 |data: &CrabReaderState, _env: &Env| match data.display_mode {
@@ -305,8 +325,9 @@ fn build_ui() -> impl Widget<CrabReaderState> {
                 ctx.request_update();
             })
             .with_text_color(colors::ON_PRIMARY)
-            .padding((0.0, 20.0)),
+            .padding(5.0),
         )
+        .with_default_spacer()
         .with_flex_child(right_panel, 1.0)
         .padding(10.0);
 

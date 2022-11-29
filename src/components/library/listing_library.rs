@@ -68,7 +68,6 @@ where
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &L, env: &Env) {
         while data.number_of_books() > self.children.len() {
             self.add_child();
-            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
@@ -81,12 +80,10 @@ where
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &L, data: &L, env: &Env) {
         if data.get_sort_order() != old_data.get_sort_order() {
             self.children.clear();
-            ctx.children_changed();
         }
 
         if data.only_fav() != old_data.only_fav() {
             self.children.clear();
-            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
