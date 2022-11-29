@@ -217,7 +217,13 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
             Event::KeyDown(key_event) => {
                 let key = key_event.code;
 
+                #[cfg(not(target_os = "macos"))]
                 if !key_event.mods.ctrl() {
+                    return Some(event);
+                };
+
+                #[cfg(target_os = "macos")]
+                if !key_event.mods.meta() {
                     return Some(event);
                 };
 
