@@ -69,6 +69,9 @@ impl Widget<Library<Book>> for CoverLibrary {
         data: &Library<Book>,
         env: &Env,
     ) {
+        if self.children.len() > data.number_of_books() {
+            self.children.truncate(data.number_of_books());
+        }
         while self.children.len() < data.number_of_books() {
             self.add_child();
             ctx.children_changed();
@@ -76,6 +79,9 @@ impl Widget<Library<Book>> for CoverLibrary {
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if !event.should_propagate_to_hidden() && !inner.is_initialized() {
+                    continue;
+                }
                 inner.lifecycle(ctx, event, book, env);
             }
         }
@@ -90,7 +96,6 @@ impl Widget<Library<Book>> for CoverLibrary {
     ) {
         if old_data.get_sort_order() != data.get_sort_order() {
             self.children.clear();
-            ctx.children_changed();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
