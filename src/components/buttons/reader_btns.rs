@@ -12,7 +12,7 @@ use crate::{
         },
         envmanager::FontSize,
     },
-    models::book::Book,
+    models::{book::Book, command::Trigger},
 };
 
 use super::rbtn::RoundedButton;
@@ -247,7 +247,7 @@ pub fn ocr_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Sincronizza ebook 📷")
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
 
-            data.ocr = true;
+            data.open_file_trigger = Trigger::OCR;
 
             //Trigger a FILE PICKER
             let cmd = Command::new(
@@ -264,7 +264,7 @@ pub fn ocr_inverse_btn() -> RoundedButton<CrabReaderState> {
     RoundedButton::from_text("Ottieni pagina 📖")
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
 
-            data.ocr_inverse = true;
+            data.open_file_trigger = Trigger::OCRINVERSE;
 
             //Trigger a FILE PICKER
             let cmd = Command::new(

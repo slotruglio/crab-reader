@@ -4,13 +4,15 @@ use components::book::book_details::BookDetails;
 use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
 use components::library::cover_library::CoverLibrary;
 use components::library::listing_library::ListLibrary;
+use druid::commands::{SHOW_OPEN_PANEL, OPEN_FILE};
+use models::command::Trigger;
 use models::library::{Library, LibraryFilterLens, SortBy};
 
 use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
 use druid::widget::{Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
-    AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc,
+    AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc, Command, FileDialogOptions, Target, FileSpec,
 };
 
 use once_cell::sync::Lazy;
@@ -20,7 +22,6 @@ use traits::gui::{GUIBook, GUILibrary};
 use utils::colors::{update_theme, CrabTheme};
 use utils::envmanager::MyEnv;
 use utils::fonts::Font;
-use utils::saveload::copy_book_in_folder;
 use utils::{ctx_menu, delegates};
 
 mod components;
@@ -97,8 +98,8 @@ pub struct CrabReaderState {
     display_mode: DisplayMode,
     reading: bool,
     reading_state: ReadingState,
-    ocr: bool,
-    ocr_inverse: bool,
+    #[data(ignore)]
+    open_file_trigger: Trigger,
     pub theme: CrabTheme,
     pub paint_shadows: bool,
 }
@@ -110,8 +111,7 @@ impl Default for CrabReaderState {
             display_mode: DisplayMode::Cover,
             reading: false,
             reading_state: ReadingState::default(),
-            ocr: false,
-            ocr_inverse: false,
+            open_file_trigger: Trigger::default(),
             theme: CrabTheme::Light,
             paint_shadows: false,
         }
@@ -268,14 +268,18 @@ fn build_ui() -> impl Widget<CrabReaderState> {
     let add_btn = RoundedButton::from_text("Aggiungi libro")
         .with_text_size(18.0)
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-            let str = "/home/cocco/Documenti/progetto-pds/crab-reader/epubs/Al cuore dell'Italia - Giulia Pompili, Valerio Valenti.epub";
-            data.library.add_book(str);
-            if let Ok(_) = copy_book_in_folder(&str.to_string()) {
-                println!("Copied book in folder");
-            } else {
-                println!("Error copying book in folder");
-            }
+
+            data.open_file_trigger = Trigger::ADDBOOK;
+
+            //Trigger a FILE PICKER
+            let cmd = Command::new(
+                SHOW_OPEN_PANEL,
+                FileDialogOptions::new().allowed_types(vec![FileSpec::new("Epub", &["epub"])]),
+                Target::Auto,
+            );
             ctx.request_update();
+            ctx.submit_command(cmd);
+
         })
         .with_text_color(colors::ON_PRIMARY)
         .padding(5.0);

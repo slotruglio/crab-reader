@@ -570,13 +570,13 @@ pub fn delete_all_notes<T: Into<String> + Clone>(
     Ok(())
 }
 
+
 pub fn delete_book(book_path: &String) -> Result<(), Box<dyn std::error::Error>> {
-    // delete book from file
     let epub = Path::new(book_path);
+    // delete book from file
     if epub.exists() {
         // remove from saved_books
-        let stem = epub.file_stem().unwrap();
-        let saved_book = get_saved_books_dir().join(stem);
+        let saved_book = get_saved_books_dir().join(epub.file_stem().unwrap());
         std::fs::remove_dir_all(saved_book)?;
 
         // remove from epubs dir
