@@ -3,19 +3,23 @@ use druid::{
     widget::{Align, Flex, Label, LineBreaking},
     AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc,
 };
-use std::{rc::Rc, path::Path};
+use std::{path::Path, rc::Rc};
 
 use super::{
     button_functions::{self, go_next, go_prev},
     colors::SWITCH_THEME,
 };
 use crate::{
-    models::{library::{SortBy, Library}, command::Trigger, book::Book},
+    models::{
+        book::Book,
+        command::Trigger,
+        library::{Library, SortBy},
+    },
     traits::{
         gui::{GUIBook, GUILibrary},
         reader::{BookManagement, BookReading},
     },
-    utils::{ocrmanager, saveload::copy_book_in_folder, dir_manager::get_epub_dir},
+    utils::{dir_manager::get_epub_dir, ocrmanager, saveload::copy_book_in_folder},
     CrabReaderState, DisplayMode, ENTERING_READING_MODE,
 };
 
@@ -54,7 +58,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 // function to do if open file is triggered for ocr
                 fn ocr_fn(file_path: &Path, selected_book_mut: &mut Book) {
                     let selected_book_path = selected_book_mut.get_path();
-                    
+
                     //split by slash, get last element, split by dot, get first element
                     let folder_name = selected_book_path
                         .split("/")
@@ -83,7 +87,11 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 }
 
                 // function to do if open file is triggered for ocr inverse
-                fn ocr_inverse_fn(file_path: &Path, selected_book_mut: &mut Book, delegate_ctx: &mut druid::DelegateCtx) {
+                fn ocr_inverse_fn(
+                    file_path: &Path,
+                    selected_book_mut: &mut Book,
+                    delegate_ctx: &mut druid::DelegateCtx,
+                ) {
                     let ebook_char_count = selected_book_mut.calculate_chars_until_current_page();
 
                     let num = ocrmanager::get_physical_page(
@@ -116,75 +124,79 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 }
 
                 // function to do if open file is triggered for add book
-                fn add_book_fn(file_path: &Path, library: &mut Library<Book>, delegate_ctx: &mut druid::DelegateCtx) {
+                fn add_book_fn(
+                    file_path: &Path,
+                    library: &mut Library<Book>,
+                    delegate_ctx: &mut druid::DelegateCtx,
+                ) {
                     let book_str = file_path.to_str().unwrap();
-                        let book_path = Path::new(book_str);
+                    let book_path = Path::new(book_str);
 
-                        let mut label_text = format!("Il libro {} è stato aggiunto alla libreria", book_str);
-                        let mut title = "Libro aggiunto".to_string();
+                    let mut label_text =
+                        format!("Il libro {} è stato aggiunto alla libreria", book_str);
+                    let mut title = "Libro aggiunto".to_string();
 
-                        // check if book_path is a file from the epub folder
-                        let epub_dir = get_epub_dir();
-                        let file_name = book_path.file_name().unwrap();
+                    // check if book_path is a file from the epub folder
+                    let epub_dir = get_epub_dir();
+                    let file_name = book_path.file_name().unwrap();
 
-                        let mut exists = false;
+                    let mut exists = false;
 
-                        for path in epub_dir.read_dir().unwrap() {
-                            if path.unwrap().file_name() == file_name {
-                                exists = true;
-                                break;
-                            }
+                    for path in epub_dir.read_dir().unwrap() {
+                        if path.unwrap().file_name() == file_name {
+                            exists = true;
+                            break;
                         }
+                    }
 
-                        // if exists a book with the same name in the epub folder
-                        // or if the book is already in the library
-                        // then don't add it
-                        if exists || book_path == epub_dir.join(file_name) {
-                            println!("Book already in epub folder");
-                            title = "Libro già presente".to_string();
-                            label_text = "Il libro è già presente nella libreria, non puoi aggiungerlo".to_string();
-                        
+                    // if exists a book with the same name in the epub folder
+                    // or if the book is already in the library
+                    // then don't add it
+                    if exists || book_path == epub_dir.join(file_name) {
+                        println!("Book already in epub folder");
+                        title = "Libro già presente".to_string();
+                        label_text = "Il libro è già presente nella libreria, non puoi aggiungerlo"
+                            .to_string();
+                    } else {
+                        if let Ok(_) = copy_book_in_folder(&book_str.to_string()) {
+                            println!("Copied book in folder");
+
+                            let real_path = get_epub_dir().join(book_path.file_name().unwrap());
+                            if real_path.exists() {
+                                // library.add_book(real_path.to_str().unwrap());
+                                library.schedule_book_loading(real_path.to_str().unwrap());
+                            }
                         } else {
-
-                            if let Ok(_) = copy_book_in_folder(&book_str.to_string()) {
-                                println!("Copied book in folder");
-
-                                let real_path = get_epub_dir().join(book_path.file_name().unwrap());
-                                if real_path.exists() {
-                                    library.add_book(real_path.to_str().unwrap());
-                                }
-                            } else {
-                                println!("Error copying book in folder");
-                            }
+                            println!("Error copying book in folder");
                         }
+                    }
 
-                        //get coordinates of the center of the monitor
-                        let monitor = &druid::Screen::get_monitors()[0];
-                        let coords = monitor.virtual_rect().center() - (150.0, 200.0);
-                        
-                        //create a new window with these labels
-                        let win_desc = WindowDesc::new(Align::centered(
-                            Label::<CrabReaderState>::new(label_text)
-                            .with_line_break_mode(LineBreaking::WordWrap)
-                        ))
-                        .title(title)
-                        .window_size((400.0, 100.0))
-                        .resizable(true)
-                        .set_position(coords);
+                    //get coordinates of the center of the monitor
+                    let monitor = &druid::Screen::get_monitors()[0];
+                    let coords = monitor.virtual_rect().center() - (150.0, 200.0);
 
-                        delegate_ctx.new_window(win_desc);
+                    //create a new window with these labels
+                    let win_desc = WindowDesc::new(Align::centered(
+                        Label::<CrabReaderState>::new(label_text)
+                            .with_line_break_mode(LineBreaking::WordWrap),
+                    ))
+                    .title(title)
+                    .window_size((400.0, 100.0))
+                    .resizable(true)
+                    .set_position(coords);
+
+                    delegate_ctx.new_window(win_desc);
                 }
 
                 match data.open_file_trigger {
-                    Trigger::OCR => ocr_fn(
-                        file_path, 
-                        data.library.get_selected_book_mut().unwrap()
-                    ),
+                    Trigger::OCR => {
+                        ocr_fn(file_path, data.library.get_selected_book_mut().unwrap())
+                    }
 
                     Trigger::OCRINVERSE => ocr_inverse_fn(
-                        file_path, 
-                        data.library.get_selected_book_mut().unwrap(), 
-                        delegate_ctx
+                        file_path,
+                        data.library.get_selected_book_mut().unwrap(),
+                        delegate_ctx,
                     ),
 
                     Trigger::ADDBOOK => add_book_fn(file_path, &mut data.library, delegate_ctx),

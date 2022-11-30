@@ -102,8 +102,10 @@ pub trait GUIBook: PartialEq + Data {
 /// in order to be rendered correctly in the GUI of the application
 pub trait GUILibrary {
     type B;
+    fn schedule_book_loading(&mut self, path: impl Into<String>);
+
     /// Add a book to the library
-    fn add_book(&mut self, book: impl Into<String>);
+    fn add_book(&mut self, book: Self::B);
 
     /// Remove a book from the library
     /// The `idx` argument is the index in the array (relax this constraint??)
@@ -141,6 +143,9 @@ pub trait GUILibrary {
 
     /// Schedule the loading of a book.
     fn schedule_cover_loading(&mut self, path: impl Into<String>, idx: usize);
+
+    /// Check books loaded
+    fn check_books_loaded(&mut self) -> bool;
 
     /// Check if any covers are loaded and set the cover for the corresponding book
     fn check_covers_loaded(&mut self) -> bool;

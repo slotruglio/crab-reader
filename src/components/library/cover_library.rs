@@ -55,6 +55,10 @@ impl Widget<Library<Book>> for CoverLibrary {
             }
         }
 
+        if data.check_books_loaded() {
+            ctx.request_layout();
+        }
+
         if data.check_covers_loaded() {
             ctx.request_update();
         }

@@ -4,6 +4,7 @@ use epub::doc::EpubDoc;
 use image::io::Reader as ImageReader;
 use std::{io::Cursor, path::PathBuf, rc::Rc, sync::Arc};
 
+use crate::traits::reader::BookManagement;
 use crate::utils::thread_loader::{ThreadLoader, ThreadResult};
 use crate::{
     models::book::Book,
@@ -42,6 +43,9 @@ pub struct Library<B: GUIBook + Data> {
     #[data(ignore)]
     #[derivative(PartialEq = "ignore")]
     cover_loader: Arc<ThreadLoader<Vec<u8>>>,
+    #[data(ignore)]
+    #[derivative(PartialEq = "ignore")]
+    book_loader: Arc<ThreadLoader<Book>>,
     pub do_paint_shadows: bool,
 }
 
@@ -54,6 +58,7 @@ impl Library<Book> {
             filter_by: String::default().into(),
             visible_books: 0,
             cover_loader: ThreadLoader::default().into(),
+            book_loader: ThreadLoader::default().into(),
             filter_fav: false,
             do_paint_shadows: false,
         };
@@ -62,8 +67,7 @@ impl Library<Book> {
             for path in paths {
                 let path: String = path.to_str().unwrap().to_string();
                 let idx = lib.books.len();
-                lib.add_book(&path);
-                lib.schedule_cover_loading(&path, idx);
+                lib.schedule_book_loading(&path);
             }
         }
         lib
@@ -92,18 +96,51 @@ impl Library<Book> {
 
 impl GUILibrary for Library<Book> {
     type B = Book;
-    fn add_book(&mut self, path: impl Into<String>) {
-        let path: String = path.into();
-        let file_name = path.split("/").last().unwrap();
-        let folder_name = file_name.split(".").next().unwrap();
-        // extract metadata and chapters
-        if !get_saved_books_dir().join(folder_name).exists() {
-            let _res = epub_utils::extract_all(&path)
-                .expect(format!("Failed to extract {}", file_name).as_str());
-        }
+    // fn add_book(&mut self, path: impl Into<String>) {
+    // let path: String = path.into();
+    // let file_name = path.split("/").last().unwrap();
+    // let folder_name = file_name.split(".").next().unwrap();
+    // // extract metadata and chapters
+    // if !get_saved_books_dir().join(folder_name).exists() {
+    // let _res = epub_utils::extract_all(&path)
+    // .expect(format!("Failed to extract {}", file_name).as_str());
+    // }
 
-        let book = Book::new(path).with_index(self.books.len());
-        self.books.push_back(book);
+    // let book = Book::new(path).with_index(self.books.len());
+    // self.books.push_back(book);
+    // self.visible_books += 1;
+    // }
+    fn check_books_loaded(&mut self) -> bool {
+        if let Some(result) = self.book_loader.try_recv() {
+            self.add_book(result.value());
+            true
+        } else {
+            false
+        }
+    }
+
+    fn schedule_book_loading(&mut self, path: impl Into<String>) {
+        let path = path.into();
+        let tx = self.book_loader.tx();
+        self.book_loader.execute(move || {
+            let file_name = path.split("/").last().unwrap();
+            let folder = file_name.split(".").next().unwrap();
+            if !get_saved_books_dir().join(folder).exists() {
+                let _res = epub_utils::extract_all(&path)
+                    .expect(format!("Failed to extract {}", file_name).as_str());
+            }
+            let book = Book::new(&path);
+            let result = ThreadResult::new(book, 0);
+            tx.send(result)
+                .expect(format!("Failed to send {}", file_name).as_str());
+        });
+    }
+
+    fn add_book(&mut self, book: Self::B) {
+        let idx = self.books.len();
+        let path = book.get_path().clone();
+        self.books.push_back(book.with_index(idx));
+        self.schedule_cover_loading(path, idx);
         self.visible_books += 1;
     }
 

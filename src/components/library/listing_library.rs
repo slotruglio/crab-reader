@@ -60,6 +60,10 @@ where
     B: GUIBook,
 {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut L, env: &Env) {
+        if data.check_books_loaded() {
+            ctx.request_layout();
+        }
+
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book_mut(idx) {
                 inner.event(ctx, event, book, env);
