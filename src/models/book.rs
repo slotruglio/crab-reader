@@ -1,14 +1,22 @@
-use druid::{im::Vector, Data, Lens};
+use derivative::Derivative;
+use druid::{
+    im::Vector,
+    piet::{Error, ImageFormat, PietImage},
+    Data, Lens, PaintCtx, RenderContext,
+};
 use epub::doc::EpubDoc;
 use image::io::Reader as ImageReader;
 use std::{
-    collections::HashMap, hash::Hash, io::Cursor as ImageCursor, rc::Rc, string::String, sync::Arc,
+    cell::{Ref, RefCell},
+    io::Cursor as ImageCursor,
+    rc::Rc,
+    string::String,
+    sync::Arc,
 };
 
 use crate::{
     traits::{
         gui::GUIBook,
-        note::NoteManagement,
         reader::{BookManagement, BookReading},
     },
     utils::{
@@ -16,24 +24,21 @@ use crate::{
         epub_utils,
         epub_utils::{
             calculate_number_of_pages, edit_chapter, get_cumulative_current_page_number,
-            get_number_of_pages, split_chapter_in_vec,
+            split_chapter_in_vec,
         },
-        saveload::{
-            delete_all_notes, delete_note, load_data, load_notes, remove_edited_chapter,
-            save_favorite, save_note,
-        },
-        text_descriptor,
+        saveload::{load_data, remove_edited_chapter, save_favorite},
     },
     MYENV,
 };
 
-use super::note::{BookNotes, Note};
+use super::note::BookNotes;
 
 const NUMBER_OF_LINES: usize = 8;
 
 /// Struct that models EPUB file
 /// Metadata are attributes
-#[derive(PartialEq, Clone, Data, Lens)]
+#[derive(Derivative, Clone, Data, Lens)]
+#[derivative(PartialEq)]
 pub struct Book {
     chapter_number: usize,
     current_page: usize,
@@ -49,7 +54,10 @@ pub struct Book {
     is_favorite: bool,
     chapter_text_split: Vector<String>,
     description: Rc<String>,
-    cover_img: Arc<Vec<u8>>,
+    cover_buffer: Arc<Vec<u8>>,
+    #[derivative(PartialEq = "ignore")]
+    #[data(ignore)]
+    cover_image: RefCell<Option<PietImage>>,
     filtered_out: bool,
     notes: BookNotes,
 }
@@ -72,7 +80,8 @@ impl Book {
             is_favorite: false,
             chapter_text_split: vec![].into(),
             description: e.clone(),
-            cover_img: vec![].into(),
+            cover_buffer: vec![].into(),
+            cover_image: None.into(),
             filtered_out: true,
             notes: BookNotes::default(),
         }
@@ -146,7 +155,8 @@ impl Book {
             selected: false,
             description: desc.into(),
             chapter_text_split: Vector::new(),
-            cover_img: vec![].into(),
+            cover_buffer: vec![].into(),
+            cover_image: None.into(),
             filtered_out: false,
             notes: notes,
         }
@@ -517,8 +527,8 @@ impl GUIBook for Book {
         Ok(rgb.into())
     }
 
-    fn get_cover_image(&self) -> Arc<Vec<u8>> {
-        self.cover_img.clone()
+    fn get_cover_buffer(&self) -> Arc<Vec<u8>> {
+        self.cover_buffer.clone()
     }
 
     fn is_filtered_out(&self) -> bool {
@@ -529,11 +539,23 @@ impl GUIBook for Book {
         self.filtered_out = filtered_out;
     }
 
-    fn set_cover_image(&mut self, cover_image: Vec<u8>) {
-        self.cover_img = cover_image.into();
+    fn set_cover_buffer(&mut self, cover_image: Vec<u8>) {
+        self.cover_buffer = cover_image.into();
     }
 
     fn is_favorite(&self) -> bool {
         self.is_favorite
+    }
+
+    fn set_cover_image(&self, ctx: &mut PaintCtx) -> Result<(), Error> {
+        let mut inner = self.cover_image.borrow_mut();
+        let buf = self.get_cover_buffer();
+        let img = ctx.make_image(150, 250, &buf, ImageFormat::Rgb)?;
+        inner.replace(img);
+        Ok(())
+    }
+
+    fn get_cover_image(&self) -> Ref<Option<PietImage>> {
+        self.cover_image.borrow()
     }
 }

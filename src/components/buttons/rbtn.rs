@@ -52,11 +52,6 @@ impl<T: Data> RoundedButton<T> {
         RoundedButton::new(label)
     }
 
-    pub fn with_text_size(mut self, size: f64) -> Self {
-        self.label.widget_mut().set_text_size(size);
-        self
-    }
-
     fn is_disabled(&self) -> bool {
         self.status == ButtonStatus::Disabled
     }
@@ -181,7 +176,7 @@ impl<T: Data> Widget<T> for RoundedButton<T> {
         }
     }
 
-    fn update(&mut self, ctx: &mut druid::UpdateCtx, old_data: &T, data: &T, env: &Env) {
+    fn update(&mut self, ctx: &mut druid::UpdateCtx, _: &T, data: &T, env: &Env) {
         self.label.update(ctx, data, env);
         if self.status == ButtonStatus::Disabled {
             ctx.set_cursor(&NotAllowed);

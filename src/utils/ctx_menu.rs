@@ -1,5 +1,5 @@
 use crate::CrabReaderState;
-use druid::{LocalizedString, Menu, MenuItem};
+use druid::{Menu, MenuItem};
 
 use super::colors::CrabTheme;
 
@@ -34,27 +34,27 @@ pub fn main_window() -> Menu<CrabReaderState> {
 
 fn theme() -> Menu<CrabReaderState> {
     let light = MenuItem::new("Chiaro")
-        .on_activate(|ctx, data: &mut CrabReaderState, env| {
+        .on_activate(|_, data: &mut CrabReaderState, _| {
             data.theme = CrabTheme::Light;
         })
-        .selected_if(|data, theme| data.theme == CrabTheme::Light);
+        .selected_if(|data, _| data.theme == CrabTheme::Light);
     let sepia = MenuItem::new("Sepia")
-        .on_activate(|ctx, data: &mut CrabReaderState, env| {
+        .on_activate(|_, data: &mut CrabReaderState, _| {
             data.theme = CrabTheme::Sepia;
         })
-        .selected_if(|data, env| data.theme == CrabTheme::Sepia);
+        .selected_if(|data, _| data.theme == CrabTheme::Sepia);
     let dark = MenuItem::new("Scuro")
-        .on_activate(|ctx, data: &mut CrabReaderState, env| {
+        .on_activate(|_, data: &mut CrabReaderState, _| {
             data.theme = CrabTheme::Dark;
         })
-        .selected_if(|data, env| data.theme == CrabTheme::Dark);
+        .selected_if(|data, _| data.theme == CrabTheme::Dark);
     Menu::new("Tema").entry(light).entry(dark).entry(sepia)
 }
 
 fn shadows() -> Menu<CrabReaderState> {
     let shadows_on = MenuItem::new("Ombre copertine")
-        .selected_if(|data: &CrabReaderState, env| data.paint_shadows)
-        .on_activate(|ctx, data: &mut CrabReaderState, env| {
+        .selected_if(|data: &CrabReaderState, _| data.paint_shadows)
+        .on_activate(|_, data: &mut CrabReaderState, _| {
             println!("{} -> {}", data.paint_shadows, !data.paint_shadows);
             data.paint_shadows = !data.paint_shadows;
         });

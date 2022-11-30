@@ -21,14 +21,11 @@ pub struct BookDetails {
 
 impl BookDetails {
     pub fn new() -> Self {
-        let header_font = fonts::Font::default().lg().bold().get();
-        let info_font = fonts::Font::default().sm().get();
-
         let header_label = Label::new("Dettagli del libro")
-            .with_font(header_font)
             .with_text_alignment(druid::TextAlignment::Start)
             .with_line_break_mode(LineBreaking::WordWrap)
-            .with_text_color(colors::ON_BACKGROUND);
+            .with_text_color(colors::ON_BACKGROUND)
+            .with_font(fonts::bold::xlarge);
 
         let title_label = Label::dynamic(|data: &Library<Book>, _| {
             data.get_selected_book()
@@ -36,9 +33,9 @@ impl BookDetails {
                     format!("Titolo: {}", book.get_title().to_string())
                 })
         })
-        .with_font(info_font.clone())
         .with_text_color(colors::ON_BACKGROUND)
         .with_line_break_mode(LineBreaking::WordWrap)
+        .with_font(fonts::medium)
         .align_left()
         .padding(5.0);
 
@@ -48,7 +45,7 @@ impl BookDetails {
                     format!("Autore: {}", book.get_author().to_string())
                 })
         })
-        .with_font(info_font.clone())
+        .with_font(fonts::medium)
         .with_text_color(colors::ON_BACKGROUND)
         .align_left()
         .padding(5.0);
@@ -59,7 +56,7 @@ impl BookDetails {
                     format!("Lingua: {}", lang_parser(&book.get_lang()))
                 })
         })
-        .with_font(info_font.clone())
+        .with_font(fonts::medium)
         .with_text_color(colors::ON_BACKGROUND)
         .align_left()
         .padding(5.0);
@@ -71,7 +68,7 @@ impl BookDetails {
                     format!("Percentuale avanzamento: {:.0}%", perc)
                 })
         })
-        .with_font(info_font.clone())
+        .with_font(fonts::small)
         .with_text_color(colors::ON_BACKGROUND)
         .align_left()
         .padding(5.0);
@@ -87,7 +84,7 @@ impl BookDetails {
                 let cmd: Command = Command::new(ENTERING_READING_MODE, (), Target::Auto);
                 ctx.submit_command(cmd.clone());
             })
-            .with_text_size(14.0);
+            .with_font(fonts::medium);
 
         let add_fav_btn = RoundedButton::dynamic(|data: &Library<Book>, _| {
             if let Some(book) = data.get_selected_book() {
@@ -106,7 +103,7 @@ impl BookDetails {
                 book.set_favorite(!fav);
             }
         })
-        .with_text_size(14.0);
+        .with_font(fonts::medium);
 
         let mut btn_ctls = Flex::row()
             .with_flex_child(keep_reading_btn, 1.0)
@@ -126,12 +123,14 @@ impl BookDetails {
                         library.remove_book(book.get_index());
                         println!("Eliminato libro");
                         ctx.children_changed();
+                        ctx.request_layout();
                     } else {
                         println!("Errore eliminazione libro");
                     }
                 }
             })
             .with_text_color(colors::ON_PRIMARY)
+            .with_font(fonts::medium)
             .padding(5.0);
 
         // inside the function to open the book there should be

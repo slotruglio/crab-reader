@@ -4,7 +4,7 @@ use components::book::book_details::BookDetails;
 use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
 use components::library::cover_library::CoverLibrary;
 use components::library::listing_library::ListLibrary;
-use druid::commands::{SHOW_OPEN_PANEL, OPEN_FILE};
+use druid::commands::SHOW_OPEN_PANEL;
 use models::command::Trigger;
 use models::library::{Library, LibraryFilterLens, SortBy};
 
@@ -12,7 +12,8 @@ use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
 use druid::widget::{Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
-    AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc, Command, FileDialogOptions, Target, FileSpec,
+    AppLauncher, Command, Data, Env, FileDialogOptions, FileSpec, Lens, PlatformError, Selector,
+    Target, UnitPoint, Widget, WidgetExt, WindowDesc,
 };
 
 use once_cell::sync::Lazy;
@@ -21,8 +22,7 @@ use std::sync::Mutex;
 use traits::gui::{GUIBook, GUILibrary};
 use utils::colors::{update_theme, CrabTheme};
 use utils::envmanager::MyEnv;
-use utils::fonts::Font;
-use utils::{ctx_menu, delegates};
+use utils::{ctx_menu, delegates, fonts};
 
 mod components;
 mod models;
@@ -134,7 +134,7 @@ fn title_sorter_btn() -> impl Widget<Library<Book>> {
         };
         format!("Titolo{}", arrow)
     })
-    .with_text_size(18.0)
+    .with_font(fonts::large)
     .with_on_click(|ctx, data: &mut Library<Book>, _: &Env| {
         let sort = data.get_sort_order();
         if sort == SortBy::Title {
@@ -160,7 +160,7 @@ fn author_sorter_btn() -> impl Widget<Library<Book>> {
         };
         format!("Autore{}", arrow)
     })
-    .with_text_size(18.0)
+    .with_font(fonts::large)
     .with_on_click(|ctx, data: &mut Library<Book>, _| {
         let sort = data.get_sort_order();
         if sort == SortBy::Author {
@@ -178,13 +178,11 @@ fn author_sorter_btn() -> impl Widget<Library<Book>> {
 }
 
 fn filter_fav_btn() -> impl Widget<Library<Book>> {
-    let emoji_font = Font::default().emoji().xs().get();
-    RoundedButton::from_text("❤")
-        .with_text_size(18.0)
+    RoundedButton::from_text(fonts::HEART_EMOJI)
+        .with_font(fonts::small)
         .with_on_click(|_, data: &mut Library<Book>, _| {
             data.toggle_fav_filter();
         })
-        .with_font(emoji_font)
         .with_toggle(|data: &Library<Book>, _env: &Env| data.only_fav())
         .secondary()
         .padding(5.0)
@@ -199,7 +197,7 @@ fn completion_sorter_btn() -> impl Widget<Library<Book>> {
         };
         format!("Progresso{}", arrow)
     })
-    .with_text_size(18.0)
+    .with_font(fonts::large)
     .with_on_click(|ctx, data: &mut Library<Book>, _| {
         let sort = data.get_sort_order();
         if sort == SortBy::PercRead {
@@ -219,6 +217,7 @@ fn completion_sorter_btn() -> impl Widget<Library<Book>> {
 fn picker_sort_by() -> impl Widget<Library<Book>> {
     let label = Label::new("Ordina")
         .with_text_color(colors::ON_BACKGROUND)
+        .with_font(fonts::medium)
         .center()
         .expand_width();
 
@@ -235,13 +234,14 @@ fn picker_sort_by() -> impl Widget<Library<Book>> {
 
 fn picker_filter_by() -> impl Widget<Library<Book>> {
     let text_edit = druid::widget::TextBox::new()
-        .with_text_size(18.0)
+        .with_font(fonts::large)
         .with_placeholder("Titolo, autore, genere...")
         .with_text_color(colors::ON_BACKGROUND)
         .lens(LibraryFilterLens);
 
     let label = Label::new("Cerca libro")
         .with_text_color(colors::ON_BACKGROUND)
+        .with_font(fonts::medium)
         .center()
         .expand_width();
 
@@ -266,9 +266,8 @@ fn picker_controller() -> impl Widget<Library<Book>> {
 
 fn build_ui() -> impl Widget<CrabReaderState> {
     let add_btn = RoundedButton::from_text("Aggiungi libro")
-        .with_text_size(18.0)
+        .with_font(fonts::large)
         .with_on_click(|ctx, data: &mut CrabReaderState, _| {
-
             data.open_file_trigger = Trigger::ADDBOOK;
 
             //Trigger a FILE PICKER
@@ -279,7 +278,6 @@ fn build_ui() -> impl Widget<CrabReaderState> {
             );
             ctx.request_update();
             ctx.submit_command(cmd);
-
         })
         .with_text_color(colors::ON_PRIMARY)
         .padding(5.0);
@@ -328,6 +326,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
                 ctx.request_update();
             })
             .with_text_color(colors::ON_PRIMARY)
+            .with_font(fonts::large)
             .padding(5.0),
         )
         .with_default_spacer()
@@ -373,9 +372,9 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
             .map_or("Titolo libro non trovato".into(), |book| book.get_title())
     })
     .with_text_color(colors::ON_BACKGROUND)
-    .with_text_size(24.0);
+    .with_font(fonts::xlarge);
 
-    let current_chapter = current_chapter_widget().with_text_size(16.0).center();
+    let current_chapter = current_chapter_widget().with_font(fonts::large).center();
 
     let sidebar_lx = Sidebar::LEFT.get();
 

@@ -1,6 +1,9 @@
 use crate::models::library::SortBy;
-use druid::Data;
-use std::sync::Arc;
+use druid::{
+    piet::{Error, PietImage},
+    Data, PaintCtx,
+};
+use std::{cell::Ref, rc::Rc, sync::Arc};
 
 pub trait GUIBook: PartialEq + Data {
     /// Returns the title
@@ -79,24 +82,30 @@ pub trait GUIBook: PartialEq + Data {
     fn unselect(&mut self);
 
     /// Returns the cover of this book
-    fn get_cover_image(&self) -> Arc<Vec<u8>>;
+    fn get_cover_buffer(&self) -> Arc<Vec<u8>>;
 
     /// Sets the cover image
-    fn set_cover_image(&mut self, cover_image: Vec<u8>);
+    fn set_cover_buffer(&mut self, cover_image: Vec<u8>);
 
     fn is_filtered_out(&self) -> bool;
 
     fn set_filtered_out(&mut self, filtered_out: bool);
 
     fn is_favorite(&self) -> bool;
+
+    fn set_cover_image(&self, ctx: &mut PaintCtx) -> Result<(), Error>;
+
+    fn get_cover_image(&self) -> Ref<Option<PietImage>>;
 }
 
 /// This trait deinfes all the functionalities that a `Library` struct must expose
 /// in order to be rendered correctly in the GUI of the application
 pub trait GUILibrary {
     type B;
+    fn schedule_book_loading(&mut self, path: impl Into<String>);
+
     /// Add a book to the library
-    fn add_book(&mut self, book: impl Into<String>);
+    fn add_book(&mut self, book: Self::B);
 
     /// Remove a book from the library
     /// The `idx` argument is the index in the array (relax this constraint??)
@@ -135,6 +144,9 @@ pub trait GUILibrary {
     /// Schedule the loading of a book.
     fn schedule_cover_loading(&mut self, path: impl Into<String>, idx: usize);
 
+    /// Check books loaded
+    fn check_books_loaded(&mut self) -> bool;
+
     /// Check if any covers are loaded and set the cover for the corresponding book
     fn check_covers_loaded(&mut self) -> bool;
 
@@ -148,4 +160,8 @@ pub trait GUILibrary {
     fn next_book_idx(&self) -> Option<usize>;
 
     fn prev_book_idx(&self) -> Option<usize>;
+
+    fn get_number_of_visible_books(&self) -> usize;
+
+    fn get_filter_by(&self) -> Rc<String>;
 }
