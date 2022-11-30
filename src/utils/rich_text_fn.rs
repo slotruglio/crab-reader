@@ -1,7 +1,7 @@
 use pulldown_cmark::{Event as ParseEvent, Options, Parser, Tag, HeadingLevel};
 
-use crate::{CrabReaderState, traits::{gui::GUILibrary, reader::{BookReading}}};
-
+use crate::{CrabReaderState, traits::{gui::GUILibrary, reader::{BookReading}}, MYENV};
+use crate::utils::fonts;
 use crate::models::rich::rich_text::{RichText, RichTextBuilder, AttributesAdder};
 use druid::{widget::prelude::*};
 use druid::widget::{Controller};
@@ -78,12 +78,11 @@ fn add_attribute_for_tag(tag: &Tag, mut attrs: AttributesAdder) {
     match tag {
         Tag::Heading(lvl, _, _) => {
             let font_size = match lvl {
-                HeadingLevel::H1 => 38.,
-                HeadingLevel::H2 => 32.0,
-                HeadingLevel::H3 => 26.0,
-                HeadingLevel::H4 => 20.0,
-                HeadingLevel::H5 => 16.0,
-                _ => 12.0,
+                HeadingLevel::H1 => fonts::H1.size,
+                HeadingLevel::H2 => fonts::H2.size,
+                HeadingLevel::H3 => fonts::H3.size,
+                HeadingLevel::H4 => fonts::H4.size,
+                _ => MYENV.lock().unwrap().font.size,
             };
             attrs.size(font_size).weight(FontWeight::BOLD);
         }

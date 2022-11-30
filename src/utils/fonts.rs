@@ -1,5 +1,18 @@
 #![allow(unused, non_upper_case_globals)]
-use druid::{FontDescriptor, FontFamily};
+use druid::{FontDescriptor, FontFamily, Selector, Key, Env};
+
+use crate::CrabReaderState;
+
+pub const SET_FONT_SMALL: Selector = Selector::new("set-font-small");
+pub const SET_FONT_MEDIUM: Selector = Selector::new("set-font-medium");
+pub const SET_FONT_LARGE: Selector = Selector::new("set-font-large");
+
+pub const FONT: Key<FontDescriptor> = Key::new("crab.reader.font.family");
+
+pub fn update_font_family(env: &mut Env, data: &CrabReaderState) {
+    let env_font = env.get(FONT);
+    env.set(FONT, data.font.clone());
+}
 
 mod font_sizes {
     pub const xxsmall: f64 = 6.0;

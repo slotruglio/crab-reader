@@ -1,7 +1,7 @@
-use crate::CrabReaderState;
-use druid::{Menu, MenuItem};
+use crate::{CrabReaderState, utils::fonts::{FONT, self, SET_FONT_SMALL, SET_FONT_MEDIUM, SET_FONT_LARGE}, MYENV};
+use druid::{Menu, MenuItem, Command, Target, Env, FontFamily, FontDescriptor};
 
-use super::colors::CrabTheme;
+use super::{colors::CrabTheme};
 
 fn file() -> Menu<CrabReaderState> {
     let add_file = MenuItem::new("Aggiungi un eBook");
@@ -62,9 +62,26 @@ fn shadows() -> Menu<CrabReaderState> {
 }
 
 fn text_sz() -> Menu<CrabReaderState> {
-    let small = MenuItem::new("Piccolo");
-    let medium = MenuItem::new("Medio").selected_if(|_, _| true);
-    let large = MenuItem::new("Grande");
+
+    fn selected_if_small(_: &CrabReaderState, _: &Env) -> bool {
+        MYENV.lock().unwrap().font.size == fonts::small.size
+    }
+
+    fn selected_if_medium(_: &CrabReaderState, _: &Env) -> bool {
+        MYENV.lock().unwrap().font.size == fonts::medium.size
+    }
+
+    fn selected_if_large(_: &CrabReaderState, _: &Env) -> bool {
+        MYENV.lock().unwrap().font.size == fonts::large.size
+    }
+
+    let small = MenuItem::new("Piccolo").selected_if(selected_if_small)
+        .command(Command::new(SET_FONT_SMALL, (), Target::Auto));
+    let medium = MenuItem::new("Medio").selected_if(selected_if_medium)
+        .command(Command::new(SET_FONT_MEDIUM, (), Target::Auto));
+    let large = MenuItem::new("Grande").selected_if(selected_if_large)
+        .command(Command::new(SET_FONT_LARGE, (), Target::Auto));
+        
     Menu::new("Dimensione testo")
         .entry(small)
         .entry(medium)
@@ -72,10 +89,67 @@ fn text_sz() -> Menu<CrabReaderState> {
 }
 
 fn font() -> Menu<CrabReaderState> {
-    let font1 = MenuItem::new("Default di sistema");
-    let font2 = MenuItem::new("Arial");
-    let font3 = MenuItem::new("Helvetica");
-    let font4 = MenuItem::new("Noto Sans");
+
+    fn selected_if_default(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::SYSTEM_UI
+    }
+
+    fn selected_if_mono(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::MONOSPACE
+    }
+
+    fn selected_if_serif(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::SERIF
+    }
+
+    fn selected_if_sans(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::SANS_SERIF
+    }
+
+    let font1 = MenuItem::new("Default di sistema").selected_if(selected_if_default)
+        .on_activate(|_, data: &mut CrabReaderState, _| {
+            let mut my_env = MYENV.lock().unwrap();
+            data.font = FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(my_env.font.size);
+            my_env.set_property(
+                "font_family".to_string(), 
+                "\"SYSTEM_UI\"".to_string()
+            );
+            my_env.save_to_env();
+        });
+    let font2 = MenuItem::new("Monospace").selected_if(selected_if_mono)
+        .on_activate(|_, data: &mut CrabReaderState, _| {
+            let mut my_env = MYENV.lock().unwrap();
+            data.font = FontDescriptor::new(FontFamily::MONOSPACE).with_size(my_env.font.size);
+            my_env.set_property(
+                "font_family".to_string(), 
+                "\"MONOSPACE\"".to_string()
+            );
+            my_env.save_to_env();
+        });
+    let font3 = MenuItem::new("Serif").selected_if(selected_if_serif)
+    .on_activate(|_, data: &mut CrabReaderState, _| {
+        let mut my_env = MYENV.lock().unwrap();
+        data.font = FontDescriptor::new(FontFamily::SERIF).with_size(my_env.font.size);
+        my_env.set_property(
+            "font_family".to_string(), 
+            "\"SERIF\"".to_string()
+        );
+        my_env.save_to_env();
+    });
+    let font4 = MenuItem::new("Sans Serif").selected_if(selected_if_sans)
+    .on_activate(|_, data: &mut CrabReaderState, _| {
+        let mut my_env = MYENV.lock().unwrap();
+        data.font = FontDescriptor::new(FontFamily::SANS_SERIF).with_size(my_env.font.size);
+        my_env.set_property(
+            "font_family".to_string(), 
+            "\"SANS_SERIF\"".to_string()
+        );
+        my_env.save_to_env();
+    });
     Menu::new("Caratteri")
         .entry(font1)
         .entry(font2)
@@ -84,7 +158,7 @@ fn font() -> Menu<CrabReaderState> {
 }
 
 fn lang() -> Menu<CrabReaderState> {
-    let lang1 = MenuItem::new("Italiano");
+    let lang1 = MenuItem::new("Italiano").selected_if(|_, _| true);
     let lang2 = MenuItem::new("Inglese");
     let lang3 = MenuItem::new("Francese");
     let lang4 = MenuItem::new("Spagnolo");

@@ -13,10 +13,11 @@ use components::views::sidebar::Sidebar;
 use druid::widget::{Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
     AppLauncher, Command, Data, Env, FileDialogOptions, FileSpec, Lens, PlatformError, Selector,
-    Target, UnitPoint, Widget, WidgetExt, WindowDesc,
+    Target, UnitPoint, Widget, WidgetExt, WindowDesc, FontDescriptor,
 };
 
 use once_cell::sync::Lazy;
+use utils::fonts::{FONT, update_font_family};
 use std::rc::Rc;
 use std::sync::Mutex;
 use traits::gui::{GUIBook, GUILibrary};
@@ -102,6 +103,7 @@ pub struct CrabReaderState {
     open_file_trigger: Trigger,
     pub theme: CrabTheme,
     pub paint_shadows: bool,
+    pub font: FontDescriptor,
 }
 
 impl Default for CrabReaderState {
@@ -114,6 +116,7 @@ impl Default for CrabReaderState {
             open_file_trigger: Trigger::default(),
             theme: CrabTheme::Light,
             paint_shadows: false,
+            font: MYENV.lock().unwrap().font.clone(),
         }
     }
 }
@@ -441,11 +444,17 @@ fn read_book_ui() -> impl Widget<CrabReaderState> {
 fn main() -> Result<(), PlatformError> {
     let crab_state = CrabReaderState::default();
     AppLauncher::with_window(
-        WindowDesc::new(get_viewswitcher().env_scope(|env, data| update_theme(env, data)))
+        WindowDesc::new(get_viewswitcher().env_scope(|env, data| {
+            update_theme(env, data);
+            update_font_family(env, data);
+        }))
             .title("CrabReader")
             .window_size((1280.0, 720.0))
             .menu(|_, _, _| ctx_menu::main_window()),
     )
+    .configure_env(|env, _| {
+        env.set(FONT, MYENV.lock().unwrap().font.clone());
+    })
     .delegate(delegates::ReadModeDelegate)
     .launch(crab_state)?;
     Ok(())
