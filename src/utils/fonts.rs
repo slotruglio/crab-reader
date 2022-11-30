@@ -1,5 +1,20 @@
 #![allow(unused, non_upper_case_globals)]
-use druid::{FontDescriptor, FontFamily};
+use druid::{FontDescriptor, FontFamily, Selector, Key, Env};
+
+use crate::CrabReaderState;
+
+pub const SET_FONT_MONOSPACE:   Selector<()> = Selector::new("font.monospace");
+pub const SET_FONT_SYSTEM_UI:   Selector<()> = Selector::new("font.system_ui");
+pub const SET_FONT_SERIF:       Selector<()> = Selector::new("font.serif");
+pub const SET_FONT_SANS_SERIF:  Selector<()> = Selector::new("font.sans_serif");
+
+pub const FONT: Key<FontDescriptor> = Key::new("crab.reader.font.family");
+
+pub fn update_font_family(env: &mut Env, data: &CrabReaderState) {
+    let env_font = env.get(FONT);
+    let data_font = data.font.family.clone();
+    env.set(FONT, FontDescriptor::new(data_font));
+}
 
 mod font_sizes {
     pub const xxsmall: f64 = 6.0;

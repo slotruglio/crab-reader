@@ -1,7 +1,7 @@
-use crate::CrabReaderState;
-use druid::{Menu, MenuItem};
+use crate::{CrabReaderState, utils::fonts::FONT};
+use druid::{Menu, MenuItem, Command, Target, Env, FontFamily};
 
-use super::colors::CrabTheme;
+use super::{colors::CrabTheme, fonts::{SET_FONT_SYSTEM_UI, SET_FONT_MONOSPACE, SET_FONT_SERIF, SET_FONT_SANS_SERIF}};
 
 fn file() -> Menu<CrabReaderState> {
     let add_file = MenuItem::new("Aggiungi un eBook");
@@ -72,10 +72,35 @@ fn text_sz() -> Menu<CrabReaderState> {
 }
 
 fn font() -> Menu<CrabReaderState> {
-    let font1 = MenuItem::new("Default di sistema");
-    let font2 = MenuItem::new("Arial");
-    let font3 = MenuItem::new("Helvetica");
-    let font4 = MenuItem::new("Noto Sans");
+
+    fn selected_if_default(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::SYSTEM_UI
+    }
+
+    fn selected_if_mono(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::MONOSPACE
+    }
+
+    fn selected_if_serif(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::SERIF
+    }
+
+    fn selected_if_sans(data: &CrabReaderState, _: &Env) -> bool {
+        let font = &data.font;
+        font.family == FontFamily::SANS_SERIF
+    }
+
+    let font1 = MenuItem::new("Default di sistema").selected_if(selected_if_default)
+        .command(Command::new(SET_FONT_SYSTEM_UI, (), Target::Auto));
+    let font2 = MenuItem::new("Monospace").selected_if(selected_if_mono)
+        .command(Command::new(SET_FONT_MONOSPACE, (), Target::Auto));
+    let font3 = MenuItem::new("Serif").selected_if(selected_if_serif)
+        .command(Command::new(SET_FONT_SERIF, (), Target::Auto));
+    let font4 = MenuItem::new("Sans Serif").selected_if(selected_if_sans)
+        .command(Command::new(SET_FONT_SANS_SERIF, (), Target::Auto));
     Menu::new("Caratteri")
         .entry(font1)
         .entry(font2)

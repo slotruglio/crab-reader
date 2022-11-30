@@ -1,14 +1,14 @@
 use druid::{
     widget::{Container, Flex, Label, LineBreaking, RawLabel, Scroll, TextBox, ViewSwitcher},
-    Data, Env, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
+    Data, Env, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt, Key, KeyOrValue,
 };
 
 use crate::{
     models::library::LibrarySelectedBookLens,
     models::rich::custom_lens::{DualPage0Lens, DualPage1Lens, SelectedPageLens},
     traits::{gui::GUILibrary, reader::BookReading},
-    utils::{colors, fonts},
-    CrabReaderState, ReadingState,
+    utils::{colors, fonts::{self, FONT}},
+    CrabReaderState, ReadingState, MYENV,
 };
 
 #[derive(Clone, PartialEq, Data)]
@@ -21,14 +21,13 @@ pub enum ReaderView {
 
 impl ReaderView {
     pub fn get_view(&self) -> Box<dyn Widget<CrabReaderState>> {
-        let font = fonts::medium;
-
+        let font = KeyOrValue::Key(FONT);
         match self {
             ReaderView::Single => single_view_widget(font),
             ReaderView::SingleEdit => single_view_edit_widget(font),
             ReaderView::Dual => dual_view_widget(font),
             ReaderView::DualEdit => dual_view_edit_widget(font),
-        }
+        }        
         .boxed()
     }
 
@@ -53,7 +52,7 @@ impl ReaderView {
 }
 
 // single page view for text reader
-fn single_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
+fn single_view_widget(font: KeyOrValue<FontDescriptor>) -> Container<CrabReaderState> {
     let raw_label = RawLabel::new()
         .with_text_color(colors::ON_BACKGROUND)
         .with_font(font)
@@ -72,7 +71,7 @@ fn single_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
 }
 
 // single page view for text editing
-fn single_view_edit_widget(font: FontDescriptor) -> Container<CrabReaderState> {
+fn single_view_edit_widget(font: KeyOrValue<FontDescriptor>) -> Container<CrabReaderState> {
     let tb = TextBox::multiline()
         .with_text_color(colors::ON_BACKGROUND)
         .with_font(font)
@@ -84,7 +83,7 @@ fn single_view_edit_widget(font: FontDescriptor) -> Container<CrabReaderState> {
 }
 
 // dual page view for text reader
-fn dual_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
+fn dual_view_widget(font: KeyOrValue<FontDescriptor>) -> Container<CrabReaderState> {
     let page_0 = RawLabel::new()
         .with_text_color(colors::ON_BACKGROUND)
         .with_font(font.clone())
@@ -117,7 +116,7 @@ fn dual_view_widget(font: FontDescriptor) -> Container<CrabReaderState> {
 }
 
 // dual page view for text editing
-fn dual_view_edit_widget(font: FontDescriptor) -> Container<CrabReaderState> {
+fn dual_view_edit_widget(font: KeyOrValue<FontDescriptor>) -> Container<CrabReaderState> {
     let text_box_page_0 = TextBox::multiline()
         .with_text_color(colors::ON_BACKGROUND)
         .with_font(font.clone())

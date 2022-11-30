@@ -1,6 +1,8 @@
 use druid::{Color, FontDescriptor, FontFamily};
 use serde_json;
 
+use super::fonts;
+
 #[derive(Debug)]
 pub struct MyEnv {
     pub theme: String,
@@ -188,9 +190,9 @@ pub enum FontSize {
 impl FontSize {
     pub fn to_f64(&self) -> f64 {
         match self {
-            FontSize::SMALL => 12.0,
-            FontSize::MEDIUM => 16.0,
-            FontSize::LARGE => 20.0,
+            FontSize::SMALL => fonts::small.size,
+            FontSize::MEDIUM => fonts::medium.size,
+            FontSize::LARGE => fonts::large.size,
         }
     }
 
@@ -204,11 +206,11 @@ impl PartialEq for FontSize {
 
 impl From<f64> for FontSize {
     fn from(value: f64) -> Self {
-        if value == 12.0 {
+        if value == fonts::small.size {
             return FontSize::SMALL;
-        } else if value == 16.0 {
+        } else if value == fonts::medium.size {
             return FontSize::MEDIUM;
-        } else if value == 20.0 {
+        } else if value == fonts::large.size {
             return FontSize::LARGE;
         }
         FontSize::MEDIUM

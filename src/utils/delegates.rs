@@ -1,13 +1,13 @@
 use druid::{
     commands::OPEN_FILE,
     widget::{Align, Flex, Label, LineBreaking},
-    AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc,
+    AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc, FontDescriptor, FontFamily,
 };
 use std::{path::Path, rc::Rc};
 
 use super::{
     button_functions::{self, go_next, go_prev},
-    colors::SWITCH_THEME,
+    colors::SWITCH_THEME, fonts::{SET_FONT_SYSTEM_UI, SET_FONT_MONOSPACE, SET_FONT_SANS_SERIF, SET_FONT_SERIF},
 };
 use crate::{
     models::{
@@ -20,7 +20,7 @@ use crate::{
         reader::{BookManagement, BookReading},
     },
     utils::{dir_manager::get_epub_dir, ocrmanager, saveload::copy_book_in_folder},
-    CrabReaderState, DisplayMode, ENTERING_READING_MODE,
+    CrabReaderState, DisplayMode, ENTERING_READING_MODE, MYENV,
 };
 
 pub struct ReadModeDelegate;
@@ -50,6 +50,55 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 data.reading_state.disable();
                 Handled::Yes
             }
+
+            notif if notif.is(SET_FONT_SYSTEM_UI) => {
+                let mut my_env = MYENV.lock().unwrap();
+                data.font = FontDescriptor::new(FontFamily::SYSTEM_UI);
+                my_env.set_property(
+                    "font_family".to_string(), 
+                    "\"SYSTEM_UI\"".to_string()
+                );
+                my_env.save_to_env();
+
+                Handled::Yes
+            }
+
+            notif if notif.is(SET_FONT_MONOSPACE) => {
+                let mut my_env = MYENV.lock().unwrap();
+                data.font = FontDescriptor::new(FontFamily::MONOSPACE);
+                my_env.set_property(
+                    "font_family".to_string(), 
+                    "\"MONOSPACE\"".to_string()
+                );
+                my_env.save_to_env();
+
+                Handled::Yes
+            }
+
+            notif if notif.is(SET_FONT_SANS_SERIF) => {
+                let mut my_env = MYENV.lock().unwrap();
+                data.font = FontDescriptor::new(FontFamily::SANS_SERIF);
+                my_env.set_property(
+                    "font_family".to_string(), 
+                    "\"SANS_SERIF\"".to_string()
+                );
+                my_env.save_to_env();
+
+                Handled::Yes
+            }
+
+            notif if notif.is(SET_FONT_SERIF) => {
+                let mut my_env = MYENV.lock().unwrap();
+                data.font = FontDescriptor::new(FontFamily::SERIF);
+                my_env.set_property(
+                    "font_family".to_string(), 
+                    "\"SERIF\"".to_string()
+                );
+                my_env.save_to_env();
+
+                Handled::Yes
+            }
+
             notif if notif.is(OPEN_FILE) => {
                 println!("Opening file!");
 
