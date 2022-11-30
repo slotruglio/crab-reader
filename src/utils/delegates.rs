@@ -7,7 +7,7 @@ use std::{path::Path, rc::Rc};
 
 use super::{
     button_functions::{self, go_next, go_prev},
-    colors::SWITCH_THEME, fonts::{SET_FONT_SYSTEM_UI, SET_FONT_MONOSPACE, SET_FONT_SANS_SERIF, SET_FONT_SERIF},
+    colors::SWITCH_THEME, fonts::{SET_FONT_SMALL, SET_FONT_MEDIUM, SET_FONT_LARGE},
 };
 use crate::{
     models::{
@@ -51,50 +51,51 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 Handled::Yes
             }
 
-            notif if notif.is(SET_FONT_SYSTEM_UI) => {
+            notif if notif.is(SET_FONT_SMALL) => {
                 let mut my_env = MYENV.lock().unwrap();
-                data.font = FontDescriptor::new(FontFamily::SYSTEM_UI);
-                my_env.set_property(
-                    "font_family".to_string(), 
-                    "\"SYSTEM_UI\"".to_string()
-                );
+                my_env.set_property("font_size".to_string(), "small".to_string());
                 my_env.save_to_env();
+
+                let text = "Dimensione carattere impostata a piccola, riavvia l'applicazione per applicare le modifiche";
+                show_alert_dialog(
+                    delegate_ctx, 
+                    Label::<CrabReaderState>::new(text).with_line_break_mode(LineBreaking::WordWrap), 
+                    "Impostazioni",
+                    (400.0, 100.0)
+                );
 
                 Handled::Yes
             }
 
-            notif if notif.is(SET_FONT_MONOSPACE) => {
+            notif if notif.is(SET_FONT_MEDIUM) => {
                 let mut my_env = MYENV.lock().unwrap();
-                data.font = FontDescriptor::new(FontFamily::MONOSPACE);
-                my_env.set_property(
-                    "font_family".to_string(), 
-                    "\"MONOSPACE\"".to_string()
-                );
+                my_env.set_property("font_size".to_string(), "medium".to_string());
                 my_env.save_to_env();
+
+                
+                let text = "Dimensione carattere impostata a media, riavvia l'applicazione per applicare le modifiche";
+                show_alert_dialog(
+                    delegate_ctx, 
+                    Label::<CrabReaderState>::new(text).with_line_break_mode(LineBreaking::WordWrap), 
+                    "Impostazioni",
+                    (400.0, 100.0)
+                );
 
                 Handled::Yes
             }
 
-            notif if notif.is(SET_FONT_SANS_SERIF) => {
+            notif if notif.is(SET_FONT_LARGE) => {
                 let mut my_env = MYENV.lock().unwrap();
-                data.font = FontDescriptor::new(FontFamily::SANS_SERIF);
-                my_env.set_property(
-                    "font_family".to_string(), 
-                    "\"SANS_SERIF\"".to_string()
-                );
+                my_env.set_property("font_size".to_string(), "large".to_string());
                 my_env.save_to_env();
 
-                Handled::Yes
-            }
-
-            notif if notif.is(SET_FONT_SERIF) => {
-                let mut my_env = MYENV.lock().unwrap();
-                data.font = FontDescriptor::new(FontFamily::SERIF);
-                my_env.set_property(
-                    "font_family".to_string(), 
-                    "\"SERIF\"".to_string()
+                let text = "Dimensione carattere impostata a grande, riavvia l'applicazione per applicare le modifiche";
+                show_alert_dialog(
+                    delegate_ctx, 
+                    Label::<CrabReaderState>::new(text).with_line_break_mode(LineBreaking::WordWrap), 
+                    "Impostazioni",
+                    (400.0, 100.0)
                 );
-                my_env.save_to_env();
 
                 Handled::Yes
             }
@@ -154,22 +155,14 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         Label::<CrabReaderState>::new("The page in the physical book is");
                     let num_label = Label::<CrabReaderState>::new(num.to_string());
 
-                    //get coordinates of the center of the monitor
-                    let monitor = &druid::Screen::get_monitors()[0];
-                    let coords = monitor.virtual_rect().center() - (150.0, 200.0);
-
-                    //create a new window with these labels
-                    let win_desc = WindowDesc::new(Align::centered(
+                    show_alert_dialog(
+                        delegate_ctx, 
                         Flex::column()
                             .with_child(message_label)
-                            .with_child(num_label),
-                    ))
-                    .title("Scan result")
-                    .window_size((300.0, 200.0))
-                    .resizable(false)
-                    .set_position(coords);
-
-                    delegate_ctx.new_window(win_desc);
+                            .with_child(num_label), 
+                        "Scan result",
+                        (300.0, 200.0)
+                    );
                 }
 
                 // function to do if open file is triggered for add book
@@ -220,21 +213,12 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         }
                     }
 
-                    //get coordinates of the center of the monitor
-                    let monitor = &druid::Screen::get_monitors()[0];
-                    let coords = monitor.virtual_rect().center() - (150.0, 200.0);
-
-                    //create a new window with these labels
-                    let win_desc = WindowDesc::new(Align::centered(
-                        Label::<CrabReaderState>::new(label_text)
-                            .with_line_break_mode(LineBreaking::WordWrap),
-                    ))
-                    .title(title)
-                    .window_size((400.0, 100.0))
-                    .resizable(true)
-                    .set_position(coords);
-
-                    delegate_ctx.new_window(win_desc);
+                    show_alert_dialog(
+                        delegate_ctx, 
+                        Label::<CrabReaderState>::new(label_text).with_line_break_mode(LineBreaking::WordWrap), 
+                        title.as_str(),
+                        (400.0, 100.0)
+                    );
                 }
 
                 match data.open_file_trigger {
@@ -564,4 +548,19 @@ fn handle_u(
         let fav = selected_book.is_favorite();
         selected_book.set_favorite(!fav);
     }
+}
+
+fn show_alert_dialog<T: druid::Data>(ctx: &mut druid::DelegateCtx, msg: impl druid::Widget<T> + 'static, title: &str, window_size: (f64, f64)) {
+    //get coordinates of the center of the monitor
+    let monitor = &druid::Screen::get_monitors()[0];
+    let coords = monitor.virtual_rect().center() - (150.0, 200.0);
+
+    //create a new window with these labels
+    let win_desc = WindowDesc::new(Align::centered(msg))
+    .title(title)
+    .window_size(window_size)
+    .resizable(false)
+    .set_position(coords);
+
+    ctx.new_window(win_desc);
 }

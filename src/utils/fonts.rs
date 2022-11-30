@@ -3,17 +3,15 @@ use druid::{FontDescriptor, FontFamily, Selector, Key, Env};
 
 use crate::CrabReaderState;
 
-pub const SET_FONT_MONOSPACE:   Selector<()> = Selector::new("font.monospace");
-pub const SET_FONT_SYSTEM_UI:   Selector<()> = Selector::new("font.system_ui");
-pub const SET_FONT_SERIF:       Selector<()> = Selector::new("font.serif");
-pub const SET_FONT_SANS_SERIF:  Selector<()> = Selector::new("font.sans_serif");
+pub const SET_FONT_SMALL: Selector = Selector::new("set-font-small");
+pub const SET_FONT_MEDIUM: Selector = Selector::new("set-font-medium");
+pub const SET_FONT_LARGE: Selector = Selector::new("set-font-large");
 
 pub const FONT: Key<FontDescriptor> = Key::new("crab.reader.font.family");
 
 pub fn update_font_family(env: &mut Env, data: &CrabReaderState) {
     let env_font = env.get(FONT);
-    let data_font = data.font.family.clone();
-    env.set(FONT, FontDescriptor::new(data_font));
+    env.set(FONT, data.font.clone());
 }
 
 mod font_sizes {
