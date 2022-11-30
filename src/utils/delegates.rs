@@ -106,7 +106,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 let file_path = cmd.get_unchecked(OPEN_FILE).path();
 
                 // function to do if open file is triggered for ocr
-                fn ocr_fn(file_path: &Path, selected_book_mut: &mut Book) {
+                fn ocr_fn(file_path: &Path, selected_book_mut: &mut Book, delegate_ctx: &mut druid::DelegateCtx) {
                     let selected_book_path = selected_book_mut.get_path();
                     
                     //split by slash, get last element, split by dot, get first element
@@ -131,7 +131,13 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                             selected_book_mut.set_chapter_current_page_number(ocr_result.1);
                         }
                         None => {
-                            println!("ERROR: OCR page not found");
+                            show_alert_dialog(
+                                delegate_ctx, 
+                                Label::<CrabReaderState>::new("Non è stato possibile trovare la pagina corrispondente")
+                                .with_line_break_mode(LineBreaking::WordWrap), 
+                                "Errore", 
+                                (300.0, 200.0)
+                            )
                         }
                     }
                 }
@@ -223,7 +229,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
 
                 match data.open_file_trigger {
                     Trigger::OCR => {
-                        ocr_fn(file_path, data.library.get_selected_book_mut().unwrap())
+                        ocr_fn(file_path, data.library.get_selected_book_mut().unwrap(), delegate_ctx);
                     }
 
                     Trigger::OCRINVERSE => ocr_inverse_fn(
