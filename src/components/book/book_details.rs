@@ -11,7 +11,7 @@ use crate::{
         gui::{GUIBook, GUILibrary},
         reader::BookManagement,
     },
-    utils::{colors, fonts},
+    utils::{colors, fonts, saveload::delete_book},
     Library, ENTERING_READING_MODE,
 };
 
@@ -117,6 +117,23 @@ impl BookDetails {
 
         let btn_ctls = btn_ctls.expand_width().padding(5.0);
 
+        let del_btn = RoundedButton::from_text("Elimina")
+            .with_on_click(|ctx, library: &mut Library<Book>, _: &Env| {
+                if let Some(book) = library.get_selected_book() {
+                    // remove book from epubs and saved_books
+                    if let Ok(_) = delete_book(&book.get_path()) {
+                        // remove book from library
+                        library.remove_book(book.get_index());
+                        println!("Eliminato libro");
+                        ctx.children_changed();
+                    } else {
+                        println!("Errore eliminazione libro");
+                    }
+                }
+            })
+            .with_text_color(colors::ON_PRIMARY)
+            .padding(5.0);
+
         // inside the function to open the book there should be
         // the book's functions lo load chapters and page
         // Book::load_chapter(), Book::load_page()
@@ -128,6 +145,7 @@ impl BookDetails {
             .with_child(lang_label)
             .with_child(completion_label)
             .with_child(btn_ctls)
+            .with_child(del_btn)
             .padding(10.0)
             .expand()
             .boxed();

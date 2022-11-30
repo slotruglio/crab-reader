@@ -66,6 +66,10 @@ where
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &L, env: &Env) {
+        if self.children.len() > data.number_of_books() {
+            self.children.truncate(data.number_of_books());
+        }
+
         while data.number_of_books() > self.children.len() {
             self.add_child();
             ctx.children_changed();
@@ -73,6 +77,9 @@ where
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if !event.should_propagate_to_hidden() && !inner.is_initialized() {
+                    continue;
+                }
                 inner.lifecycle(ctx, event, book, env);
             }
         }

@@ -1,16 +1,29 @@
 use std::{
+    collections::HashMap,
     fs::{create_dir_all, File, OpenOptions},
     io::BufReader,
-    sync::mpsc::channel, path::Path, str::FromStr, collections::HashMap,
+    path::Path,
+    str::FromStr,
+    sync::mpsc::channel,
 };
 
-use druid::im::{Vector};
+use druid::im::Vector;
 use rust_fuzzy_search::fuzzy_compare;
 use serde_json::{json, Value};
 
-use crate::{MYENV, utils::{dir_manager::{get_savedata_path, get_saved_books_dir, get_edited_books_dir, get_epub_dir, get_books_notes_path}, epub_utils::{get_metadata_of_book, split_chapter_in_vec}}, models::note::Note};
+use crate::{
+    models::note::Note,
+    utils::{
+        dir_manager::{
+            get_books_notes_path, get_edited_books_dir, get_epub_dir, get_saved_books_dir,
+            get_savedata_path,
+        },
+        epub_utils::{get_metadata_of_book, split_chapter_in_vec},
+    },
+    MYENV,
+};
 
-use super::{envmanager::FontSize, dir_manager::get_metadata_path};
+use super::{dir_manager::get_metadata_path, envmanager::FontSize};
 
 pub enum FileExtension {
     TXT,
@@ -29,7 +42,6 @@ pub fn save_data<T: Into<String> + Clone>(
     font_size: FontSize,
     edited: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-
     println!(
         "DEBUG saving data: {} {} {} {} {}",
         chapter,
@@ -53,7 +65,12 @@ pub fn save_data<T: Into<String> + Clone>(
         create_dir_all(savedata_path.parent().unwrap()).unwrap();
     }
     // create a vec of edited chapters
-    let mut set = json[book_path.clone().into()]["edited_chapters"].as_array().unwrap_or(&vec![]).iter().map(|x| x.as_u64().unwrap() as usize).collect::<Vec<usize>>();
+    let mut set = json[book_path.clone().into()]["edited_chapters"]
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .map(|x| x.as_u64().unwrap() as usize)
+        .collect::<Vec<usize>>();
     println!("DEBUG set before push: {:?}", set);
     if edited {
         if !set.contains(&chapter) {
@@ -129,7 +146,7 @@ pub fn remove_all_savedata() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn remove_edited_chapter<T: Into<String>+Clone>(book_path: T, chapter_number: usize) {
+pub fn remove_edited_chapter<T: Into<String> + Clone>(book_path: T, chapter_number: usize) {
     let savedata_path = get_savedata_path();
     let mut json = json!({});
     if let Ok(opened_file) = File::open(savedata_path.clone()) {
@@ -141,10 +158,12 @@ pub fn remove_edited_chapter<T: Into<String>+Clone>(book_path: T, chapter_number
     }
 
     let mut set = json[book_path.clone().into()]["edited_chapters"]
-        .as_array().unwrap_or(&vec![])
-        .iter().map(|x| x.as_u64().unwrap() as usize).collect::<Vec<usize>>();
-    
-    
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .map(|x| x.as_u64().unwrap() as usize)
+        .collect::<Vec<usize>>();
+
     if let Ok(index) = set.binary_search(&chapter_number) {
         set.remove(index);
     } else {
@@ -157,14 +176,16 @@ pub fn remove_edited_chapter<T: Into<String>+Clone>(book_path: T, chapter_number
         .write(true)
         .create(true)
         .truncate(true)
-        .open(get_savedata_path()).unwrap();
+        .open(get_savedata_path())
+        .unwrap();
 
     serde_json::to_writer_pretty(file, &json).unwrap();
     let book: String = book_path.into();
     let folder_name = Path::new(&book).file_stem().unwrap().to_str().unwrap();
-    let path = get_edited_books_dir().join(folder_name).join(format!("page_{}.txt", chapter_number));
+    let path = get_edited_books_dir()
+        .join(folder_name)
+        .join(format!("page_{}.txt", chapter_number));
     let _ = std::fs::remove_file(path);
-
 }
 
 fn evaluate_numeric_options(chapter: Option<u64>, page: Option<u64>) -> Option<(usize, usize)> {
@@ -172,7 +193,10 @@ fn evaluate_numeric_options(chapter: Option<u64>, page: Option<u64>) -> Option<(
     let page = page?;
     Some((chapter as usize, page as usize))
 }
-fn evaluate_str_options<'a>(font_size: Option<&str>, saved_content: Option<&'a str>) -> Option<(FontSize, &'a str)> {
+fn evaluate_str_options<'a>(
+    font_size: Option<&str>,
+    saved_content: Option<&'a str>,
+) -> Option<(FontSize, &'a str)> {
     let font_size = font_size?;
     let saved_content = saved_content?;
     Some((FontSize::from(font_size.to_string()), saved_content))
@@ -192,10 +216,7 @@ fn search_page<T: Into<String> + Clone>(book_path: T, chapter_number: usize, tex
 
     let mut best_page = (0, 0.0);
     for (i, page) in pages.iter().enumerate() {
-        let result = fuzzy_compare(
-            text,
-            page.as_str(),
-        );
+        let result = fuzzy_compare(text, page.as_str());
         if result > best_page.1 {
             best_page = (i, result);
         }
@@ -203,15 +224,20 @@ fn search_page<T: Into<String> + Clone>(book_path: T, chapter_number: usize, tex
     best_page.0
 }
 
-pub fn save_favorite<T: Into<String> + Clone>(book_path: T, favorite: bool) -> Result<(), Box<dyn std::error::Error>> {
-
+pub fn save_favorite<T: Into<String> + Clone>(
+    book_path: T,
+    favorite: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut metadata = get_metadata_of_book(book_path.clone().into().as_str());
     let old_string = &metadata["favorite"];
     if (old_string == "true" && favorite) || (old_string == "false" && !favorite) {
         return Ok(());
     }
 
-    metadata.insert("favorite".to_string(), if favorite { "true" } else { "false" }.to_string());
+    metadata.insert(
+        "favorite".to_string(),
+        if favorite { "true" } else { "false" }.to_string(),
+    );
 
     let json = json!(metadata);
     let metadata_path = get_metadata_path(&book_path.into());
@@ -242,21 +268,17 @@ pub fn load_data<T: Into<String> + Clone>(
         let json: Value = serde_json::from_reader(reader)?;
 
         if let Some(value) = json.get(book_path.clone().into()) {
-            let saved_chapter_value = value
-                .get("chapter").and_then(|v| v.as_u64());
-            let saved_page_value = value
-                .get("page").and_then(|v| v.as_u64());
-            let saved_font_size = value
-                .get("font_size").and_then(|v| v.as_str());
-            let saved_content = value
-                .get("content").and_then(|v| v.as_str());
+            let saved_chapter_value = value.get("chapter").and_then(|v| v.as_u64());
+            let saved_page_value = value.get("page").and_then(|v| v.as_u64());
+            let saved_font_size = value.get("font_size").and_then(|v| v.as_str());
+            let saved_content = value.get("content").and_then(|v| v.as_str());
 
             // assign values considering the same font size
             if let Some((c, s)) = evaluate_numeric_options(saved_chapter_value, saved_page_value) {
                 chapter = c;
                 page = s;
             }
-            if let Some((f, c)) = evaluate_str_options(saved_font_size, saved_content){
+            if let Some((f, c)) = evaluate_str_options(saved_font_size, saved_content) {
                 font_size = f;
                 content = c;
             }
@@ -264,7 +286,11 @@ pub fn load_data<T: Into<String> + Clone>(
             let app_font_size = FontSize::from(MYENV.lock().unwrap().font.size);
             // check if the application font size (env) is different from the saved one
             if (app_font_size != font_size) || force_fuzzy {
-                println!("DEBUG font size is different {:?} {:?}", &font_size.to_string(), &app_font_size.to_string());
+                println!(
+                    "DEBUG font size is different {:?} {:?}",
+                    &font_size.to_string(),
+                    &app_font_size.to_string()
+                );
                 // need to "find" the last read page
                 page = search_page(book_path.clone(), chapter, content);
             }
@@ -295,9 +321,9 @@ pub fn get_chapter_bytes(
     extension: FileExtension,
 ) -> Result<Vec<u8>, String> {
     let (path, ext) = match extension {
-        FileExtension::TXT => (get_edited_books_dir(),"txt"),
-        FileExtension::HTML => (get_saved_books_dir(),"html"),
-        FileExtension::EPUB => (get_epub_dir(),"epub"),
+        FileExtension::TXT => (get_edited_books_dir(), "txt"),
+        FileExtension::HTML => (get_saved_books_dir(), "html"),
+        FileExtension::EPUB => (get_epub_dir(), "epub"),
     };
 
     let filename = path
@@ -315,7 +341,6 @@ pub fn save_note<T: Into<String> + Clone>(
     page_text: T,
     note: T,
 ) -> Result<String, Box<dyn std::error::Error>> {
-
     // check if exists a file
     let notes_path = get_books_notes_path();
     let mut json = json!({});
@@ -331,7 +356,11 @@ pub fn save_note<T: Into<String> + Clone>(
     }
 
     let text = page_text.into();
-    let to_take = if text.len() > 200 { text.len()/3 } else { text.len() };
+    let to_take = if text.len() > 200 {
+        text.len() / 3
+    } else {
+        text.len()
+    };
     // json value for the note to save
     let value = json!(
         {
@@ -392,12 +421,13 @@ pub fn load_notes<T: Into<String> + Clone>(
                     for note in notes_array {
                         let start_page = note["start"].as_str().unwrap();
                         let note_text = note["note"].as_str().unwrap().to_string();
-                        let page = search_page(book_path.clone().into(), chapter_number, start_page);
-                        map.entry((chapter_number, page)).and_modify(
-                            |v| v.push_back(Note::new(start_page.into(), note_text.clone()))
-                        ).or_insert(
-                            Vector::from(vec![Note::new(start_page.into(), note_text)])
-                        );
+                        let page =
+                            search_page(book_path.clone().into(), chapter_number, start_page);
+                        map.entry((chapter_number, page))
+                            .and_modify(|v| {
+                                v.push_back(Note::new(start_page.into(), note_text.clone()))
+                            })
+                            .or_insert(Vector::from(vec![Note::new(start_page.into(), note_text)]));
                     }
                 }
             }
@@ -419,7 +449,7 @@ pub fn delete_note<T: Into<String> + Clone>(
 
     let reader = BufReader::new(file);
     let mut json: Value = serde_json::from_reader(reader)?;
-    
+
     // check if there is a book with that name and an array
     let Some(book_array) = json[book_path.clone().into()].as_array_mut() else {
         return Ok(());
@@ -434,7 +464,7 @@ pub fn delete_note<T: Into<String> + Clone>(
             let Some(notes_array) = chapter_value["notes"].as_array_mut() else {
                 return Ok(());
             };
-            
+
             for (i, note) in notes_array.into_iter().enumerate() {
                 let saved_start_page = note["start"].as_str().unwrap();
                 if saved_start_page == start_page.clone().into() {
@@ -451,10 +481,10 @@ pub fn delete_note<T: Into<String> + Clone>(
 
     // open file to write
     let file = OpenOptions::new()
-    .write(true)
-    .create(true)
-    .truncate(true)
-    .open(get_books_notes_path())?;
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_books_notes_path())?;
 
     serde_json::to_writer_pretty(file, &json)?;
 
@@ -473,7 +503,7 @@ pub fn delete_notes<T: Into<String> + Clone>(
 
     let reader = BufReader::new(file);
     let mut json: Value = serde_json::from_reader(reader)?;
-    
+
     // check if there is a book with that name and an array
     let Some(book_array) = json[book_path.clone().into()].as_array_mut() else {
         return Ok(());
@@ -481,7 +511,7 @@ pub fn delete_notes<T: Into<String> + Clone>(
 
     for item in book_array {
         let chapter_number = item["chapter"].as_u64().unwrap() as usize;
-        
+
         if chapter_number != chapter {
             continue;
         }
@@ -491,18 +521,18 @@ pub fn delete_notes<T: Into<String> + Clone>(
         };
 
         notes_array.retain(|note| {
-            !start_pages.iter().any(|start| {
-                note["start"].as_str().unwrap() == start
-            })
-        }); 
+            !start_pages
+                .iter()
+                .any(|start| note["start"].as_str().unwrap() == start)
+        });
     }
 
     // open file to write
     let file = OpenOptions::new()
-    .write(true)
-    .create(true)
-    .truncate(true)
-    .open(get_books_notes_path())?;
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_books_notes_path())?;
 
     serde_json::to_writer_pretty(file, &json)?;
 
@@ -512,7 +542,7 @@ pub fn delete_notes<T: Into<String> + Clone>(
 /// function to delete all notes of a book
 pub fn delete_all_notes<T: Into<String> + Clone>(
     book_path: T,
-) -> Result<(), Box<dyn std::error::Error>>{
+) -> Result<(), Box<dyn std::error::Error>> {
     // open file to read
     let Ok(file) = File::open(get_books_notes_path()) else {
         return Ok(());
@@ -520,7 +550,7 @@ pub fn delete_all_notes<T: Into<String> + Clone>(
 
     let reader = BufReader::new(file);
     let mut json: Value = serde_json::from_reader(reader)?;
-    
+
     // check if there is a book with that name and an array
     let Some(book_array) = json[book_path.clone().into()].as_array_mut() else {
         return Ok(());
@@ -530,13 +560,43 @@ pub fn delete_all_notes<T: Into<String> + Clone>(
 
     // open file to write
     let file = OpenOptions::new()
-    .write(true)
-    .create(true)
-    .truncate(true)
-    .open(get_books_notes_path())?;
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(get_books_notes_path())?;
 
     serde_json::to_writer_pretty(file, &json)?;
 
+    Ok(())
+}
+
+
+pub fn delete_book(book_path: &String) -> Result<(), Box<dyn std::error::Error>> {
+    let epub = Path::new(book_path);
+    // delete book from file
+    if epub.exists() {
+        // remove from saved_books
+        let saved_book = get_saved_books_dir().join(epub.file_stem().unwrap());
+        std::fs::remove_dir_all(saved_book)?;
+
+        // remove from epubs dir
+        std::fs::remove_file(book_path)?;
+    }
+
+    Ok(())
+}
+
+pub fn copy_book_in_folder(from: &String) -> Result<(), Box<dyn std::error::Error>> {
+    let path = Path::new(from);
+    if !path.exists() {
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "file not found",
+        )));
+    }
+
+    let to = get_epub_dir().join(path.file_name().unwrap());
+    std::fs::copy(from, to)?;
     Ok(())
 }
 

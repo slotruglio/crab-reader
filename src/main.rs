@@ -4,13 +4,15 @@ use components::book::book_details::BookDetails;
 use components::buttons::{rbtn::RoundedButton, reader_btns::ReaderBtn};
 use components::library::cover_library::CoverLibrary;
 use components::library::listing_library::ListLibrary;
+use druid::commands::{SHOW_OPEN_PANEL, OPEN_FILE};
+use models::command::Trigger;
 use models::library::{Library, LibraryFilterLens, SortBy};
 
 use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
 use druid::widget::{Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
-    AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc,
+    AppLauncher, Data, Env, Lens, PlatformError, Selector, UnitPoint, Widget, WidgetExt, WindowDesc, Command, FileDialogOptions, Target, FileSpec,
 };
 
 use once_cell::sync::Lazy;
@@ -96,8 +98,8 @@ pub struct CrabReaderState {
     display_mode: DisplayMode,
     reading: bool,
     reading_state: ReadingState,
-    ocr: bool,
-    ocr_inverse: bool,
+    #[data(ignore)]
+    open_file_trigger: Trigger,
     pub theme: CrabTheme,
     pub paint_shadows: bool,
 }
@@ -109,8 +111,7 @@ impl Default for CrabReaderState {
             display_mode: DisplayMode::Cover,
             reading: false,
             reading_state: ReadingState::default(),
-            ocr: false,
-            ocr_inverse: false,
+            open_file_trigger: Trigger::default(),
             theme: CrabTheme::Light,
             paint_shadows: false,
         }
@@ -264,6 +265,25 @@ fn picker_controller() -> impl Widget<Library<Book>> {
 }
 
 fn build_ui() -> impl Widget<CrabReaderState> {
+    let add_btn = RoundedButton::from_text("Aggiungi libro")
+        .with_text_size(18.0)
+        .with_on_click(|ctx, data: &mut CrabReaderState, _| {
+
+            data.open_file_trigger = Trigger::ADDBOOK;
+
+            //Trigger a FILE PICKER
+            let cmd = Command::new(
+                SHOW_OPEN_PANEL,
+                FileDialogOptions::new().allowed_types(vec![FileSpec::new("Epub", &["epub"])]),
+                Target::Auto,
+            );
+            ctx.request_update();
+            ctx.submit_command(cmd);
+
+        })
+        .with_text_color(colors::ON_PRIMARY)
+        .padding(5.0);
+
     let library_cover = CoverLibrary::new()
         .background(colors::BACKGROUND_VARIANT)
         .rounded(ROUND_FACTR)
@@ -290,6 +310,9 @@ fn build_ui() -> impl Widget<CrabReaderState> {
         .align_vertical(UnitPoint::TOP);
     let right_panel = Scroll::new(book_details_panel()).vertical();
     let right_col = Flex::column()
+        .must_fill_main_axis(true)
+        .with_child(add_btn)
+        .with_default_spacer()
         .with_child(
             RoundedButton::dynamic(
                 |data: &CrabReaderState, _env: &Env| match data.display_mode {
@@ -305,8 +328,9 @@ fn build_ui() -> impl Widget<CrabReaderState> {
                 ctx.request_update();
             })
             .with_text_color(colors::ON_PRIMARY)
-            .padding((0.0, 20.0)),
+            .padding(5.0),
         )
+        .with_default_spacer()
         .with_flex_child(right_panel, 1.0)
         .padding(10.0);
 

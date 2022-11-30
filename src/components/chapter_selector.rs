@@ -70,7 +70,6 @@ impl Widget<Library<Book>> for ChapterSelector {
         while self.children.len() < book.get_number_of_chapters() {
             let idx = self.children.len();
             self.add_child(idx);
-            ctx.children_changed();
         }
 
         for child in self.children.iter_mut() {
