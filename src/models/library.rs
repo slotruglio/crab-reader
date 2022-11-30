@@ -2,16 +2,7 @@ use derivative::Derivative;
 use druid::{im::Vector, Data, Lens};
 use epub::doc::EpubDoc;
 use image::io::Reader as ImageReader;
-use std::{
-    io::Cursor,
-    path::PathBuf,
-    rc::Rc,
-    sync::{
-        mpsc::{self, Receiver, Sender},
-        Arc,
-    },
-};
-use threadpool::ThreadPool;
+use std::{io::Cursor, path::PathBuf, rc::Rc, sync::Arc};
 
 use crate::utils::thread_loader::{ThreadLoader, ThreadResult};
 use crate::{
@@ -201,7 +192,7 @@ impl GUILibrary for Library<Book> {
             let book = self.get_book_mut(result.idx());
             if let Some(book) = book {
                 let cover = result.value();
-                book.set_cover_image(cover);
+                book.set_cover_buffer(cover);
                 loaded = true;
             }
         }
@@ -326,32 +317,6 @@ impl Library<Book> {
             }
         }
         self.visible_books = cnt;
-    }
-}
-
-struct CoverResult {
-    idx: usize,
-    cover: Option<Vec<u8>>,
-}
-
-unsafe impl Send for CoverResult {}
-unsafe impl Sync for CoverResult {}
-
-struct CoverLoader {
-    pool: ThreadPool,
-    tx: Sender<CoverResult>,
-    rx: Receiver<CoverResult>,
-}
-
-impl Default for CoverLoader {
-    fn default() -> Self {
-        let (tx, rx) = mpsc::channel();
-        let pool = ThreadPool::new(4);
-        Self {
-            pool,
-            tx: tx.into(),
-            rx: rx.into(),
-        }
     }
 }
 

@@ -1,10 +1,7 @@
 use druid::{
-    piet::{ImageFormat, InterpolationMode, PietImage},
-    widget::Label,
-    BoxConstraints, Color, Command,
-    Cursor::Pointer,
-    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
-    Size, Target, UpdateCtx, Widget, WidgetPod,
+    piet::InterpolationMode, widget::Label, BoxConstraints, Color, Command, Cursor::Pointer, Data,
+    Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext, Size,
+    Target, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::{
@@ -20,7 +17,6 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 pub struct BookCover<B: GUIBook> {
     is_hot: bool,
     star: WidgetPod<B, Label<B>>,
-    image: Option<PietImage>,
     label: WidgetPod<B, Label<B>>,
 }
 
@@ -40,7 +36,6 @@ impl<B: GUIBook> BookCover<B> {
         Self {
             is_hot: false,
             star: WidgetPod::new(star),
-            image: None,
             label: WidgetPod::new(label),
         }
     }
@@ -62,29 +57,28 @@ impl<B: GUIBook> BookCover<B> {
     }
 
     fn paint_cover(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
-        let cover_data = data.get_cover_image();
-        if cover_data.len() == 0 {
+        let rect = ctx.size().to_rect();
+        let rrect = rect.clone().to_rounded_rect(10.0);
+
+        if data.get_cover_image().is_none() && data.get_cover_buffer().is_empty() {
             self.paint_default_cover(ctx, data, env);
             return;
         }
 
-        let round_factr = 20.0;
-        let paint_rect = ctx.size().to_rect();
-        let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
-        let w = BOOK_WIDGET_SIZE.width as usize;
-        let h = BOOK_WIDGET_SIZE.height as usize;
+        if data.get_cover_image().is_none() && !data.get_cover_buffer().is_empty() {
+            let Ok(_) = data.set_cover_image(ctx) else { return };
+        }
 
-        if let Some(ref image) = self.image {
+        if data.get_cover_image().is_none() {
+            self.paint_default_cover(ctx, data, env);
+            return;
+        }
+
+        if let Some(image) = data.get_cover_image().as_ref() {
             ctx.with_save(|ctx| {
-                ctx.clip(paint_rounded);
-                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+                ctx.clip(rrect);
+                ctx.draw_image(&image, rect, InterpolationMode::Bilinear);
             });
-        } else if let Ok(image) = ctx.make_image(w, h, &cover_data, ImageFormat::Rgb) {
-            ctx.with_save(|ctx| {
-                ctx.clip(paint_rounded);
-                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
-            });
-            self.image = Some(image);
         }
     }
 

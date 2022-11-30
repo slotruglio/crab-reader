@@ -1,6 +1,9 @@
 use crate::models::library::SortBy;
-use druid::Data;
-use std::sync::Arc;
+use druid::{
+    piet::{Error, PietImage},
+    Data, PaintCtx,
+};
+use std::{cell::Ref, sync::Arc};
 
 pub trait GUIBook: PartialEq + Data {
     /// Returns the title
@@ -79,16 +82,20 @@ pub trait GUIBook: PartialEq + Data {
     fn unselect(&mut self);
 
     /// Returns the cover of this book
-    fn get_cover_image(&self) -> Arc<Vec<u8>>;
+    fn get_cover_buffer(&self) -> Arc<Vec<u8>>;
 
     /// Sets the cover image
-    fn set_cover_image(&mut self, cover_image: Vec<u8>);
+    fn set_cover_buffer(&mut self, cover_image: Vec<u8>);
 
     fn is_filtered_out(&self) -> bool;
 
     fn set_filtered_out(&mut self, filtered_out: bool);
 
     fn is_favorite(&self) -> bool;
+
+    fn set_cover_image(&self, ctx: &mut PaintCtx) -> Result<(), Error>;
+
+    fn get_cover_image(&self) -> Ref<Option<PietImage>>;
 }
 
 /// This trait deinfes all the functionalities that a `Library` struct must expose
