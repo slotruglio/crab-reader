@@ -9,7 +9,7 @@ use crate::{
         note::{BookNotes, Note},
     },
     traits::reader::BookManagement,
-    utils::colors,
+    utils::{colors, fonts},
     CrabReaderState, ROUND_FACTR,
 };
 
@@ -30,7 +30,7 @@ pub fn get_notes_list() -> impl Widget<CrabReaderState> {
         let header = Label::new(|note: &Note, _env: &_| {
             format!("{}...", note.get_start()[0..10].to_string())
         })
-        .with_text_size(8.0)
+        .with_font(fonts::small)
         .with_text_color(colors::ON_SECONDARY)
         .with_line_break_mode(LineBreaking::WordWrap)
         .with_text_alignment(druid::TextAlignment::Start)

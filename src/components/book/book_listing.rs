@@ -19,7 +19,7 @@ pub struct BookListing<T> {
 impl<T: GUIBook> BookListing<T> {
     pub fn new() -> Self {
         let title_label = Label::dynamic(|data: &T, _| format!("{}", data.get_title().to_string()))
-            .with_font(fonts::Font::default().md().bold().get())
+            .with_font(fonts::medium)
             .with_line_break_mode(LineBreaking::WordWrap)
             .with_text_color(colors::ON_PRIMARY);
 
@@ -30,13 +30,19 @@ impl<T: GUIBook> BookListing<T> {
                 data.get_number_of_pages()
             )
         })
-        .with_font(fonts::Font::default().sm().get())
+        .with_font(fonts::medium)
         .with_line_break_mode(LineBreaking::WordWrap)
         .with_text_color(colors::ON_PRIMARY);
 
-        let star_label =
-            Label::dynamic(|data: &T, _| if data.is_favorite() { "❤" } else { "" }.into())
-                .with_font(fonts::Font::default().md().emoji().get());
+        let star_label = Label::dynamic(|data: &T, _| {
+            if data.is_favorite() {
+                fonts::HEART_EMOJI
+            } else {
+                ""
+            }
+            .into()
+        })
+        .with_font(fonts::large);
 
         Self {
             is_hot: false,

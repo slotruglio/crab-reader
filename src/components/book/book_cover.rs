@@ -27,15 +27,16 @@ impl<B: GUIBook> BookCover<B> {
     pub fn new() -> Self {
         let star = Label::dynamic(|data: &B, _| {
             if data.is_favorite() {
-                "❤".into()
+                fonts::HEART_EMOJI.into()
             } else {
                 "".into()
             }
         })
-        .with_font(fonts::Font::default().lg().emoji().get());
+        .with_font(fonts::medium);
 
         let label = Label::dynamic(|data: &B, _| data.get_title().to_string())
-            .with_line_break_mode(LineBreaking::WordWrap);
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .with_font(fonts::medium);
 
         Self {
             is_hot: false,

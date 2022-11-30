@@ -14,7 +14,7 @@ use crate::{
         note::NoteManagement,
         reader::{BookManagement, BookReading},
     },
-    utils::colors,
+    utils::{colors, fonts},
     CrabReaderState, ReadingState,
 };
 
@@ -42,10 +42,10 @@ fn left_sidebar_widget() -> Flex<CrabReaderState> {
             "Chiudi selezione capitoli".into()
         }
     })
-    .with_on_click(|ctx, data: &mut ReadingState, _env| {
+    .with_on_click(|_, data: &mut ReadingState, _env| {
         data.sidebar_open = !data.sidebar_open;
     })
-    .with_text_size(18.0)
+    .with_font(fonts::large)
     .align_horizontal(UnitPoint::CENTER)
     .lens(CrabReaderState::reading_state);
 

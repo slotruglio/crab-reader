@@ -66,7 +66,6 @@ impl Library<Book> {
         if let Ok(paths) = lib.epub_paths() {
             for path in paths {
                 let path: String = path.to_str().unwrap().to_string();
-                let idx = lib.books.len();
                 lib.schedule_book_loading(&path);
             }
         }
