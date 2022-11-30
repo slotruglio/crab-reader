@@ -26,7 +26,7 @@ impl Lens<Library<Book>, String> for LibraryFilterLens {
         let mut filter = data.filter_by.to_string();
         let res = f(&mut filter);
         data.filter_by = filter.into();
-        data.filter_out_by_string();
+        data.filter_books();
         res
     }
 }
@@ -233,7 +233,7 @@ impl GUILibrary for Library<Book> {
 
     fn toggle_fav_filter(&mut self) {
         self.filter_fav = !self.filter_fav;
-        self.filter_out_by_string();
+        self.filter_books();
     }
 
     fn only_fav(&self) -> bool {
@@ -318,7 +318,7 @@ impl Library<Book> {
         self.sorted_by = by;
     }
 
-    pub fn filter_out_by_string(&mut self) {
+    pub fn filter_books(&mut self) {
         let filter = self.get_filter_by();
         let only_fav = self.filter_fav;
         let mut cnt = 0;

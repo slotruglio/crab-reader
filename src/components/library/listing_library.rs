@@ -36,7 +36,7 @@ impl<B: GUIBook, L: GUILibrary> ListLibrary<L, B> {
     }
 
     fn update_child_count(&mut self, ctx: &mut LifeCycleCtx, data: &L) -> bool {
-        let target = data.get_number_of_visible_books();
+        let target = data.number_of_books();
         let current = self.children.len();
         if target > current {
             for _ in current..target {
@@ -108,6 +108,10 @@ where
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &L, data: &L, env: &Env) {
+        if data.only_fav() != old_data.only_fav() {
+            ctx.request_layout();
+        }
+
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 if let Some(old_book) = old_data.get_book(idx) {
