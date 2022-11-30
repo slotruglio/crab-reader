@@ -88,14 +88,6 @@ impl Library<Book> {
             .collect();
         Ok(vec)
     }
-
-    pub fn get_number_of_visible_books(&self) -> usize {
-        self.visible_books
-    }
-
-    pub fn get_filter_by(&self) -> Rc<String> {
-        self.filter_by.clone()
-    }
 }
 
 impl GUILibrary for Library<Book> {
@@ -233,6 +225,14 @@ impl GUILibrary for Library<Book> {
             .rev()
             .find(|(cidx, b)| !b.is_filtered_out() && *cidx < idx)
             .map(|(idx, _)| idx)
+    }
+
+    fn get_number_of_visible_books(&self) -> usize {
+        self.visible_books
+    }
+
+    fn get_filter_by(&self) -> Rc<String> {
+        self.filter_by.clone()
     }
 }
 

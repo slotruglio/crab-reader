@@ -9,14 +9,16 @@ use crate::{
     utils::library::SELECTED_BOOK_SELECTOR,
 };
 
-pub struct ListLibrary<B: GUIBook> {
+pub struct ListLibrary<L: GUILibrary, B: GUIBook> {
     children: Vec<WidgetPod<B, BookListing<B>>>,
+    marker: std::marker::PhantomData<L>,
 }
 
-impl<B: GUIBook> ListLibrary<B> {
+impl<B: GUIBook, L: GUILibrary> ListLibrary<L, B> {
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
+            marker: std::marker::PhantomData,
         }
     }
 
@@ -32,9 +34,27 @@ impl<B: GUIBook> ListLibrary<B> {
             self.children.remove(idx);
         }
     }
+
+    fn update_child_count(&mut self, ctx: &mut LifeCycleCtx, data: &L) -> bool {
+        let target = data.get_number_of_visible_books();
+        let current = self.children.len();
+        if target > current {
+            for _ in current..target {
+                self.add_child();
+            }
+            ctx.children_changed();
+            true
+        } else if target < current {
+            self.children.truncate(target);
+            ctx.children_changed();
+            true
+        } else {
+            false
+        }
+    }
 }
 
-impl<L, B> Widget<L> for ListLibrary<B>
+impl<L, B> Widget<L> for ListLibrary<L, B>
 where
     L: GUILibrary + GUILibrary<B = B>,
     B: GUIBook,
@@ -66,13 +86,8 @@ where
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &L, env: &Env) {
-        if self.children.len() > data.number_of_books() {
-            self.children.truncate(data.number_of_books());
-        }
-
-        while data.number_of_books() > self.children.len() {
-            self.add_child();
-            ctx.children_changed();
+        if self.update_child_count(ctx, data) {
+            ctx.request_layout();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
@@ -86,16 +101,6 @@ where
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &L, data: &L, env: &Env) {
-        if data.get_sort_order() != old_data.get_sort_order() {
-            self.children.clear();
-            ctx.children_changed();
-        }
-
-        if data.only_fav() != old_data.only_fav() {
-            self.children.clear();
-            ctx.children_changed();
-        }
-
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
                 if let Some(old_book) = old_data.get_book(idx) {

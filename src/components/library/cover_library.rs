@@ -27,6 +27,24 @@ impl CoverLibrary {
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
+
+    fn update_child_count(&mut self, ctx: &mut LifeCycleCtx, data: &Library<Book>) -> bool {
+        let target = data.get_number_of_visible_books();
+        let current = self.children.len();
+        if target > current {
+            for _ in current..target {
+                self.add_child();
+            }
+            ctx.children_changed();
+            true
+        } else if target < current {
+            self.children.truncate(target);
+            ctx.children_changed();
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Widget<Library<Book>> for CoverLibrary {
@@ -69,12 +87,8 @@ impl Widget<Library<Book>> for CoverLibrary {
         data: &Library<Book>,
         env: &Env,
     ) {
-        if self.children.len() > data.number_of_books() {
-            self.children.truncate(data.number_of_books());
-        }
-        while self.children.len() < data.number_of_books() {
-            self.add_child();
-            ctx.children_changed();
+        if self.update_child_count(ctx, data) {
+            ctx.request_layout();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
@@ -94,10 +108,6 @@ impl Widget<Library<Book>> for CoverLibrary {
         data: &Library<Book>,
         env: &Env,
     ) {
-        if old_data.get_sort_order() != data.get_sort_order() {
-            self.children.clear();
-        }
-
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(old_book) = old_data.get_book(idx) {
                 if let Some(book) = data.get_book(idx) {

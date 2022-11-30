@@ -3,7 +3,7 @@ use druid::{
     piet::{Error, PietImage},
     Data, PaintCtx,
 };
-use std::{cell::Ref, sync::Arc};
+use std::{cell::Ref, rc::Rc, sync::Arc};
 
 pub trait GUIBook: PartialEq + Data {
     /// Returns the title
@@ -155,4 +155,8 @@ pub trait GUILibrary {
     fn next_book_idx(&self) -> Option<usize>;
 
     fn prev_book_idx(&self) -> Option<usize>;
+
+    fn get_number_of_visible_books(&self) -> usize;
+
+    fn get_filter_by(&self) -> Rc<String>;
 }
