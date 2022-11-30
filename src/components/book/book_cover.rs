@@ -1,7 +1,10 @@
 use druid::{
-    piet::InterpolationMode, widget::Label, BoxConstraints, Color, Command, Cursor::Pointer, Data,
-    Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext, Size,
-    Target, UpdateCtx, Widget, WidgetPod,
+    piet::InterpolationMode,
+    widget::{Label, LineBreaking},
+    BoxConstraints, Color, Command,
+    Cursor::Pointer,
+    Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
+    Size, Target, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::{
@@ -31,7 +34,8 @@ impl<B: GUIBook> BookCover<B> {
         })
         .with_font(fonts::Font::default().lg().emoji().get());
 
-        let label = Label::dynamic(|data: &B, _| data.get_title().to_string());
+        let label = Label::dynamic(|data: &B, _| data.get_title().to_string())
+            .with_line_break_mode(LineBreaking::WordWrap);
 
         Self {
             is_hot: false,
@@ -147,7 +151,10 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
         let sl = self.star.layout(ctx, bc, data, env);
         let origin = (10.0, BOOK_WIDGET_SIZE.height - sl.height - 10.0).into();
         self.star.set_origin(ctx, data, env, origin);
-        let ls = self.label.layout(ctx, bc, data, env);
+        let lbc = BoxConstraints::tight(bc.constrain(BOOK_WIDGET_SIZE))
+            .loosen()
+            .shrink((10.0, 10.0));
+        let ls = self.label.layout(ctx, &lbc, data, env);
         let origin_x = (BOOK_WIDGET_SIZE.width - ls.width) / 2.0;
         let origin_y = (BOOK_WIDGET_SIZE.height - ls.height) / 2.0;
         let origin = (origin_x, origin_y).into();

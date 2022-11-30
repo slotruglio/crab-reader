@@ -126,6 +126,7 @@ impl BookDetails {
                         library.remove_book(book.get_index());
                         println!("Eliminato libro");
                         ctx.children_changed();
+                        ctx.request_layout();
                     } else {
                         println!("Errore eliminazione libro");
                     }

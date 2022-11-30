@@ -51,6 +51,9 @@ impl Widget<Library<Book>> for CoverLibrary {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library<Book>, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book_mut(idx) {
+                if !event.should_propagate_to_hidden() && !inner.is_initialized() {
+                    continue;
+                }
                 inner.event(ctx, event, book, env);
             }
         }
@@ -146,6 +149,10 @@ impl Widget<Library<Book>> for CoverLibrary {
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if !inner.is_initialized() {
+                    continue;
+                }
+
                 if book.is_filtered_out() {
                     inner.layout(ctx, bc, book, env);
                     continue;
@@ -172,7 +179,9 @@ impl Widget<Library<Book>> for CoverLibrary {
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Library<Book>, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
-                inner.paint(ctx, book, env);
+                if inner.is_initialized() {
+                    inner.paint(ctx, book, env);
+                }
             }
         }
     }

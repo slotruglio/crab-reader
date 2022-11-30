@@ -66,6 +66,9 @@ where
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book_mut(idx) {
+                if !event.should_propagate_to_hidden() && !inner.is_initialized() {
+                    continue;
+                }
                 inner.event(ctx, event, book, env);
             }
         }
@@ -125,6 +128,10 @@ where
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if !inner.is_initialized() {
+                    continue;
+                }
+
                 if book.is_filtered_out() {
                     let bc = BoxConstraints::tight((0.0, 0.0).into());
                     inner.layout(ctx, &bc, book, env);
