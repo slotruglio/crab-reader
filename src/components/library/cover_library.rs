@@ -1,6 +1,6 @@
 use druid::{
-    BoxConstraints, Data, Env, Event, EventCtx, Key, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, Size, UpdateCtx, Widget, WidgetPod,
+    BoxConstraints, Env, Event, EventCtx, Key, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
+    Size, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::{
@@ -27,14 +27,39 @@ impl CoverLibrary {
         let pod = WidgetPod::new(widget);
         self.children.push(pod);
     }
+
+    fn update_child_count(&mut self, ctx: &mut LifeCycleCtx, data: &Library<Book>) -> bool {
+        let target = data.number_of_books();
+        let current = self.children.len();
+        if target > current {
+            for _ in current..target {
+                self.add_child();
+            }
+            ctx.children_changed();
+            true
+        } else if target < current {
+            self.children.truncate(target);
+            ctx.children_changed();
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Widget<Library<Book>> for CoverLibrary {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Library<Book>, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book_mut(idx) {
+                if !event.should_propagate_to_hidden() && !inner.is_initialized() {
+                    continue;
+                }
                 inner.event(ctx, event, book, env);
             }
+        }
+
+        if data.check_books_loaded() {
+            ctx.request_layout();
         }
 
         if data.check_covers_loaded() {
@@ -69,12 +94,8 @@ impl Widget<Library<Book>> for CoverLibrary {
         data: &Library<Book>,
         env: &Env,
     ) {
-        if self.children.len() > data.number_of_books() {
-            self.children.truncate(data.number_of_books());
-        }
-        while self.children.len() < data.number_of_books() {
-            self.add_child();
-            ctx.children_changed();
+        if self.update_child_count(ctx, data) {
+            ctx.request_layout();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
@@ -94,17 +115,13 @@ impl Widget<Library<Book>> for CoverLibrary {
         data: &Library<Book>,
         env: &Env,
     ) {
-        if old_data.get_sort_order() != data.get_sort_order() {
-            self.children.clear();
+        if data.only_fav() != old_data.only_fav() {
+            ctx.request_layout();
         }
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
-            if let Some(old_book) = old_data.get_book(idx) {
-                if let Some(book) = data.get_book(idx) {
-                    if !old_book.same(book) || ctx.env_changed() {
-                        inner.update(ctx, book, env);
-                    }
-                }
+            if let Some(book) = data.get_book(idx) {
+                inner.update(ctx, book, env);
             }
         }
     }
@@ -132,6 +149,10 @@ impl Widget<Library<Book>> for CoverLibrary {
 
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
+                if !inner.is_initialized() {
+                    continue;
+                }
+
                 if book.is_filtered_out() {
                     inner.layout(ctx, bc, book, env);
                     continue;
@@ -158,7 +179,9 @@ impl Widget<Library<Book>> for CoverLibrary {
     fn paint(&mut self, ctx: &mut PaintCtx, data: &Library<Book>, env: &Env) {
         for (idx, inner) in self.children.iter_mut().enumerate() {
             if let Some(book) = data.get_book(idx) {
-                inner.paint(ctx, book, env);
+                if inner.is_initialized() {
+                    inner.paint(ctx, book, env);
+                }
             }
         }
     }

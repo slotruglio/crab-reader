@@ -1,10 +1,10 @@
 use druid::{
-    piet::{ImageFormat, InterpolationMode, PietImage},
-    widget::Label,
+    piet::InterpolationMode,
+    widget::{Label, LineBreaking},
     BoxConstraints, Color, Command,
     Cursor::Pointer,
     Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, RenderContext,
-    Size, Target, TextLayout, UpdateCtx, Widget, WidgetPod,
+    Size, Target, UpdateCtx, Widget, WidgetPod,
 };
 
 use crate::{
@@ -20,24 +20,28 @@ pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
 pub struct BookCover<B: GUIBook> {
     is_hot: bool,
     star: WidgetPod<B, Label<B>>,
-    image: Option<PietImage>,
+    label: WidgetPod<B, Label<B>>,
 }
 
 impl<B: GUIBook> BookCover<B> {
     pub fn new() -> Self {
         let star = Label::dynamic(|data: &B, _| {
             if data.is_favorite() {
-                "❤".into()
+                fonts::HEART_EMOJI.into()
             } else {
                 "".into()
             }
         })
-        .with_font(fonts::Font::default().lg().emoji().get());
+        .with_font(fonts::medium);
+
+        let label = Label::dynamic(|data: &B, _| data.get_title().to_string())
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .with_font(fonts::medium);
 
         Self {
             is_hot: false,
             star: WidgetPod::new(star),
-            image: None,
+            label: WidgetPod::new(label),
         }
     }
 
@@ -57,64 +61,39 @@ impl<B: GUIBook> BookCover<B> {
         ctx.blurred_rect(shadow_rect, blur_radius, &shadow_color);
     }
 
-    fn paint_cover(&mut self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
-        let cover_data = data.get_cover_image();
-        if cover_data.len() == 0 {
+    fn paint_cover(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
+        let rect = ctx.size().to_rect();
+        let rrect = rect.clone().to_rounded_rect(10.0);
+
+        if data.get_cover_image().is_none() && data.get_cover_buffer().is_empty() {
             self.paint_default_cover(ctx, data, env);
-            self.paint_book_title(ctx, env, data);
             return;
         }
 
-        let round_factr = 20.0;
-        let paint_rect = ctx.size().to_rect();
-        let paint_rounded = paint_rect.clone().to_rounded_rect(round_factr);
-        let w = BOOK_WIDGET_SIZE.width as usize;
-        let h = BOOK_WIDGET_SIZE.height as usize;
+        if data.get_cover_image().is_none() && !data.get_cover_buffer().is_empty() {
+            let Ok(_) = data.set_cover_image(ctx) else { return };
+        }
 
-        if let Some(ref image) = self.image {
+        if data.get_cover_image().is_none() {
+            self.paint_default_cover(ctx, data, env);
+            return;
+        }
+
+        if let Some(image) = data.get_cover_image().as_ref() {
             ctx.with_save(|ctx| {
-                ctx.clip(paint_rounded);
-                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
+                ctx.clip(rrect);
+                ctx.draw_image(&image, rect, InterpolationMode::Bilinear);
             });
-        } else if let Ok(image) = ctx.make_image(w, h, &cover_data, ImageFormat::Rgb) {
-            ctx.with_save(|ctx| {
-                ctx.clip(paint_rounded);
-                ctx.draw_image(&image, paint_rect, InterpolationMode::Bilinear);
-            });
-            self.image = Some(image);
         }
     }
 
-    fn paint_default_cover(&self, ctx: &mut PaintCtx, data: &impl GUIBook, env: &Env) {
+    fn paint_default_cover(&mut self, ctx: &mut PaintCtx, data: &B, env: &Env) {
         let round_factr = 20.0;
         let color = self.get_bg_color(data, env);
         let rect = ctx.size().to_rounded_rect(round_factr);
 
-        ctx.paint_with_z_index(2, move |ctx| {
-            ctx.fill(rect, &color);
-        });
-    }
-
-    fn paint_book_title(&self, ctx: &mut PaintCtx, env: &Env, data: &impl GUIBook) {
-        let font = fonts::Font::default().sm().get();
-        let mut layout = TextLayout::new();
-        layout.set_text(data.get_title().to_string());
-        layout.set_text_color(env.get(colors::ON_PRIMARY));
-        layout.set_font(font);
-        layout.set_wrap_width(ctx.size().width - 2.5);
-        layout.rebuild_if_needed(ctx.text(), env);
-
-        let pos = ctx.size().to_rect().center() - layout.size().to_vec2() / 2.0;
-
-        ctx.paint_with_z_index(3, move |ctx| {
-            if let Some(layout) = layout.layout() {
-                ctx.draw_text(layout, pos);
-            }
-        });
-    }
-
-    fn set_hot(&mut self, is_hot: bool) {
-        self.is_hot = is_hot;
+        ctx.fill(rect, &color);
+        self.label.paint(ctx, data, env);
     }
 
     fn get_bg_color(&self, data: &impl GUIBook, env: &Env) -> Color {
@@ -131,6 +110,7 @@ impl<B: GUIBook> BookCover<B> {
 impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut B, env: &Env) {
         self.star.event(ctx, event, data, env);
+        self.label.event(ctx, event, data, env);
 
         if ctx.is_hot() {
             ctx.set_cursor(&Pointer);
@@ -155,17 +135,13 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &B, env: &Env) {
         self.star.lifecycle(ctx, event, data, env);
-        match event {
-            LifeCycle::HotChanged(hot) => {
-                self.set_hot(*hot);
-            }
-            _ => {}
-        }
+        self.label.lifecycle(ctx, event, data, env);
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &B, data: &B, env: &Env) {
         if !data.same(old_data) || ctx.env_changed() {
             self.star.update(ctx, data, env);
+            self.label.update(ctx, data, env);
         }
     }
 
@@ -176,6 +152,14 @@ impl<B: GUIBook + Data> Widget<B> for BookCover<B> {
         let sl = self.star.layout(ctx, bc, data, env);
         let origin = (10.0, BOOK_WIDGET_SIZE.height - sl.height - 10.0).into();
         self.star.set_origin(ctx, data, env, origin);
+        let lbc = BoxConstraints::tight(bc.constrain(BOOK_WIDGET_SIZE))
+            .loosen()
+            .shrink((10.0, 10.0));
+        let ls = self.label.layout(ctx, &lbc, data, env);
+        let origin_x = (BOOK_WIDGET_SIZE.width - ls.width) / 2.0;
+        let origin_y = (BOOK_WIDGET_SIZE.height - ls.height) / 2.0;
+        let origin = (origin_x, origin_y).into();
+        self.label.set_origin(ctx, data, env, origin);
         BOOK_WIDGET_SIZE
     }
 

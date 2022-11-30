@@ -1,19 +1,14 @@
 use druid::{
-    widget::{
-        Container, Either, Flex, Label, LineBreaking, RawLabel, Scroll, TextBox, ViewSwitcher,
-    },
+    widget::{Container, Flex, Label, LineBreaking, RawLabel, Scroll, TextBox, ViewSwitcher},
     Data, Env, FontDescriptor, LensExt, TextAlignment, Widget, WidgetExt,
 };
 
 use crate::{
     models::library::LibrarySelectedBookLens,
     models::rich::custom_lens::{DualPage0Lens, DualPage1Lens, SelectedPageLens},
-    traits::{
-        gui::{GUIBook, GUILibrary},
-        reader::BookReading,
-    },
-    utils::colors,
-    CrabReaderState, ReadingState, MYENV,
+    traits::{gui::GUILibrary, reader::BookReading},
+    utils::{colors, fonts},
+    CrabReaderState, ReadingState,
 };
 
 #[derive(Clone, PartialEq, Data)]
@@ -26,9 +21,7 @@ pub enum ReaderView {
 
 impl ReaderView {
     pub fn get_view(&self) -> Box<dyn Widget<CrabReaderState>> {
-        let myenv = MYENV.lock().unwrap();
-        let font = myenv.font.clone();
-        let font_color = myenv.font_color.clone();
+        let font = fonts::medium;
 
         match self {
             ReaderView::Single => single_view_widget(font),
@@ -51,7 +44,7 @@ impl ReaderView {
             (false, false) => ReaderView::Dual,
         };
 
-        let child_builder = |view: &ReaderView, _data: &CrabReaderState, env: &Env| view.get_view();
+        let child_builder = |view: &ReaderView, _data: &CrabReaderState, _: &Env| view.get_view();
         ViewSwitcher::new(child_picker, child_builder)
             .background(colors::BACKGROUND)
             .center()
@@ -143,21 +136,6 @@ fn dual_view_edit_widget(font: FontDescriptor) -> Container<CrabReaderState> {
         .with_flex_child(Scroll::new(text_box_page_1).vertical(), 1.0);
 
     Container::new(inner)
-}
-
-pub fn title_widget() -> impl Widget<CrabReaderState> {
-    Label::dynamic(|data: &CrabReaderState, _env: &_| {
-        data.library
-            .get_selected_book()
-            .unwrap()
-            .get_title()
-            .to_string()
-    })
-    .with_text_color(colors::ON_BACKGROUND)
-    .with_line_break_mode(LineBreaking::Clip)
-    .with_text_size(32.0)
-    .padding(10.0)
-    .center()
 }
 
 pub fn current_chapter_widget() -> Label<CrabReaderState> {

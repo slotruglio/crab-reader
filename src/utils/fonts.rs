@@ -1,113 +1,82 @@
-use druid::{FontDescriptor, FontFamily, FontStyle, FontWeight};
+#![allow(unused, non_upper_case_globals)]
+use druid::{FontDescriptor, FontFamily};
 
-const SZ_XS: f64 = 12.0;
-const SZ_S: f64 = 16.0;
-const SZ_M: f64 = 20.0;
-const SZ_L: f64 = 24.0;
-const SZ_XL: f64 = 28.0;
-
-pub enum FontSize {
-    XS,
-    SM,
-    MD,
-    LG,
-    XL,
+mod font_sizes {
+    pub const xxsmall: f64 = 6.0;
+    pub const xsmall: f64 = 10.0;
+    pub const small: f64 = 14.0;
+    pub const medium: f64 = 18.0;
+    pub const large: f64 = 22.0;
+    pub const xlarge: f64 = 26.0;
+    pub const xxlarge: f64 = 30.0;
 }
 
-impl From<FontSize> for f64 {
-    fn from(sz: FontSize) -> Self {
-        match sz {
-            FontSize::XS => SZ_XS,
-            FontSize::SM => SZ_S,
-            FontSize::MD => SZ_M,
-            FontSize::LG => SZ_L,
-            FontSize::XL => SZ_XL,
-        }
-    }
+pub mod bold {
+    use druid::{FontDescriptor, FontFamily, FontWeight};
+
+    use super::font_sizes;
+
+    pub const xxsmall: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::xxsmall)
+        .with_weight(FontWeight::BOLD);
+    pub const xsmall: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::xsmall)
+        .with_weight(FontWeight::BOLD);
+    pub const small: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::small)
+        .with_weight(FontWeight::BOLD);
+    pub const medium: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::medium)
+        .with_weight(FontWeight::BOLD);
+    pub const large: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::large)
+        .with_weight(FontWeight::BOLD);
+    pub const xlarge: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::xlarge)
+        .with_weight(FontWeight::BOLD);
 }
 
-pub struct Font {
-    family: FontFamily,
-    weight: FontWeight,
-    style: FontStyle,
-    sz: f64,
+pub mod italic {
+    use druid::{FontDescriptor, FontFamily, FontStyle};
+
+    use super::font_sizes;
+
+    pub const xxsmall: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::xxsmall)
+        .with_style(FontStyle::Italic);
+    pub const xsmall: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::xsmall)
+        .with_style(FontStyle::Italic);
+    pub const small: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::small)
+        .with_style(FontStyle::Italic);
+    pub const medium: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::medium)
+        .with_style(FontStyle::Italic);
+    pub const large: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::large)
+        .with_style(FontStyle::Italic);
+    pub const xlarge: FontDescriptor = FontDescriptor::new(FontFamily::SYSTEM_UI)
+        .with_size(font_sizes::xlarge)
+        .with_style(FontStyle::Italic);
 }
 
-impl Font {
-    pub fn get(self) -> FontDescriptor {
-        FontDescriptor::new(self.family.clone())
-            .with_weight(self.weight)
-            .with_size(self.sz)
-    }
+pub const H1: FontDescriptor = bold::xlarge;
+pub const H2: FontDescriptor = bold::large;
+pub const H3: FontDescriptor = bold::medium;
+pub const H4: FontDescriptor = bold::small;
 
-    pub fn xs(mut self) -> Self {
-        self.sz = SZ_XS;
-        self
-    }
+pub const xxsmall: FontDescriptor =
+    FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(font_sizes::xxsmall);
+pub const xsmall: FontDescriptor =
+    FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(font_sizes::xsmall);
+pub const small: FontDescriptor =
+    FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(font_sizes::small);
+pub const medium: FontDescriptor =
+    FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(font_sizes::medium);
+pub const large: FontDescriptor =
+    FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(font_sizes::large);
+pub const xlarge: FontDescriptor =
+    FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(font_sizes::xlarge);
 
-    pub fn sm(mut self) -> Self {
-        self.sz = SZ_S;
-        self
-    }
-
-    pub fn md(mut self) -> Self {
-        self.sz = SZ_M;
-        self
-    }
-
-    pub fn lg(mut self) -> Self {
-        self.sz = SZ_L;
-        self
-    }
-
-    pub fn xl(mut self) -> Self {
-        self.sz = SZ_XL;
-        self
-    }
-
-    pub fn bold(mut self) -> Self {
-        self.weight = FontWeight::SEMI_BOLD;
-        self
-    }
-
-    pub fn normal(mut self) -> Self {
-        self.weight = FontWeight::NORMAL;
-        self
-    }
-
-    pub fn dejavu(mut self) -> Self {
-        self.family = FontFamily::new_unchecked("DejaVu Sans");
-        self
-    }
-
-    pub fn sf_apple(mut self) -> Self {
-        self.family = FontFamily::new_unchecked("SF Pro Text");
-        self
-    }
-
-    pub fn arial(mut self) -> Self {
-        self.family = FontFamily::new_unchecked("Arial");
-        self
-    }
-
-    pub fn italic(mut self) -> Self {
-        self.style = FontStyle::Italic;
-        self
-    }
-
-    pub fn emoji(mut self) -> Self {
-        self.family = FontFamily::new_unchecked("Noto Emoji");
-        self
-    }
-}
-
-impl Default for Font {
-    fn default() -> Self {
-        Font {
-            family: FontFamily::new_unchecked("DejaVu Sans"),
-            weight: FontWeight::NORMAL,
-            sz: SZ_M,
-            style: FontStyle::Regular,
-        }
-    }
-}
+pub const HEART_EMOJI: &str = "❤️";
