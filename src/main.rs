@@ -111,6 +111,7 @@ impl Default for CrabReaderState {
         let my_env = MYENV.lock().unwrap();
         let theme = my_env.theme.clone();
         let font = my_env.font.clone();
+        let shadows = my_env.shadows;
         drop(my_env);
         Self {
             library: Library::new(),
@@ -119,7 +120,7 @@ impl Default for CrabReaderState {
             reading_state: ReadingState::default(),
             open_file_trigger: Trigger::default(),
             theme: CrabTheme::from(theme),
-            paint_shadows: false,
+            paint_shadows: shadows,
             font: font,
         }
     }

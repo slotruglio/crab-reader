@@ -72,6 +72,11 @@ fn shadows() -> Menu<CrabReaderState> {
         .on_activate(|_, data: &mut CrabReaderState, _| {
             println!("{} -> {}", data.paint_shadows, !data.paint_shadows);
             data.paint_shadows = !data.paint_shadows;
+            // update env
+            let mut my_env = MYENV.lock().unwrap();
+            my_env.set_property(
+                "shadows".to_string(), data.paint_shadows.to_string());
+            my_env.save_to_env();
         });
     Menu::new("Ombre").entry(shadows_on)
 }

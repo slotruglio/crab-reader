@@ -8,6 +8,7 @@ pub struct MyEnv {
     pub theme: String,
     pub font_color: Color,
     pub font: FontDescriptor,
+    pub shadows: bool,
 }
 
 impl MyEnv {
@@ -16,6 +17,7 @@ impl MyEnv {
             theme: "light".to_string(),
             font_color: Color::rgb8(0, 0, 0),
             font: FontDescriptor::new(FontFamily::SYSTEM_UI),
+            shadows: false,
         };
 
         //Take the JSON, turn it into a MAP
@@ -29,6 +31,7 @@ impl MyEnv {
                     "font_family": "SISTEM_UI",
                     "font_size": "medium",
                     "theme": "light",
+                    "shadows": false
                 }
             );
             let _ = serde_json::to_writer_pretty(file, &json);
@@ -50,6 +53,8 @@ impl MyEnv {
             json.get("font_family").unwrap().to_string(),
         ))
         .with_size(font_size_numeric);
+
+        new_env.shadows = json.get("shadows").unwrap().as_bool().unwrap();
 
         return new_env;
     }
@@ -79,6 +84,10 @@ impl MyEnv {
             "font_family".to_string(),
             serde_json::Value::String(MyEnv::get_font_family_reverse(self.font.family.clone())),
         );
+        json.insert(
+            "shadows".to_string(),
+            serde_json::Value::Bool(self.shadows.clone()),
+        );
 
         //write the json object to the file
         serde_json::to_writer_pretty(file, &json).unwrap();
@@ -97,6 +106,7 @@ impl MyEnv {
                 self.font =
                     FontDescriptor::new(MyEnv::get_font_family(value)).with_size(self.font.size)
             }
+            "shadows" => self.shadows = value.parse::<bool>().unwrap(),
             _ => (),
         }
     }
