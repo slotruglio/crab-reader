@@ -34,7 +34,8 @@ use crate::{
 use super::note::BookNotes;
 
 const NUMBER_OF_LINES: usize = 8;
-
+pub const PAGE_WIDTH: f32 = 1000.0;
+pub const PAGE_HEIGHT: f32 = 800.0;
 /// Struct that models EPUB file
 /// Metadata are attributes
 #[derive(Derivative, Clone, Data, Lens)]
@@ -207,8 +208,8 @@ impl BookReading for Book {
             self.chapter_number,
             8,
             16.0,
-            800.0,
-            300.0,
+            PAGE_WIDTH,
+            PAGE_HEIGHT,
         );
         for i in 0..self.current_page {
             chars += chapter_pages[i].len();
@@ -286,11 +287,6 @@ impl BookManagement for Book {
     }
 
     fn split_chapter_in_pages(&self, is_single_view: bool) -> Vector<String> {
-        let mut width = 800.0;
-        let height = 300.0;
-        if !is_single_view {
-            width = 400.0;
-        }
 
         epub_utils::split_chapter_in_vec(
             self.path.as_str(),
@@ -298,8 +294,8 @@ impl BookManagement for Book {
             self.chapter_number,
             NUMBER_OF_LINES,
             MYENV.lock().unwrap().font.size,
-            width,
-            height,
+            PAGE_WIDTH,
+            PAGE_HEIGHT,
         )
         .into_iter()
         .map(|s| s.to_string())
@@ -339,8 +335,8 @@ impl BookManagement for Book {
             self.chapter_number,
             NUMBER_OF_LINES,
             MYENV.lock().unwrap().font.size,
-            800.0,
-            300.0,
+            PAGE_WIDTH,
+            PAGE_HEIGHT,
         )
         .len();
         if new_len != old_len {

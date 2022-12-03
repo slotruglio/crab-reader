@@ -1,4 +1,4 @@
-use crate::{MYENV, utils::{envmanager::FontSize, dir_manager::get_edited_books_dir}};
+use crate::{MYENV, utils::{envmanager::FontSize, dir_manager::get_edited_books_dir}, models::book::{PAGE_WIDTH, PAGE_HEIGHT}};
 
 use super::{saveload::{get_chapter_bytes, FileExtension, remove_edited_chapter}, dir_manager::{get_saved_books_dir, get_saved_covers_dir, get_metadata_path}};
 use epub::doc::EpubDoc;
@@ -308,8 +308,8 @@ pub fn calculate_number_of_pages(
                 i,
                 number_of_lines,
                 font_size,
-                800.0,
-                300.0,
+                PAGE_WIDTH,
+                PAGE_HEIGHT,
             );
             println!("DEBUG: chapter {} has {} pages", i, pages.len());
             // send tuple with index of chapter and number of pages

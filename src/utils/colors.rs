@@ -79,6 +79,22 @@ impl Deref for CrabTheme {
     }
 }
 
+impl From<&str> for CrabTheme {
+    fn from(s: &str) -> Self {
+        match s {
+            "sepia" => CrabTheme::Sepia,
+            "dark" => CrabTheme::Dark,
+            _ => CrabTheme::Light,
+        }
+    }
+}
+
+impl From<String> for CrabTheme {
+    fn from(s: String) -> Self {
+        CrabTheme::from(s.as_str())
+    }
+}
+
 pub const PRIMARY: Key<Color> = Key::new("crabreader.primary");
 pub const PRIMARY_VARIANT: Key<Color> = Key::new("crabreader.primary_variant");
 pub const PRIMARY_ACCENT: Key<Color> = Key::new("crabreader.primary_accent");
