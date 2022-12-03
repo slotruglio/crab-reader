@@ -57,7 +57,7 @@ impl MyEnv {
     #[allow(dead_code)]
     pub fn save_to_env(&mut self) {
         //open a new file, creating it if it doesn't exist
-        let file = std::fs::File::create("env.json").unwrap();
+        let file = std::fs::File::create(get_env_path()).unwrap();
 
         //create a new json object
         let mut json = serde_json::Map::new();

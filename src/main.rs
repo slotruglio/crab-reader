@@ -108,15 +108,19 @@ pub struct CrabReaderState {
 
 impl Default for CrabReaderState {
     fn default() -> Self {
+        let my_env = MYENV.lock().unwrap();
+        let theme = my_env.theme.clone();
+        let font = my_env.font.clone();
+        drop(my_env);
         Self {
             library: Library::new(),
             display_mode: DisplayMode::Cover,
             reading: false,
             reading_state: ReadingState::default(),
             open_file_trigger: Trigger::default(),
-            theme: CrabTheme::Light,
+            theme: CrabTheme::from(theme),
             paint_shadows: false,
-            font: MYENV.lock().unwrap().font.clone(),
+            font: font,
         }
     }
 }

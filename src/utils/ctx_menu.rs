@@ -36,16 +36,31 @@ fn theme() -> Menu<CrabReaderState> {
     let light = MenuItem::new("Chiaro")
         .on_activate(|_, data: &mut CrabReaderState, _| {
             data.theme = CrabTheme::Light;
+            // update env
+            let mut my_env = MYENV.lock().unwrap();
+            my_env.set_property(
+                "theme".to_string(), "light".to_string());
+            my_env.save_to_env();
         })
         .selected_if(|data, _| data.theme == CrabTheme::Light);
     let sepia = MenuItem::new("Sepia")
         .on_activate(|_, data: &mut CrabReaderState, _| {
             data.theme = CrabTheme::Sepia;
+            // update env
+            let mut my_env = MYENV.lock().unwrap();
+            my_env.set_property(
+                "theme".to_string(), "sepia".to_string());
+            my_env.save_to_env();
         })
         .selected_if(|data, _| data.theme == CrabTheme::Sepia);
     let dark = MenuItem::new("Scuro")
         .on_activate(|_, data: &mut CrabReaderState, _| {
             data.theme = CrabTheme::Dark;
+            // update env
+            let mut my_env = MYENV.lock().unwrap();
+            my_env.set_property(
+                "theme".to_string(), "dark".to_string());
+            my_env.save_to_env();
         })
         .selected_if(|data, _| data.theme == CrabTheme::Dark);
     Menu::new("Tema").entry(light).entry(dark).entry(sepia)
