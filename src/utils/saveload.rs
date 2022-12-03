@@ -12,7 +12,7 @@ use rust_fuzzy_search::fuzzy_compare;
 use serde_json::{json, Value};
 
 use crate::{
-    models::note::Note,
+    models::{note::Note, book::{PAGE_WIDTH, PAGE_HEIGHT}},
     utils::{
         dir_manager::{
             get_books_notes_path, get_edited_books_dir, get_epub_dir, get_saved_books_dir,
@@ -210,8 +210,8 @@ fn search_page<T: Into<String> + Clone>(book_path: T, chapter_number: usize, tex
         chapter_number,
         8,
         MYENV.lock().unwrap().font.size,
-        800.0,
-        300.0,
+        PAGE_WIDTH,
+        PAGE_HEIGHT,
     );
 
     let mut best_page = (0, 0.0);

@@ -12,7 +12,7 @@ fn get_app_dir() -> PathBuf {
     get_fake_app_dir()
 
     // todo: return the real app dir
-    // dir
+    //dir
 }
 
 fn get_fake_app_dir() -> PathBuf {
@@ -57,6 +57,14 @@ pub fn get_saved_covers_dir() -> PathBuf {
     let _ = std::fs::create_dir_all(&data_dir);
     data_dir
 }
+
+/// Get path of env.json
+pub fn get_env_path() -> PathBuf {
+    let mut config_file = get_config_dir();
+    config_file.push("env.json");
+    config_file
+}
+
 
 /// Get path of the books with saved progress
 pub fn get_savedata_path() -> PathBuf {

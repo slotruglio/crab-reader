@@ -1,31 +1,39 @@
 use druid::{Color, FontDescriptor, FontFamily};
-use serde_json;
+use serde_json::{self, json};
 
-use super::fonts;
+use super::{fonts, dir_manager::get_env_path};
 
 #[derive(Debug)]
 pub struct MyEnv {
     pub theme: String,
     pub font_color: Color,
     pub font: FontDescriptor,
-    pub books_path: String,
-    pub edits_path: String,
-    pub bookmarks_path: String,
 }
 
 impl MyEnv {
     pub fn new() -> Self {
         let mut new_env: Self = Self {
-            theme: "dark".to_string(),
+            theme: "light".to_string(),
             font_color: Color::rgb8(0, 0, 0),
             font: FontDescriptor::new(FontFamily::SYSTEM_UI),
-            books_path: "".to_string(),
-            edits_path: "".to_string(),
-            bookmarks_path: "".to_string(),
         };
 
         //Take the JSON, turn it into a MAP
-        let json = std::fs::read_to_string("env.json").unwrap();
+        let env_path = get_env_path();
+        let Ok(json) = std::fs::read_to_string(&env_path) else {
+            //If the file doesn't exist, create it
+            let file = std::fs::File::create(env_path).unwrap();
+            let json = json!(
+                {
+                    "font_color": "WHITE",
+                    "font_family": "SISTEM_UI",
+                    "font_size": "medium",
+                    "theme": "light",
+                }
+            );
+            let _ = serde_json::to_writer_pretty(file, &json);
+            return new_env;
+        };
         let json: serde_json::Value = serde_json::from_str(&json).unwrap();
         let json = json.as_object().unwrap();
 
@@ -42,26 +50,6 @@ impl MyEnv {
             json.get("font_family").unwrap().to_string(),
         ))
         .with_size(font_size_numeric);
-
-        //SET books_path, edits_path, bookmarks_path
-        new_env.books_path = json
-            .get("books_path")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string();
-        new_env.edits_path = json
-            .get("edits_path")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string();
-        new_env.bookmarks_path = json
-            .get("bookmarks_path")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string();
 
         return new_env;
     }
@@ -90,18 +78,6 @@ impl MyEnv {
         json.insert(
             "font_family".to_string(),
             serde_json::Value::String(MyEnv::get_font_family_reverse(self.font.family.clone())),
-        );
-        json.insert(
-            "books_path".to_string(),
-            serde_json::Value::String(self.books_path.clone()),
-        );
-        json.insert(
-            "edits_path".to_string(),
-            serde_json::Value::String(self.edits_path.clone()),
-        );
-        json.insert(
-            "bookmarks_path".to_string(),
-            serde_json::Value::String(self.bookmarks_path.clone()),
         );
 
         //write the json object to the file

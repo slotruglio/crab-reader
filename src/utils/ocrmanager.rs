@@ -2,6 +2,8 @@ use rust_fuzzy_search::fuzzy_compare;
 
 use std::sync::{mpsc::channel, Arc, Mutex, Condvar};
 
+use crate::models::book::{PAGE_WIDTH, PAGE_HEIGHT};
+
 use super::epub_utils;
 
 #[derive(Debug)]
@@ -100,7 +102,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usiz
 //For each page, it computes the similarity with the given text: if it's higher than 0.85, the page is returned
 fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize) -> Option<Page> {
 
-    let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, 800.0, 300.0);
+    let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, PAGE_WIDTH, PAGE_HEIGHT);
 
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
