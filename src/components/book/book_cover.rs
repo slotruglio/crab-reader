@@ -36,7 +36,8 @@ impl<B: GUIBook> BookCover<B> {
 
         let label = Label::dynamic(|data: &B, _| data.get_title().to_string())
             .with_line_break_mode(LineBreaking::WordWrap)
-            .with_font(fonts::medium);
+            .with_font(fonts::medium)
+            .with_text_color(colors::ON_PRIMARY);
 
         Self {
             is_hot: false,

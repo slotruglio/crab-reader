@@ -129,7 +129,7 @@ impl BookDetails {
                     }
                 }
             })
-            .with_text_color(colors::ON_PRIMARY)
+            .secondary()
             .with_font(fonts::medium)
             .padding(5.0);
 
