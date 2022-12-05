@@ -10,5 +10,4 @@ pub mod library;
 pub mod ocrmanager;
 pub mod rich_text_fn;
 pub mod saveload;
-pub mod text_descriptor;
 pub mod thread_loader;
