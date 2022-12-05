@@ -16,7 +16,7 @@ impl MyEnv {
         let mut new_env: Self = Self {
             theme: "light".to_string(),
             font_color: Color::rgb8(0, 0, 0),
-            font: FontDescriptor::new(FontFamily::SYSTEM_UI),
+            font: FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(FontSize::MEDIUM.to_f64()),
             shadows: false,
         };
 

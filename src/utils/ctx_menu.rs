@@ -83,16 +83,16 @@ fn shadows() -> Menu<CrabReaderState> {
 
 fn text_sz() -> Menu<CrabReaderState> {
 
-    fn selected_if_small(_: &CrabReaderState, _: &Env) -> bool {
-        MYENV.lock().unwrap().font.size == fonts::small.size
+    fn selected_if_small(data: &CrabReaderState, _: &Env) -> bool {
+        data.font.size == fonts::small.size
     }
 
-    fn selected_if_medium(_: &CrabReaderState, _: &Env) -> bool {
-        MYENV.lock().unwrap().font.size == fonts::medium.size
+    fn selected_if_medium(data: &CrabReaderState, _: &Env) -> bool {
+        data.font.size == fonts::medium.size
     }
 
-    fn selected_if_large(_: &CrabReaderState, _: &Env) -> bool {
-        MYENV.lock().unwrap().font.size == fonts::large.size
+    fn selected_if_large(data: &CrabReaderState, _: &Env) -> bool {
+        data.font.size == fonts::large.size
     }
 
     let small = MenuItem::new("Piccolo").selected_if(selected_if_small)
