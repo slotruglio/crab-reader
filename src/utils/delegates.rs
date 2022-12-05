@@ -1,7 +1,7 @@
 use druid::{
     commands::OPEN_FILE,
     widget::{Align, Flex, Label, LineBreaking},
-    AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc, FontDescriptor, FontFamily,
+    AppDelegate, Code, Env, Event, Handled, KeyEvent, WindowDesc, FontDescriptor, FontFamily, KeyOrValue,
 };
 use std::{path::Path, rc::Rc};
 
@@ -19,7 +19,7 @@ use crate::{
         gui::{GUIBook, GUILibrary},
         reader::{BookManagement, BookReading},
     },
-    utils::{dir_manager::get_epub_dir, ocrmanager, saveload::copy_book_in_folder},
+    utils::{dir_manager::get_epub_dir, ocrmanager, saveload::copy_book_in_folder, fonts::FONT},
     CrabReaderState, DisplayMode, ENTERING_READING_MODE, MYENV,
 };
 
@@ -106,7 +106,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                 let file_path = cmd.get_unchecked(OPEN_FILE).path();
 
                 // function to do if open file is triggered for ocr
-                fn ocr_fn(file_path: &Path, selected_book_mut: &mut Book, delegate_ctx: &mut druid::DelegateCtx) {
+                fn ocr_fn(file_path: &Path, selected_book_mut: &mut Book, delegate_ctx: &mut druid::DelegateCtx, font_size: f64) {
                     let selected_book_path = selected_book_mut.get_path();
                     
                     //split by slash, get last element, split by dot, get first element
@@ -122,6 +122,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     let ocr_result = ocrmanager::get_ebook_page(
                         folder_name.to_string(),
                         file_path.to_str().unwrap().to_string(),
+                        font_size
                     );
 
                     match ocr_result {
@@ -229,7 +230,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
 
                 match data.open_file_trigger {
                     Trigger::OCR => {
-                        ocr_fn(file_path, data.library.get_selected_book_mut().unwrap(), delegate_ctx);
+                        ocr_fn(file_path, data.library.get_selected_book_mut().unwrap(), delegate_ctx, data.font.size);
                     }
 
                     Trigger::OCRINVERSE => ocr_inverse_fn(

@@ -16,7 +16,7 @@ struct Page {
 
 
 //function that, given a pic of a physical book page, gives the corresponding page in the ebook
-pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usize,usize)> {
+pub fn get_ebook_page(ebook_name: String, physical_page: String, font_size: f64) -> Option<(usize,usize)> {
 
     //start timer
     let start = std::time::Instant::now();
@@ -51,7 +51,7 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usiz
         //..create a thread that will calculate the similarity between the physical page and the chapter pages
         //NOTE: the thread pool will aggregate these functions in 4 threads (see pool initialization)
         pool.execute(move || {
-            let result = compute_similarity(book_path_clone, text_clone, i);
+            let result = compute_similarity(book_path_clone, text_clone, i, font_size);
             if result.is_some() {
                 tx.send(result.unwrap()).expect("Error in sending msg");
             }
@@ -100,9 +100,9 @@ pub fn get_ebook_page(ebook_name: String, physical_page: String) -> Option<(usiz
 
 //This function, given a chapter, gets its pages and iterates through them.
 //For each page, it computes the similarity with the given text: if it's higher than 0.85, the page is returned
-fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize) -> Option<Page> {
+fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize, font_size: f64) -> Option<Page> {
 
-    let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, 12.0, PAGE_WIDTH, PAGE_HEIGHT);
+    let chapter_pages = epub_utils::split_chapter_in_vec(book_path.as_str(), None, chapter_to_examine, 8, font_size, PAGE_WIDTH, PAGE_HEIGHT);
 
     //Iterate through che chapter pages
     for i in 0..chapter_pages.len() {
