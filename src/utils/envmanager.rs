@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use druid::{Color, FontDescriptor, FontFamily};
 use serde_json::{self, json};
 
@@ -12,7 +14,7 @@ pub struct MyEnv {
 }
 
 impl MyEnv {
-    pub fn new() -> Self {
+    pub fn new(env_path: PathBuf) -> Self {
         let mut new_env: Self = Self {
             theme: "light".to_string(),
             font_color: Color::rgb8(0, 0, 0),
@@ -21,7 +23,6 @@ impl MyEnv {
         };
 
         //Take the JSON, turn it into a MAP
-        let env_path = get_env_path();
         let Ok(json) = std::fs::read_to_string(&env_path) else {
             //If the file doesn't exist, create it
             let file = std::fs::File::create(env_path).unwrap();
@@ -113,13 +114,16 @@ impl MyEnv {
 
     //HELPER METHODS
     fn get_color(value: String) -> druid::Color {
-        //match value against every color contained in the Color struct
 
+        //If value is surrounded by quotes, remove them
+        let value = value.replace("\"", "");
+
+        //match value against every color contained in the Color struct
         match value.as_str() {
-            "\"BLACK\"" => druid::Color::BLACK,
-            "\"NAVY\"" => druid::Color::NAVY,
-            "\"WHITE\"" => druid::Color::WHITE,
-            "\"TEAL\"" => druid::Color::TEAL,
+            "BLACK" => druid::Color::BLACK,
+            "NAVY" => druid::Color::NAVY,
+            "WHITE" => druid::Color::WHITE,
+            "TEAL" => druid::Color::TEAL,
             _ => druid::Color::BLACK,
         }
     }
@@ -140,11 +144,15 @@ impl MyEnv {
     }
 
     fn get_font_family(value: String) -> FontFamily {
+
+        //If value is surrounded by quotes, remove them
+        let value = value.replace("\"", "");
+
         match value.as_str() {
-            "\"MONOSPACE\"" => FontFamily::MONOSPACE,
-            "\"SYSTEM_UI\"" => FontFamily::SYSTEM_UI,
-            "\"SERIF\"" => FontFamily::SERIF,
-            "\"SANS_SERIF\"" => FontFamily::SANS_SERIF,
+            "MONOSPACE" => FontFamily::MONOSPACE,
+            "SYSTEM_UI" => FontFamily::SYSTEM_UI,
+            "SERIF" => FontFamily::SERIF,
+            "SANS_SERIF" => FontFamily::SANS_SERIF,
             _ => FontFamily::SYSTEM_UI,
         }
     }
@@ -230,4 +238,199 @@ impl ToString for FontSize {
             FontSize::LARGE => "large".to_string(),
         }
     }
+}
+
+
+//TEST METHODS
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use serial_test::serial;
+
+    use super::*;
+
+    //MAIN FUNCTIONS TESTS
+
+    #[test]
+    #[serial]
+    fn test_new_fresh() {
+        //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
+        let env = MyEnv::new(PathBuf::from("./conf/env.test.json"));
+
+        //The file doesnt exist, so the default values should be used
+        assert_eq!(env.font, fonts::medium);
+        assert_eq!(env.font_color, Color::rgb8(0, 0, 0));
+        assert_eq!(env.theme, "light".to_string());
+        assert_eq!(env.shadows, false);
+
+        //delete the env.test.json file
+        std::fs::remove_file("./conf/env.test.json").unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_new_normal() {
+
+        //create a new env.test.json file
+        let mut file = std::fs::File::create("./conf/env.test.json").unwrap();
+
+        //write the json content
+        file.write_all(
+            r#"
+            {
+                "font_color": "NAVY",
+                "font_family": "MONOSPACE",
+                "font_size": "small",
+                "shadows": true,
+                "theme": "dark"
+            }
+            "#
+            .as_bytes(),
+        ).unwrap();
+
+
+        //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
+        let env = MyEnv::new(PathBuf::from("./conf/env.test.json"));
+
+        //The file exists, so the values should be the ones contained in the file
+        assert_eq!(env.font.family, FontFamily::MONOSPACE);
+        assert_eq!(env.font.size, FontSize::SMALL.to_f64());
+        assert_eq!(env.font_color, Color::NAVY);
+        assert_eq!(env.theme, "dark".to_string());
+        assert_eq!(env.shadows, true);
+
+        //delete the env.test.json file
+        std::fs::remove_file("./conf/env.test.json").unwrap();
+
+    }
+
+
+    fn test_save_to_env() {
+        todo!();
+    }
+
+    #[test]
+    #[serial]
+    fn test_set_property() {
+        //create a new env.test.json file
+        let mut file = std::fs::File::create("./conf/env.test.json").unwrap();
+
+        //write the json content
+        file.write_all(
+            r#"
+            {
+                "font_color": "NAVY",
+                "font_family": "MONOSPACE",
+                "font_size": "small",
+                "shadows": true,
+                "theme": "dark"
+            }
+            "#
+            .as_bytes(),
+        ).unwrap();
+
+        //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
+        let mut env = MyEnv::new(PathBuf::from("./conf/env.test.json"));
+
+        //set the font family to serif
+        env.set_property("font_family".to_string(), "SERIF".to_string());
+        assert_eq!(env.font.family, FontFamily::SERIF);
+
+        //set the font size to large
+        env.set_property("font_size".to_string(), "large".to_string());
+        assert_eq!(env.font.size, FontSize::LARGE.to_f64());
+
+        //set the font color to white
+        env.set_property("font_color".to_string(), "WHITE".to_string());
+        assert_eq!(env.font_color, Color::WHITE);
+
+        //set the theme to light
+        env.set_property("theme".to_string(), "light".to_string());
+        assert_eq!(env.theme, "light".to_string());
+
+        //set the shadows to false
+        env.set_property("shadows".to_string(), "false".to_string());
+        assert_eq!(env.shadows, false);
+
+
+
+        //delete the env.test.json file
+        std::fs::remove_file("./conf/env.test.json").unwrap();
+
+    }
+
+
+    //HELPER METHODS TESTS
+
+    #[test]
+    fn test_get_color() {
+        assert_eq!(MyEnv::get_color("\"BLACK\"".to_string()), druid::Color::BLACK);
+        assert_eq!(MyEnv::get_color("\"NAVY\"".to_string()), druid::Color::NAVY);
+        assert_eq!(MyEnv::get_color("\"WHITE\"".to_string()), druid::Color::WHITE);
+        assert_eq!(MyEnv::get_color("\"TEAL\"".to_string()), druid::Color::TEAL);
+    }
+
+    #[test]
+    fn test_get_color_reverse() {
+        assert_eq!(MyEnv::get_color_reverse(druid::Color::BLACK), "BLACK".to_string());
+        assert_eq!(MyEnv::get_color_reverse(druid::Color::NAVY), "NAVY".to_string());
+        assert_eq!(MyEnv::get_color_reverse(druid::Color::WHITE), "WHITE".to_string());
+        assert_eq!(MyEnv::get_color_reverse(druid::Color::TEAL), "TEAL".to_string());
+    }
+
+    #[test]
+    fn test_get_font_family() {
+        assert_eq!(
+            MyEnv::get_font_family("\"MONOSPACE\"".to_string()),
+            FontFamily::MONOSPACE
+        );
+        assert_eq!(
+            MyEnv::get_font_family("\"SYSTEM_UI\"".to_string()),
+            FontFamily::SYSTEM_UI
+        );
+        assert_eq!(MyEnv::get_font_family("\"SERIF\"".to_string()), FontFamily::SERIF);
+        assert_eq!(
+            MyEnv::get_font_family("\"SANS_SERIF\"".to_string()),
+            FontFamily::SANS_SERIF
+        );
+    }
+
+    #[test]
+    fn test_get_font_family_reverse() {
+        assert_eq!(
+            MyEnv::get_font_family_reverse(FontFamily::MONOSPACE),
+            "MONOSPACE".to_string()
+        );
+        assert_eq!(
+            MyEnv::get_font_family_reverse(FontFamily::SYSTEM_UI),
+            "SYSTEM_UI".to_string()
+        );
+        assert_eq!(
+            MyEnv::get_font_family_reverse(FontFamily::SERIF),
+            "SERIF".to_string()
+        );
+        assert_eq!(
+            MyEnv::get_font_family_reverse(FontFamily::SANS_SERIF),
+            "SANS_SERIF".to_string()
+        );
+    }
+
+    #[test]
+    fn test_get_font_size() {
+        assert_eq!(MyEnv::get_font_size("small".to_string()), fonts::small.size);
+        assert_eq!(MyEnv::get_font_size("medium".to_string()), fonts::medium.size);
+        assert_eq!(MyEnv::get_font_size("large".to_string()), fonts::large.size);
+    }
+
+    #[test]
+    fn test_get_font_size_reverse() {
+        assert_eq!(MyEnv::get_font_size_reverse(fonts::small.size), "small".to_string());
+        assert_eq!(MyEnv::get_font_size_reverse(fonts::medium.size), "medium".to_string());
+        assert_eq!(MyEnv::get_font_size_reverse(fonts::large.size), "large".to_string());
+    }
+
+    //TRAIT METHODS TESTS
+
+    
 }
