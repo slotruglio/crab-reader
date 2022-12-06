@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 
 use druid::{Color, FontDescriptor, FontFamily};
 use serde_json::{self, json};
@@ -14,13 +13,15 @@ pub struct MyEnv {
 }
 
 impl MyEnv {
-    pub fn new(env_path: PathBuf) -> Self {
+    pub fn new() -> Self {
         let mut new_env: Self = Self {
             theme: "light".to_string(),
             font_color: Color::rgb8(0, 0, 0),
             font: FontDescriptor::new(FontFamily::SYSTEM_UI).with_size(FontSize::MEDIUM.to_f64()),
             shadows: false,
         };
+
+        let env_path = get_env_path();
 
         //Take the JSON, turn it into a MAP
         let Ok(json) = std::fs::read_to_string(&env_path) else {
@@ -244,7 +245,7 @@ impl ToString for FontSize {
 //TEST METHODS
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::io::{Write, Read};
 
     use serial_test::serial;
 
@@ -255,8 +256,13 @@ mod tests {
     #[test]
     #[serial]
     fn test_new_fresh() {
-        //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
-        let env = MyEnv::new(PathBuf::from("./conf/env.test.json"));
+
+        //Rename ./conf.env.json to ./conf/env.test.json if it exists
+        if std::path::Path::new("./conf/env.json").exists() {
+            std::fs::rename("./conf/env.json", "./conf/env.copy.json").unwrap();
+        }
+
+        let env = MyEnv::new();
 
         //The file doesnt exist, so the default values should be used
         assert_eq!(env.font, fonts::medium);
@@ -264,16 +270,23 @@ mod tests {
         assert_eq!(env.theme, "light".to_string());
         assert_eq!(env.shadows, false);
 
-        //delete the env.test.json file
-        std::fs::remove_file("./conf/env.test.json").unwrap();
+        //Rename env.copy.json to env.json if it exists
+        if std::path::Path::new("./conf/env.copy.json").exists() {
+            std::fs::rename("./conf/env.copy.json", "./conf/env.json").unwrap();
+        }
     }
 
     #[test]
     #[serial]
     fn test_new_normal() {
 
-        //create a new env.test.json file
-        let mut file = std::fs::File::create("./conf/env.test.json").unwrap();
+        //Rename ./conf.env.json to ./conf/env.test.json if it exists
+        if std::path::Path::new("./conf/env.json").exists() {
+            std::fs::rename("./conf/env.json", "./conf/env.copy.json").unwrap();
+        }
+
+        //Create env.json
+        let mut file = std::fs::File::create("./conf/env.json").unwrap();
 
         //write the json content
         file.write_all(
@@ -290,8 +303,7 @@ mod tests {
         ).unwrap();
 
 
-        //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
-        let env = MyEnv::new(PathBuf::from("./conf/env.test.json"));
+        let env = MyEnv::new();
 
         //The file exists, so the values should be the ones contained in the file
         assert_eq!(env.font.family, FontFamily::MONOSPACE);
@@ -300,21 +312,68 @@ mod tests {
         assert_eq!(env.theme, "dark".to_string());
         assert_eq!(env.shadows, true);
 
-        //delete the env.test.json file
-        std::fs::remove_file("./conf/env.test.json").unwrap();
+        
+        //Rename env.copy.json to env.json if it exists
+        if std::path::Path::new("./conf/env.copy.json").exists() {
+            std::fs::rename("./conf/env.copy.json", "./conf/env.json").unwrap();
+        }
+
 
     }
 
-
+    #[test]
+    #[serial]
     fn test_save_to_env() {
-        todo!();
+
+        //Copy ./conf.env.json to ./conf/env.test.json if it exists and remove ./conf/env.json
+        if std::path::Path::new("./conf/env.json").exists() {
+            std::fs::rename("./conf/env.json", "./conf/env.copy.json").unwrap();
+        }
+
+        //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
+        let mut env = MyEnv::new();
+
+        //set the font family to serif
+        env.set_property("font_family".to_string(), "MONOSPACE".to_string());
+        //set the font size to large
+        env.set_property("font_size".to_string(), "large".to_string());
+        //set the font color to white
+        env.set_property("font_color".to_string(), "TEAL".to_string());
+        //set the theme to light
+        env.set_property("theme".to_string(), "dark".to_string());
+        //set the shadows to false
+        env.set_property("shadows".to_string(), "true".to_string());
+
+        env.save_to_env();
+
+        let json = std::fs::read_to_string("./conf/env.json").unwrap();
+        let json: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let json_object = json.as_object().unwrap();
+
+        assert_eq!(json_object.get("font_family").unwrap().as_str().unwrap(), "MONOSPACE");
+        assert_eq!(json_object.get("font_size").unwrap().as_str().unwrap(), "large");
+        assert_eq!(json_object.get("font_color").unwrap().as_str().unwrap(), "TEAL");
+        assert_eq!(json_object.get("theme").unwrap().as_str().unwrap(), "dark");
+        assert_eq!(json_object.get("shadows").unwrap().as_bool().unwrap(), true);
+
+
+        //Delete env.json and rename env.copy.json to env.json if it exists
+        if std::path::Path::new("./conf/env.copy.json").exists() {
+            std::fs::rename("./conf/env.copy.json", "./conf/env.json").unwrap();
+        }
     }
 
     #[test]
     #[serial]
     fn test_set_property() {
-        //create a new env.test.json file
-        let mut file = std::fs::File::create("./conf/env.test.json").unwrap();
+
+        //Rename ./conf.env.json to ./conf/env.test.json if it exists
+        if std::path::Path::new("./conf/env.json").exists() {
+            std::fs::rename("./conf/env.json", "./conf/env.copy.json").unwrap();
+        }
+
+        //change the content of env.json
+        let mut file = std::fs::File::create("./conf/env.json").unwrap();
 
         //write the json content
         file.write_all(
@@ -331,7 +390,7 @@ mod tests {
         ).unwrap();
 
         //create a new MyEnv, passing ./config/env.test.json as a PathBuf parameter
-        let mut env = MyEnv::new(PathBuf::from("./conf/env.test.json"));
+        let mut env = MyEnv::new();
 
         //set the font family to serif
         env.set_property("font_family".to_string(), "SERIF".to_string());
@@ -354,9 +413,10 @@ mod tests {
         assert_eq!(env.shadows, false);
 
 
-
-        //delete the env.test.json file
-        std::fs::remove_file("./conf/env.test.json").unwrap();
+        //Rename env.copy.json to env.json if it exists
+        if std::path::Path::new("./conf/env.copy.json").exists() {
+            std::fs::rename("./conf/env.copy.json", "./conf/env.json").unwrap();
+        }
 
     }
 

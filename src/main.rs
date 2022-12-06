@@ -17,7 +17,6 @@ use druid::{
 };
 
 use once_cell::sync::Lazy;
-use utils::dir_manager::get_env_path;
 use utils::fonts::{FONT, update_font_family};
 use std::rc::Rc;
 use std::sync::Mutex;
@@ -39,7 +38,7 @@ const ROUND_FACTR: f64 = 10.0;
 
 //Create a global ENV variable
 #[allow(dead_code)]
-static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new(get_env_path())));
+static MYENV: Lazy<Mutex<MyEnv>> = Lazy::new(|| Mutex::new(MyEnv::new()));
 
 #[derive(Clone, Data, Lens)]
 pub struct ReadingState {
