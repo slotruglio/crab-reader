@@ -193,7 +193,7 @@ impl BookReading for Book {
         self.notes.update_current(chapter, self.current_page);
     }
 
-    fn calculate_chars_until_current_page(&self) -> usize {
+    fn calculate_chars_until_current_page(&self, font_size: f64) -> usize {
         let mut chars = 0;
         for i in 0..self.chapter_number {
             //get chapter text
@@ -207,7 +207,7 @@ impl BookReading for Book {
             chapter_text,
             self.chapter_number,
             8,
-            16.0,
+            font_size,
             PAGE_WIDTH,
             PAGE_HEIGHT,
         );

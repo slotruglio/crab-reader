@@ -35,7 +35,7 @@ pub trait BookReading {
 
     fn get_number_of_chapters(&self) -> usize;
 
-    fn calculate_chars_until_current_page(&self) -> usize;
+    fn calculate_chars_until_current_page(&self, font_size: f64) -> usize;
 }
 
 /// Trait that describes book management functions
