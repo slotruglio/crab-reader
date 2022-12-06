@@ -8,8 +8,6 @@ use super::epub_utils;
 
 #[derive(Debug)]
 struct Page {
-    //page: String, useless, since it's not accessed
-    high_count: i32,
     chapter_number: usize,
     chapter_page_number: usize
 }
@@ -129,7 +127,6 @@ fn compute_similarity(book_path: String, text: String, chapter_to_examine: usize
 
         if similarity > 0.85 {
             return Some(Page {
-                high_count: 11, //useless atm
                 chapter_number: chapter_to_examine,
                 chapter_page_number: i
             });
