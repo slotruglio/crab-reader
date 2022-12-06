@@ -171,147 +171,156 @@ pub fn get_physical_page(physical_page_path: String, chapter_number: usize, eboo
 
 
 /* TEST METHODS */
+#[cfg(test)]
+mod tests {
 
-#[test]
-//This method is used to test the fuzzy_compare() method
-fn test_fuzzy_compare() {
+    use super::*;
+    use serial_test::serial;
 
-    //create an array of fake pages (string)
-    //create a string of text to search for
-    //find the index of the array with the highets similarity
-    //assert that the index is the same as the one we expect
-    let pages = vec![
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-        "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa",
-        "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores "
-    ];
+    #[test]
+    //This method is used to test the fuzzy_compare() method
+    fn test_fuzzy_compare() {
 
-    let text = "natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam,";
+        //create an array of fake pages (string)
+        //create a string of text to search for
+        //find the index of the array with the highets similarity
+        //assert that the index is the same as the one we expect
+        let pages = vec![
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+            "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa",
+            "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores "
+        ];
 
-    let mut max_similarity = 0.0;
-    let mut max_similarity_index = 0;
+        let text = "natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam,";
 
-    for i in 0..pages.len() {
-        let similarity = fuzzy_compare(&text, &pages[i]);
-        if similarity > max_similarity {
-            max_similarity = similarity;
-            max_similarity_index = i;
+        let mut max_similarity = 0.0;
+        let mut max_similarity_index = 0;
+
+        for i in 0..pages.len() {
+            let similarity = fuzzy_compare(&text, &pages[i]);
+            if similarity > max_similarity {
+                max_similarity = similarity;
+                max_similarity_index = i;
+            }
         }
+
+        assert_eq!(max_similarity_index, 1);
+
     }
 
-    assert_eq!(max_similarity_index, 1);
+    //This method is used to test get_ebook_page (small font)
+    #[test]
+    #[serial]
+    fn test_get_ebook_page_small_font() {
 
-}
-
-//This method is used to test get_ebook_page (small font)
-#[test]
-fn test_get_ebook_page_small_font() {
-
-    //CASE 1: First page of chapter
-    //Search for the page whose ebook version is the first page (index 0) of the sixth chapter (index 5)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok1.png".to_string(), 14.0);
-    assert_eq!(page, Some((5,0)));
-
-    //CASE 2: Random page of chapter
-    //Search for the page whose ebook version is the 21st page (index 20) of the eleventh chapter (index 10)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok2.png".to_string(), 14.0);
-    assert_eq!(page, Some((10,20)));
-
-    //CASE 3: Last page of chapter
-    //Search for the page whose ebook version is the last page (index 59) of the eight chapter (index 7)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok3.png".to_string(), 14.0);
-    assert_eq!(page, Some((7,59)));
-
-
-    //CASE 4: Page non-existent in ebook
-    //Search for a page that is not in the ebook version
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/err_screenshot.png".to_string(), 14.0);
-    assert_eq!(page, None);
-
-}
-
-//This method is used to test get_ebook_page (medium font)
-#[test]
-fn test_get_ebook_page_medium_font() {
-
-    //CASE 1: First page of chapter
-    //Search for the page whose ebook version is the first page (index 0) of the sixth chapter (index 5)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok1.png".to_string(), 18.0);
-    assert_eq!(page, Some((5,0)));
-
-    //CASE 2: Random page of chapter
-    //Search for the page whose ebook version is the 36th page (index 35) of the eleventh chapter (index 10)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok2.png".to_string(), 18.0);
-    assert_eq!(page, Some((10,35)));
-
-    //CASE 3: Last page of chapter
-    //Search for the page whose ebook version is the last page (index 100) of the eight chapter (index 7)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok3.png".to_string(), 18.0);
-    assert_eq!(page, Some((7,100)));
-
-
-    //CASE 4: Page non-existent in ebook
-    //Search for a page that is not in the ebook version
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/err_screenshot.png".to_string(), 18.0);
-    assert_eq!(page, None);
-
-}
-
-//This method is used to test get_ebook_page (large font)
-#[test]
-fn test_get_ebook_page_large_font() {
-
-    //CASE 1: First page of chapter
-    //Search for the page whose ebook version is the first page (index 0) of the sixth chapter (index 5)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok1.png".to_string(), 22.0);
-    assert_eq!(page, Some((5,0)));
-
-    //CASE 2: Random page of chapter
-    //Search for the page whose ebook version is the 59st page (index 58) of the eleventh chapter (index 10)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok2.png".to_string(), 22.0);
-    assert_eq!(page, Some((10,58)));
-
-    //CASE 3: Last page of chapter
-    //Search for the page whose ebook version is the last page (index 156) of the eight chapter (index 7)
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok3.png".to_string(), 22.0);
-    assert_eq!(page, Some((7,156)));
-
-
-    //CASE 4: Page non-existent in ebook
-    //Search for a page that is not in the ebook version
-    let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/err_screenshot.png".to_string(), 22.0);
-    assert_eq!(page, None);
-
-}
-
-#[test]
-fn test_get_physical_page() {
-    
         //CASE 1: First page of chapter
-        //Calculate the physical page starting from the first page (chars read: 3654) of the fifth chapter (index 4)
-        let page = get_physical_page("./test_ocr_images/OCR_INVERSE/svevo.png".to_string(), 4, 3654);
+        //Search for the page whose ebook version is the first page (index 0) of the sixth chapter (index 5)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok1.png".to_string(), 14.0);
+        assert_eq!(page, Some((5,0)));
 
-        //assert in range: the page should be between 9-15 and 9+15 (9 is the real physical page)
-        assert!(page <= 9+15);
-    
         //CASE 2: Random page of chapter
-        //Calculate the physical page starting from the 19th page (chars read: 159737) of the eight chapter (index 7)
-        let page = get_physical_page("./test_ocr_images/OCR_INVERSE/svevo.png".to_string(), 7, 159737);
+        //Search for the page whose ebook version is the 21st page (index 20) of the eleventh chapter (index 10)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok2.png".to_string(), 14.0);
+        assert_eq!(page, Some((10,20)));
 
-        //assert in range: the page should be between 108-15 and 108+15 (9 is the real physical page)
-        assert!(page >= 108-15);
-        assert!(page <= 108+15);
-    
         //CASE 3: Last page of chapter
-        //Search for the page whose ebook version is the last page (chars read: 801152) of the tenth chapter (index 9)
-        let page = get_physical_page("./test_ocr_images/OCR_INVERSE/svevo.png".to_string(), 9, 801152);
+        //Search for the page whose ebook version is the last page (index 59) of the eight chapter (index 7)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok3.png".to_string(), 14.0);
+        assert_eq!(page, Some((7,59)));
 
-        //assert in range: the page should be between 142-15 and 142+15 (9 is the real physical page)
-        assert!(page >= 545-15);
-        assert!(page <= 545+15);
 
-        //NOTE: Case 4 is not present because this method does not calculate the ACTUAL page number: it rather
-        //calculates an approximation of it using some heuristics.
+        //CASE 4: Page non-existent in ebook
+        //Search for a page that is not in the ebook version
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/err_screenshot.png".to_string(), 14.0);
+        assert_eq!(page, None);
 
+    }
+
+    //This method is used to test get_ebook_page (medium font)
+    #[test]
+    #[serial]
+    fn test_get_ebook_page_medium_font() {
+
+        //CASE 1: First page of chapter
+        //Search for the page whose ebook version is the first page (index 0) of the sixth chapter (index 5)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok1.png".to_string(), 18.0);
+        assert_eq!(page, Some((5,0)));
+
+        //CASE 2: Random page of chapter
+        //Search for the page whose ebook version is the 36th page (index 35) of the eleventh chapter (index 10)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok2.png".to_string(), 18.0);
+        assert_eq!(page, Some((10,35)));
+
+        //CASE 3: Last page of chapter
+        //Search for the page whose ebook version is the last page (index 100) of the eight chapter (index 7)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok3.png".to_string(), 18.0);
+        assert_eq!(page, Some((7,100)));
+
+
+        //CASE 4: Page non-existent in ebook
+        //Search for a page that is not in the ebook version
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/err_screenshot.png".to_string(), 18.0);
+        assert_eq!(page, None);
+
+    }
+
+    //This method is used to test get_ebook_page (large font)
+    #[test]
+    #[serial]
+    fn test_get_ebook_page_large_font() {
+
+        //CASE 1: First page of chapter
+        //Search for the page whose ebook version is the first page (index 0) of the sixth chapter (index 5)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok1.png".to_string(), 22.0);
+        assert_eq!(page, Some((5,0)));
+
+        //CASE 2: Random page of chapter
+        //Search for the page whose ebook version is the 59st page (index 58) of the eleventh chapter (index 10)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok2.png".to_string(), 22.0);
+        assert_eq!(page, Some((10,58)));
+
+        //CASE 3: Last page of chapter
+        //Search for the page whose ebook version is the last page (index 156) of the eight chapter (index 7)
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/svevo_ok3.png".to_string(), 22.0);
+        assert_eq!(page, Some((7,156)));
+
+
+        //CASE 4: Page non-existent in ebook
+        //Search for a page that is not in the ebook version
+        let page = get_ebook_page("svevo_la_coscienza_di_zeno".to_string(), "./test_ocr_images/OCR/err_screenshot.png".to_string(), 22.0);
+        assert_eq!(page, None);
+
+    }
+
+    #[test]
+    fn test_get_physical_page() {
         
+            //CASE 1: First page of chapter
+            //Calculate the physical page starting from the first page (chars read: 3654) of the fifth chapter (index 4)
+            let page = get_physical_page("./test_ocr_images/OCR_INVERSE/svevo.png".to_string(), 4, 3654);
+
+            //assert in range: the page should be between 9-15 and 9+15 (9 is the real physical page)
+            assert!(page <= 9+15);
+        
+            //CASE 2: Random page of chapter
+            //Calculate the physical page starting from the 19th page (chars read: 159737) of the eight chapter (index 7)
+            let page = get_physical_page("./test_ocr_images/OCR_INVERSE/svevo.png".to_string(), 7, 159737);
+
+            //assert in range: the page should be between 108-15 and 108+15 (9 is the real physical page)
+            assert!(page >= 108-15);
+            assert!(page <= 108+15);
+        
+            //CASE 3: Last page of chapter
+            //Search for the page whose ebook version is the last page (chars read: 801152) of the tenth chapter (index 9)
+            let page = get_physical_page("./test_ocr_images/OCR_INVERSE/svevo.png".to_string(), 9, 801152);
+
+            //assert in range: the page should be between 142-15 and 142+15 (9 is the real physical page)
+            assert!(page >= 545-15);
+            assert!(page <= 545+15);
+
+            //NOTE: Case 4 is not present because this method does not calculate the ACTUAL page number: it rather
+            //calculates an approximation of it using some heuristics.
+
+            
+    }
 }
