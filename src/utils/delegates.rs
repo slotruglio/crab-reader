@@ -202,13 +202,12 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     // or if the book is already in the library
                     // then don't add it
                     if exists || book_path == epub_dir.join(file_name) {
-                        println!("Book already in epub folder");
+                        //Book already in epub folder
                         title = "Libro già presente".to_string();
                         label_text = "Il libro è già presente nella libreria, non puoi aggiungerlo"
                             .to_string();
                     } else {
                         if let Ok(_) = copy_book_in_folder(&book_str.to_string()) {
-                            println!("Copied book in folder");
 
                             let real_path = get_epub_dir().join(book_path.file_name().unwrap());
                             if real_path.exists() {

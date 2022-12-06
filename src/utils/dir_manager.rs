@@ -65,7 +65,6 @@ pub fn get_env_path() -> PathBuf {
     config_file
 }
 
-
 /// Get path of the books with saved progress
 pub fn get_savedata_path() -> PathBuf {
     let mut config_file = get_config_dir();
