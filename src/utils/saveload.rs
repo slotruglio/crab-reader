@@ -577,7 +577,7 @@ pub fn copy_book_in_folder(from: &String) -> Result<(), Box<dyn std::error::Erro
 // Tests are provided only for the functions that are really used
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{path::PathBuf, fmt::format};
 
     use super::*;
     use serde_json::{json, Value};
@@ -605,6 +605,28 @@ mod tests {
             path.with_file_name("tmp_copy.json"),
             path
         );
+    }
+
+    fn create_file_for_bytes(ext: FileExtension) -> (String, usize, Vec<u8>) {
+        let folder_name = "test_bytes";
+        let chapter = 1;
+        let content: Vec<u8> = "this is a test".into();
+        let (path, ext_str) = match ext {
+            FileExtension::TXT => (get_edited_books_dir(), "txt"),
+            _ => (get_saved_books_dir(), "html"),
+        };
+
+        // create dir for file
+        let _ = std::fs::create_dir_all(path.join(folder_name));
+        // create fake file
+        let file = std::fs::write(
+            path.join(format!("test_bytes/page_1.{}", ext_str)), 
+            &content
+        );
+
+        assert!(file.is_ok());
+
+        (folder_name.to_string(), chapter, content)
     }
 
     // fn save_data
@@ -868,15 +890,148 @@ mod tests {
     // save_favorite
     #[test]
     #[ignore]
-    fn save_book_as_favorite() {
-        unimplemented!();
+    fn save_book_as_favorite_when_not() {
+        let json = json!({"favorite": "false",});
+        let book = get_epub_dir().join("test_book.epub");
+        let book_string = book.to_str().unwrap().to_string();
+        // create dir for file
+        let _ = std::fs::create_dir_all(get_saved_books_dir().join("test_book"));
+        // create fake file
+        let metadata_path = get_metadata_path(&book_string);
+        let metadata_file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(metadata_path)
+            .unwrap();
+
+        let _ = serde_json::to_writer_pretty(metadata_file, &json);
+
+        assert_eq!(get_metadata_path(&book_string).exists(), true);
+
+        assert!(save_favorite(&book_string, true).is_ok());
+
+        let file = File::open(get_metadata_path(&book_string)).unwrap();
+        let reader = BufReader::new(file);
+
+        // assert that file contains correct data
+        let saved: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(saved, json!({"favorite": "true",}));
+
+        let _ = std::fs::remove_dir_all(get_saved_books_dir().join("test_book"));
+        assert_eq!(get_saved_books_dir().join("test_book").exists(), false);
+    }
+
+    #[test]
+    #[ignore]
+    fn save_book_as_not_favorite_when_true() {
+        let json = json!({"favorite": "true",});
+        let book = get_epub_dir().join("test_book.epub");
+        let book_string = book.to_str().unwrap().to_string();
+        // create dir for file
+        let _ = std::fs::create_dir_all(get_saved_books_dir().join("test_book"));
+        // create fake file
+        let metadata_path = get_metadata_path(&book_string);
+        let metadata_file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(metadata_path)
+            .unwrap();
+
+        let _ = serde_json::to_writer_pretty(metadata_file, &json);
+
+        assert_eq!(get_metadata_path(&book_string).exists(), true);
+
+        assert!(save_favorite(&book_string, false).is_ok());
+
+        let file = File::open(get_metadata_path(&book_string)).unwrap();
+        let reader = BufReader::new(file);
+
+        // assert that file contains correct data
+        let saved: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(saved, json!({"favorite": "false",}));
+
+        let _ = std::fs::remove_dir_all(get_saved_books_dir().join("test_book"));
+        assert_eq!(get_saved_books_dir().join("test_book").exists(), false);
+    }
+    
+    #[test]
+    #[ignore]
+    fn save_book_as_fav_when_true() {
+        let json = json!({"favorite": "true",});
+        let book = get_epub_dir().join("test_book.epub");
+        let book_string = book.to_str().unwrap().to_string();
+        // create dir for file
+        let _ = std::fs::create_dir_all(get_saved_books_dir().join("test_book"));
+        // create fake file
+        let metadata_path = get_metadata_path(&book_string);
+        let metadata_file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(metadata_path)
+            .unwrap();
+
+        let _ = serde_json::to_writer_pretty(metadata_file, &json);
+
+        assert_eq!(get_metadata_path(&book_string).exists(), true);
+
+        assert!(save_favorite(&book_string, true).is_ok());
+
+        let file = File::open(get_metadata_path(&book_string)).unwrap();
+        let reader = BufReader::new(file);
+
+        // assert that file contains correct data
+        let saved: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(saved, json!({"favorite": "true",}));
+
+        let _ = std::fs::remove_dir_all(get_saved_books_dir().join("test_book"));
+        assert_eq!(get_saved_books_dir().join("test_book").exists(), false);
     }
 
     // get_chapter_bytes
     #[test]
     #[ignore]
-    fn get_chapter_bytes() {
-        unimplemented!();
+    fn get_chapter_bytes_when_txt() {
+        let (folder_name, chapter, content) = create_file_for_bytes(FileExtension::TXT);
+        
+        assert_eq!(get_chapter_bytes(&folder_name, chapter, FileExtension::TXT).unwrap(), content);
+
+        let _ = std::fs::remove_dir_all(get_edited_books_dir().join(&folder_name));
+
+        assert_eq!(get_edited_books_dir().join(folder_name).exists(), false);
+    }
+
+    #[test]
+    #[ignore]
+    fn get_chapter_bytes_when_html() {
+        let (folder_name, chapter, content) = create_file_for_bytes(FileExtension::HTML);
+        
+        assert_eq!(get_chapter_bytes(&folder_name, chapter, FileExtension::HTML).unwrap(), content);
+
+        let _ = std::fs::remove_dir_all(get_saved_books_dir().join(&folder_name));
+
+        assert_eq!(get_saved_books_dir().join(folder_name).exists(), false);
+    }
+
+    #[test]
+    #[ignore]
+    fn get_chapter_bytes_when_epub() {
+        let folder_name = "test_bytes";
+        let chapter = 1;
+
+        let (_, _, _) = create_file_for_bytes(FileExtension::TXT);
+        let (_, _, _) = create_file_for_bytes(FileExtension::HTML);
+
+        assert!(get_chapter_bytes(folder_name, chapter, FileExtension::EPUB).is_err());
+
+        let _ = std::fs::remove_dir_all(get_edited_books_dir().join(folder_name));
+        assert_eq!(get_edited_books_dir().join(folder_name).exists(), false);
+
+        let _ = std::fs::remove_dir_all(get_saved_books_dir().join(folder_name));
+        assert_eq!(get_saved_books_dir().join(folder_name).exists(), false);
+
     }
 
     // save_note
