@@ -577,10 +577,11 @@ pub fn copy_book_in_folder(from: &String) -> Result<(), Box<dyn std::error::Erro
 // Tests are provided only for the functions that are really used
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use serde_json::{json, Value};
 
-    //todo() use tempdir to create a temp dir and use it for tests
     fn delete_savedata() {
         // delete existing file
         let _ = std::fs::remove_file(get_savedata_path());
@@ -588,6 +589,24 @@ mod tests {
         // assert that file doesn't exist
         assert_eq!(get_savedata_path().exists(), false);
     }
+    /// if exists, copy file at path
+    fn copy_existing_file(path: PathBuf) {
+        if !path.exists() {return}
+
+        let _ = std::fs::copy(
+            &path, 
+            path.with_file_name("tmp_copy.json")
+        );
+    }
+    /// if exists, restore file at path
+    fn restore_existing_file(path: PathBuf) {
+        if !path.with_file_name("tmp_copy.json").exists() {return}
+        let _ = std::fs::copy(
+            path.with_file_name("tmp_copy.json"),
+            path
+        );
+    }
+
     // fn save_data
     #[test]
     #[ignore]
@@ -596,6 +615,8 @@ mod tests {
         let chapter = 1;
         let page = 1;
         let content = "inventa gli ordigni fuori del suo corpo";
+
+        copy_existing_file(get_savedata_path());
 
         delete_savedata();
 
@@ -618,6 +639,7 @@ mod tests {
         }));
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     #[test]
@@ -627,7 +649,8 @@ mod tests {
         let chapter = 1;
         let page = 1;
         let content = "inventa gli ordigni fuori del suo corpo";
-
+        
+        copy_existing_file(get_savedata_path());
         delete_savedata();
 
         // assert that function returns Ok
@@ -652,6 +675,7 @@ mod tests {
         }));
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     #[test]
@@ -662,6 +686,7 @@ mod tests {
         let page = 1;
         let content = "inventa gli ordigni fuori del suo corpo";
 
+        copy_existing_file(get_savedata_path());
         delete_savedata();
 
         // assert that function returns Ok
@@ -692,6 +717,7 @@ mod tests {
         }));
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     #[test]
@@ -702,6 +728,7 @@ mod tests {
         let page = 1;
         let content = "inventa gli ordigni fuori del suo corpo";
 
+        copy_existing_file(get_savedata_path());
         delete_savedata();
 
         // assert that function returns Ok
@@ -723,6 +750,7 @@ mod tests {
         }));
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     // fn load_data
@@ -735,6 +763,7 @@ mod tests {
         let content = "inventa gli ordigni fuori del suo corpo";
         let font_size = FontSize::MEDIUM;
 
+        copy_existing_file(get_savedata_path());
         delete_savedata();
 
         // assert that function returns Ok
@@ -753,6 +782,7 @@ mod tests {
         assert_eq!(size, FontSize::MEDIUM.to_f64());
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     #[test]
@@ -760,6 +790,7 @@ mod tests {
     fn load_data_from_non_existing_file() {
         let book_path = "test_book";
 
+        copy_existing_file(get_savedata_path());
         delete_savedata();
 
         // assert that function returns Ok
@@ -772,6 +803,7 @@ mod tests {
         assert_eq!(size, FontSize::MEDIUM.to_f64());
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     #[test]
@@ -793,6 +825,7 @@ mod tests {
             }
         });
 
+        copy_existing_file(get_savedata_path());
         delete_savedata();
 
         // write new json file
@@ -829,6 +862,7 @@ mod tests {
         drop(my_env);
 
         delete_savedata();
+        restore_existing_file(get_savedata_path());
     }
 
     // save_favorite
