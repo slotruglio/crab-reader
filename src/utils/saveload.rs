@@ -1034,24 +1034,64 @@ mod tests {
 
     }
 
+    #[test]
+    #[ignore]
+    fn get_chapter_bytes_when_no_page() {
+        let folder_name = "test_bytes";
+        let chapter = 1;
+
+        // create dir for file
+        let _ = std::fs::create_dir_all(get_saved_books_dir().join(folder_name));
+
+        assert!(get_chapter_bytes(folder_name, chapter, FileExtension::HTML).is_err());
+
+        let _ = std::fs::remove_dir_all(get_saved_books_dir().join(folder_name));
+        assert_eq!(get_saved_books_dir().join(folder_name).exists(), false);
+
+    }
+    
     // save_note
     #[test]
     #[ignore]
-    fn save_note() {
+    fn save_create_note() {
+        unimplemented!();
+    }
+
+    #[test]
+    #[ignore]
+    fn save_overwrite_note() {
+        unimplemented!();
+    }
+
+    #[test]
+    #[ignore]
+    fn save_other_book_note() {
         unimplemented!();
     }
 
     // delete_notes
     #[test]
     #[ignore]
-    fn delete_notes() {
+    fn delete_notes_when_existing() {
+        unimplemented!();
+    }
+
+    #[test]
+    #[ignore]
+    fn delete_notes_when_not_existing() {
         unimplemented!();
     }
 
     // load_notes
     #[test]
     #[ignore]
-    fn get_notes() {
+    fn get_notes_when_existing() {
+        unimplemented!();
+    }
+
+    #[test]
+    #[ignore]
+    fn get_notes_when_not_existing() {
         unimplemented!();
     }
 
