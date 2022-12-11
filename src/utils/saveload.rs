@@ -577,7 +577,7 @@ pub fn copy_book_in_folder(from: &String) -> Result<(), Box<dyn std::error::Erro
 // Tests are provided only for the functions that are really used
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, fmt::format, io::BufWriter};
+    use std::{path::PathBuf, io::BufWriter};
 
     use super::*;
     use serde_json::{json, Value};
@@ -1249,13 +1249,129 @@ mod tests {
     #[test]
     #[ignore]
     fn delete_notes_when_existing() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        let book = "/Users/slotruglio/pds/crab-reader/epubs/pg69058-images.epub".to_string();
+        let chapter = 1;
+        let start = ["enterado debía", "que hubiera", "Martín Alonso", "porque la"].map(|s| s.to_string());
+        
+        let json = json!({
+            &book: [
+              {
+                "chapter": chapter,
+                "notes": [
+                  {
+                    "note": "ciao amici",
+                    "start": start[0]
+                  },
+                  {
+                    "note": "ciao come",
+                    "start": start[1]
+                  },
+                  {
+                    "note": "tutto bene",
+                    "start": start[2]
+                  },
+                  {
+                    "note": "testing",
+                    "start": start[3]
+                  }
+                ]
+              }
+            ]
+          });
+
+        let file = File::create(get_books_notes_path()).unwrap();
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, &json).unwrap();
+
+        // assert that file exists
+        assert_eq!(get_books_notes_path().exists(), true);
+        let to_remove = vec![start[0].clone(), start[2].clone()];
+        assert!(delete_notes(&book, chapter, to_remove).is_ok());
+
+        let file = File::open(get_books_notes_path()).unwrap();
+        let reader = BufReader::new(file);
+        let json_2: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(json_2, json!({
+            &book: [
+              {
+                "chapter": chapter,
+                "notes": [
+                  {
+                    "note": "ciao come",
+                    "start": start[1]
+                  },
+                  {
+                    "note": "testing",
+                    "start": start[3]
+                  }
+                ]
+              }
+            ]
+          }));
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
+        
     }
 
     #[test]
     #[ignore]
     fn delete_notes_when_not_existing() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        let book = "/Users/slotruglio/pds/crab-reader/epubs/pg69058-images.epub".to_string();
+        let chapter = 1;
+        let start = ["enterado debía", "que hubiera", "Martín Alonso", "porque la"].map(|s| s.to_string());
+        
+        let json = json!({
+            &book: [
+              {
+                "chapter": chapter,
+                "notes": [
+                  {
+                    "note": "ciao amici",
+                    "start": start[0]
+                  },
+                  {
+                    "note": "ciao come",
+                    "start": start[1]
+                  }
+                ]
+              }
+            ]
+          });
+
+        let file = File::create(get_books_notes_path()).unwrap();
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, &json).unwrap();
+
+        // assert that file exists
+        assert_eq!(get_books_notes_path().exists(), true);
+
+        // delete notes of an existing book but not existing chapter
+        let to_remove = vec![start[0].clone(), start[2].clone()];
+        assert!(delete_notes(&book, chapter + 1, to_remove.clone()).is_ok());
+
+        let file = File::open(get_books_notes_path()).unwrap();
+        let reader = BufReader::new(file);
+        let json_2: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(json_2, json);
+
+        // delete notes of a not existing book
+        let book2 = "/Users/slotruglio/pds/crab-reader/epubs/test_book.epub".to_string();
+        assert!(delete_notes(&book2, chapter, to_remove).is_ok());
+
+        let file = File::open(get_books_notes_path()).unwrap();
+        let reader = BufReader::new(file);
+        let json_3: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(json_3, json);
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
     }
 
     // load_notes
