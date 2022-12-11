@@ -577,17 +577,17 @@ pub fn copy_book_in_folder(from: &String) -> Result<(), Box<dyn std::error::Erro
 // Tests are provided only for the functions that are really used
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, fmt::format};
+    use std::{path::PathBuf, fmt::format, io::BufWriter};
 
     use super::*;
     use serde_json::{json, Value};
 
-    fn delete_savedata() {
+    fn delete_file(path: PathBuf) {
         // delete existing file
-        let _ = std::fs::remove_file(get_savedata_path());
+        let _ = std::fs::remove_file(&path);
 
         // assert that file doesn't exist
-        assert_eq!(get_savedata_path().exists(), false);
+        assert_eq!(path.exists(), false);
     }
     /// if exists, copy file at path
     fn copy_existing_file(path: PathBuf) {
@@ -603,8 +603,10 @@ mod tests {
         if !path.with_file_name("tmp_copy.json").exists() {return}
         let _ = std::fs::copy(
             path.with_file_name("tmp_copy.json"),
-            path
+            &path
         );
+
+        let _ = std::fs::remove_file(path.with_file_name("tmp_copy.json"));
     }
 
     fn create_file_for_bytes(ext: FileExtension) -> (String, usize, Vec<u8>) {
@@ -640,7 +642,7 @@ mod tests {
 
         copy_existing_file(get_savedata_path());
 
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // assert that function returns Ok
         assert!(save_data(book_path, chapter, page, content, FontSize::MEDIUM, false).is_ok());
@@ -660,7 +662,7 @@ mod tests {
             }
         }));
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -673,7 +675,7 @@ mod tests {
         let content = "inventa gli ordigni fuori del suo corpo";
         
         copy_existing_file(get_savedata_path());
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // assert that function returns Ok
         assert!(save_data(book_path, chapter, page, content, FontSize::MEDIUM, false).is_ok());
@@ -696,7 +698,7 @@ mod tests {
             }
         }));
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -709,7 +711,7 @@ mod tests {
         let content = "inventa gli ordigni fuori del suo corpo";
 
         copy_existing_file(get_savedata_path());
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // assert that function returns Ok
         assert!(save_data(book_path, chapter, page, content, FontSize::MEDIUM, false).is_ok());
@@ -738,7 +740,7 @@ mod tests {
             }
         }));
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -751,7 +753,7 @@ mod tests {
         let content = "inventa gli ordigni fuori del suo corpo";
 
         copy_existing_file(get_savedata_path());
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // assert that function returns Ok
         assert!(save_data(book_path, chapter, page, content, FontSize::MEDIUM, true).is_ok());
@@ -771,7 +773,7 @@ mod tests {
             }
         }));
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -786,7 +788,7 @@ mod tests {
         let font_size = FontSize::MEDIUM;
 
         copy_existing_file(get_savedata_path());
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // assert that function returns Ok
         assert!(save_data(book_path, chapter, page, content, font_size, false).is_ok());
@@ -803,7 +805,7 @@ mod tests {
         assert_eq!(page, page);
         assert_eq!(size, FontSize::MEDIUM.to_f64());
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -813,7 +815,7 @@ mod tests {
         let book_path = "test_book";
 
         copy_existing_file(get_savedata_path());
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // assert that function returns Ok
         assert!(load_data(book_path, false).is_ok());
@@ -824,7 +826,7 @@ mod tests {
         assert_eq!(page, 0);
         assert_eq!(size, FontSize::MEDIUM.to_f64());
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -848,7 +850,7 @@ mod tests {
         });
 
         copy_existing_file(get_savedata_path());
-        delete_savedata();
+        delete_file(get_savedata_path());
 
         // write new json file
         let file = OpenOptions::new()
@@ -883,7 +885,7 @@ mod tests {
         my_env.save_to_env();
         drop(my_env);
 
-        delete_savedata();
+        delete_file(get_savedata_path());
         restore_existing_file(get_savedata_path());
     }
 
@@ -1054,19 +1056,193 @@ mod tests {
     #[test]
     #[ignore]
     fn save_create_note() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        let book = get_epub_dir().join("test_book.epub").to_str().unwrap().to_string();
+        let chapter = 1;
+        let page_text = "test page text".to_string();
+        let note_text = "testing notes".to_string();
+
+        assert!(save_note(
+            &book,
+            chapter,
+            &page_text,
+            &note_text,
+        ).is_ok());
+
+        // assert that file exists
+        assert_eq!(get_books_notes_path().exists(), true);
+
+        let file = File::open(get_books_notes_path()).unwrap();
+        let reader = BufReader::new(file);
+
+        // assert that file contains correct data
+        let json: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(json, json!({
+            book: [
+                {
+                "chapter": chapter,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    }
+                ]}
+            ]
+        }));
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
     }
 
     #[test]
     #[ignore]
     fn save_overwrite_note() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        let book = get_epub_dir().join("test_book.epub").to_str().unwrap().to_string();
+        let chapter = 1;
+        let page_text = "test page text".to_string();
+        let note_text = "testing notes".to_string();
+
+        let file = File::create(get_books_notes_path()).unwrap();
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, &json!({
+            &book: [
+                {
+                "chapter": chapter,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    }
+                ]}
+            ]
+        })).unwrap();
+
+        // assert that file exists
+        assert_eq!(get_books_notes_path().exists(), true);
+
+        // write a note for a different chapter
+        assert!(save_note(
+            &book,
+            chapter+1,
+            &page_text,
+            &note_text,
+        ).is_ok());
+        // write a note for a different page
+        let other_page = "other page".to_string();
+        assert!(save_note(
+            &book,
+            chapter,
+            &other_page,
+            &note_text,
+        ).is_ok());
+
+        let file = File::open(get_books_notes_path()).unwrap();
+        let reader = BufReader::new(file);
+
+        // assert that file contains correct data
+        let json: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(json, json!({
+            book: [
+                {
+                "chapter": chapter,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    },
+                    {
+                    "note": note_text,
+                    "start": other_page
+                    }
+                ]},
+                {
+                "chapter": chapter+1,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    }
+                ]}
+            ]
+        }));
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
     }
 
     #[test]
     #[ignore]
     fn save_other_book_note() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        let book = get_epub_dir().join("test_book.epub").to_str().unwrap().to_string();
+        let chapter = 1;
+        let page_text = "test page text".to_string();
+        let note_text = "testing notes".to_string();
+
+        let file = File::create(get_books_notes_path()).unwrap();
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, &json!({
+            &book: [
+                {
+                "chapter": chapter,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    }
+                ]}
+            ]
+        })).unwrap();
+
+        // assert that file exists
+        assert_eq!(get_books_notes_path().exists(), true);
+
+        let book2 = get_epub_dir().join("test_book2.epub").to_str().unwrap().to_string();
+
+        assert!(save_note(
+            &book2,
+            chapter,
+            &page_text,
+            &note_text,
+        ).is_ok());
+
+        let file = File::open(get_books_notes_path()).unwrap();
+        let reader = BufReader::new(file);
+
+        // assert that file contains correct data
+        let json: Value = serde_json::from_reader(reader).unwrap();
+        assert_eq!(json, json!({
+            book: [
+                {
+                "chapter": chapter,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    }
+                ]}
+            ],
+            book2: [
+                {
+                "chapter": chapter,
+                "notes": [
+                    {
+                    "note": note_text,
+                    "start": page_text
+                    }
+                ]}
+            ]
+        }));
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
     }
 
     // delete_notes
