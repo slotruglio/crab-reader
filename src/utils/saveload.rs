@@ -580,6 +580,7 @@ mod tests {
     use std::{path::PathBuf, io::BufWriter};
 
     use super::*;
+    use druid::platform_menus::win::file::print;
     use serde_json::{json, Value};
 
     fn delete_file(path: PathBuf) {
@@ -631,6 +632,43 @@ mod tests {
         (folder_name.to_string(), chapter, content)
     }
 
+    fn create_note_file(path: PathBuf, chapter: usize, start: Vec<String>, notes: Vec<String>) -> Value {
+        let book = path.to_str().unwrap().to_string();
+        
+        let json = json!({
+            &book: [
+              {
+                "chapter": chapter,
+                "notes": [
+                  {
+                    "note": notes[0],
+                    "start": start[0]
+                  },
+                  {
+                    "note": notes[1],
+                    "start": start[1]
+                  },
+                  {
+                    "note": notes[2],
+                    "start": start[2]
+                  },
+                  {
+                    "note": notes[3],
+                    "start": start[3]
+                  }
+                ]
+              }
+            ]
+          });
+
+        let file = File::create(get_books_notes_path()).unwrap();
+        let writer = BufWriter::new(file);
+        serde_json::to_writer_pretty(writer, &json).unwrap();
+
+        // assert that file exists
+        assert_eq!(get_books_notes_path().exists(), true);
+        return json;
+    }
     // fn save_data
     #[test]
     #[ignore]
@@ -1252,42 +1290,15 @@ mod tests {
         copy_existing_file(get_books_notes_path());
         delete_file(get_books_notes_path());
 
-        let book = "/Users/slotruglio/pds/crab-reader/epubs/pg69058-images.epub".to_string();
+        let book = get_epub_dir().join("test_book.epub").to_str().unwrap().to_string();
         let chapter = 1;
         let start = ["enterado debía", "que hubiera", "Martín Alonso", "porque la"].map(|s| s.to_string());
-        
-        let json = json!({
-            &book: [
-              {
-                "chapter": chapter,
-                "notes": [
-                  {
-                    "note": "ciao amici",
-                    "start": start[0]
-                  },
-                  {
-                    "note": "ciao come",
-                    "start": start[1]
-                  },
-                  {
-                    "note": "tutto bene",
-                    "start": start[2]
-                  },
-                  {
-                    "note": "testing",
-                    "start": start[3]
-                  }
-                ]
-              }
-            ]
-          });
+        let notes = ["ciao come", "testing", "abc", "ciao"].map(|s| s.to_string());
+        let _ = create_note_file(
+            get_epub_dir().join("test_book.epub"), 
+            chapter, start.to_vec(), notes.to_vec()
+        );
 
-        let file = File::create(get_books_notes_path()).unwrap();
-        let writer = BufWriter::new(file);
-        serde_json::to_writer(writer, &json).unwrap();
-
-        // assert that file exists
-        assert_eq!(get_books_notes_path().exists(), true);
         let to_remove = vec![start[0].clone(), start[2].clone()];
         assert!(delete_notes(&book, chapter, to_remove).is_ok());
 
@@ -1323,34 +1334,15 @@ mod tests {
         copy_existing_file(get_books_notes_path());
         delete_file(get_books_notes_path());
 
-        let book = "/Users/slotruglio/pds/crab-reader/epubs/pg69058-images.epub".to_string();
+        let book = get_epub_dir().join("test_book.epub").to_str().unwrap().to_string();
         let chapter = 1;
         let start = ["enterado debía", "que hubiera", "Martín Alonso", "porque la"].map(|s| s.to_string());
-        
-        let json = json!({
-            &book: [
-              {
-                "chapter": chapter,
-                "notes": [
-                  {
-                    "note": "ciao amici",
-                    "start": start[0]
-                  },
-                  {
-                    "note": "ciao come",
-                    "start": start[1]
-                  }
-                ]
-              }
-            ]
-          });
+        let notes = ["ciao come", "testing", "abc", "ciao"].map(|s| s.to_string());
 
-        let file = File::create(get_books_notes_path()).unwrap();
-        let writer = BufWriter::new(file);
-        serde_json::to_writer(writer, &json).unwrap();
-
-        // assert that file exists
-        assert_eq!(get_books_notes_path().exists(), true);
+        let json = create_note_file(
+            get_epub_dir().join("test_book.epub"), 
+            chapter, start.to_vec(), notes.to_vec()
+        );
 
         // delete notes of an existing book but not existing chapter
         let to_remove = vec![start[0].clone(), start[2].clone()];
@@ -1362,7 +1354,7 @@ mod tests {
         assert_eq!(json_2, json);
 
         // delete notes of a not existing book
-        let book2 = "/Users/slotruglio/pds/crab-reader/epubs/test_book.epub".to_string();
+        let book2 = get_epub_dir().join("test_book2.epub").to_str().unwrap().to_string();
         assert!(delete_notes(&book2, chapter, to_remove).is_ok());
 
         let file = File::open(get_books_notes_path()).unwrap();
@@ -1378,13 +1370,73 @@ mod tests {
     #[test]
     #[ignore]
     fn get_notes_when_existing() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        let book = get_epub_dir().join("pg69058-images.epub").to_str().unwrap().to_string();
+        let chapter = 1;
+        let start = [
+            "que hubiera estado a punto de proponerles su descubrimiento conanterioridad al gran Almirante y que éste debiera a sus conferencias con el mayor de los Pinzones: la seguridad que tenía de encontrar, navegando al oeste, países desconocidos hasta entonces. \n\nDe ser cierto que Martín Alonso creyera que existían y que no era imposible llegar a ellos, lo que invirtió en favorecer a Colón debió emplearlo en favorecerse a sí mismo. Siendo español, afamado piloto, rico e influyente, no[]() le hubieran surgido tantas dificultades como a Colón, extranjero y pobre. \n\nLo del fantástico mapa de la biblioteca del pontífice demuestra, si bien se considera, que, sin la ayuda del mayor de los Pinzones, nada hubiera podido descubrirse. Don Martín Fernández de Navarrete opina que fué un ardid de fray Juan Pérez y de Cristóbal Colón, y que lo pusieron en conocimiento de Martín Alonso para que lo utilizase en convencer con más facilidad a los reacios a ir en la armada. Don Cristóbal se había reconocido incapaz de atraérselos, y estando el asunto en manos de Martín, entre aquél y fra",
+            "Martín Alonso quedóse en aquella costa de Gran Canaria..., y al cabovinieron a la Gomera. Vieron salir gran fuego de la sierra de la isla de Tenerife, que es muy alta». \n\n\\* \\* \\* \n\nTodavía está muy generalizada la creencia de que en la nave de Colón estalló un tremendo motín contra el Almirante para obligarle a que se volviera a España, y que ese motín fué promovido y atizado por los hermanos Pinzones. \n\nEs una de las mil fantasías puestas en circulación por los obstinados en presentar al eximio descubridor como un mártir, a cuya cabeza le brotaban por doquiera las espinas de las persecuciones. \n\nTan irreflexivos panegiristas, más impulsados quizá por la pasión política que por el sentimiento religioso, han pretendido la canonización de don Cristóbal, y en su deseo de con[]()seguirla han falseado la historia atribuyéndole perfecciones imaginarias—aunque tuviera otras reales—y rodeándole de circunstancias y vicisitudes de que no precisaba para su grandeza. \n\nDe creer a los propagadores de estas fábulas, el motín a bordo fué verdaderamente monumental, extrordinari",
+            "porque la carabela *Pinta* iba delante del almirante—dice don Cristóbalen su *Diario*—, halló tierra e hizo las señas que el almirante había mandado. Esta tierra vido primero un marinero que se decía Rodrigo de Triana». \n\nLe cuesta trabajo a Colón reconocer que no fué él quien se adelantó a los demás en ver la isla de Guanahaní. Aun incurriendo en contra[]()dicciones, no quiere desprenderse por completo de tal honra. El almirante, «a las diez de la noche (del jueves 11 de octubre), estando en el castillo de popa, vido lumbre, aunque fué cosa tan cerrada que no quiso afirmar que fuese tierra... Pero... tuvo por cierto estar junto a tierra». \n\nEs muy extraño que tuviera por cierto estar junto a tierra y no lo quisiera afirmar, lo que demuestra que lo tuvo por muy dudoso. De no haber sido así, se hubiera apresurado a mandar hacer las correspondientes señales. Cuando lo tuvo por cierto fué cuando salió de la *Pinta* el anhelado grito. \n\nY quien lo lanzó no fué Rodrigo de Triana, sino Juan Rodríguez Bermejo, a no ser que Colón entendiese Rodrigo por un Rodríguez a quien hubie",   
+            "aclamadores a todo trance. Y la iniquidad no deja de informar algunasveces los actos de los soberanos más ensalzados por sus virtudes. \n\nMartín Alonso, con su pericia y con su buen sentido, cualidades que, en ciertos casos, pueden valer y valen más que las teorías y las elucubraciones empingorotadas, fué la causa de que el descubrimiento de América se anticipase. \n\nSin los consejos del célebre piloto en cuanto a la ruta que debía seguirse, el hallazgo del Nuevo Mundo se hubiera retrasado, no se hubiera dado con él por las islas Lucayas, sino por otra parte más remota, luego de esfuerzos y contratiempos sobre los ya sufridos, o lo que es más seguro, hubiera fracasado la empresa. \n\nRelativamente a este extremo fueron interrogados algunos testigos en el pleito entre don Diego Colón y la Corona, «si sabían que[]() el dicho almirante le preguntó que si le parecía que fuesen aquel camino, e que el dicho Martín Alonso le dijo que no, que muchas veces se lo había dicho que no iban bien, que tornasen la cuarta de sudueste e que darían en tierra más aína; e que"
+            ].map(|s| s.to_string());
+        let notes = ["ciao come", "tutto bene", "testing", "ciao ancora"].map(|s| s.to_string());
+
+        let pages: Vec<usize> = start.iter().map(|s| 
+            search_page(book.clone(), chapter, s.as_str())
+        ).collect();
+
+        let _ = create_note_file(
+            get_epub_dir().join("pg69058-images.epub"), 
+            chapter, start.to_vec(), notes.to_vec()
+        );
+
+        let notes_map = load_notes(&book).unwrap();
+        
+        for (i, page) in pages.iter().enumerate() {
+            let saved_notes = notes_map.get(&(chapter, *page)).unwrap();
+            assert!(
+                saved_notes.iter().any(|n| n.get_start() == &start[i] && n.get_text() == &notes[i])
+            );
+        }
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
+
+
     }
 
     #[test]
     #[ignore]
     fn get_notes_when_not_existing() {
-        unimplemented!();
+        copy_existing_file(get_books_notes_path());
+        delete_file(get_books_notes_path());
+
+        // when file doesn't exist
+        let path = get_epub_dir().join("text.epub");
+        let book = path.to_str().unwrap().to_string();
+        let res = load_notes(book.clone());
+
+        assert!(res.is_ok());
+        assert!(res.unwrap().is_empty());
+
+        // when file exists, but with no notes for the book
+        let chapter = 1;
+        let start = ["enterado debía", "que hubiera", "Martín Alonso", "porque la"].map(|s| s.to_string());
+        let notes = ["ciao come", "testing", "abc", "ciao"].map(|s| s.to_string());
+
+        let _ = create_note_file(
+            get_epub_dir().join("test_book.epub"), 
+            chapter, start.to_vec(), notes.to_vec()
+        );
+
+        let res = load_notes(book);
+        assert!(res.is_ok());
+        assert!(res.unwrap().is_empty());
+
+        delete_file(get_books_notes_path());
+        restore_existing_file(get_books_notes_path());
     }
 
     // delete_book
