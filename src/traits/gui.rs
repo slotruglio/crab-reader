@@ -109,7 +109,7 @@ pub trait GUILibrary {
 
     /// Remove a book from the library
     /// The `idx` argument is the index in the array (relax this constraint??)
-    fn remove_book(&mut self, idx: usize);
+    fn remove_book(&mut self, idx: usize) -> bool;
 
     /// Get a mutable reference to a book in the library
     /// The `idx` argument is the index in the array (relax this constraint??)
@@ -164,4 +164,7 @@ pub trait GUILibrary {
     fn get_number_of_visible_books(&self) -> usize;
 
     fn get_filter_by(&self) -> Rc<String>;
+
+    #[cfg(test)]
+    fn check_books_loaded_blocking(&mut self);
 }

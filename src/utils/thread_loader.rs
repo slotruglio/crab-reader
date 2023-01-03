@@ -50,6 +50,12 @@ impl<T> ThreadLoader<T> {
             None
         }
     }
+
+    #[cfg(test)]
+    /// Blocking version of try_recv, meant for test purposes only
+    pub fn recv(&self) -> ThreadResult<T> {
+        self.receiver.recv().unwrap()
+    }
 }
 
 impl<T: Clone> ThreadResult<T> {
@@ -67,6 +73,40 @@ impl<T: Clone> ThreadResult<T> {
     pub fn idx(&self) -> usize {
         self.idx
     }
+
+    #[cfg(test)]
+    pub fn value_and_idx(self) -> (T, usize) {
+        (self.result.into_inner().unwrap(), self.idx)
+    }
 }
 
 unsafe impl<T> Send for ThreadResult<T> {}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn thread_loader_test() {
+        let items = [1, 2, 3];
+        let tl = super::ThreadLoader::default();
+
+        for (idx, item) in items.iter().enumerate() {
+            let res = super::ThreadResult::new(item, idx);
+            tl.sender.send(res).unwrap();
+        }
+
+        for _ in 0..items.len() {
+            let res = tl.recv();
+            let (value, idx) = res.value_and_idx();
+            assert_eq!(*value, items[idx]);
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Nothing was received")]
+    fn thread_loader_no_value() {
+        let tl = super::ThreadLoader::<i32>::default();
+        let res = tl.try_recv();
+        res.expect("Nothing was received").value();
+        panic!("Should not get here");
+    }
+}

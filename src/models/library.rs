@@ -72,6 +72,22 @@ impl Library<Book> {
         lib
     }
 
+    #[cfg(test)]
+    pub fn new_no_cache() -> Self {
+        let lib = Self {
+            books: Vector::new(),
+            selected_book: None,
+            sorted_by: SortBy::Title,
+            filter_by: String::default().into(),
+            visible_books: 0,
+            cover_loader: ThreadLoader::default().into(),
+            book_loader: ThreadLoader::default().into(),
+            filter_fav: false,
+            do_paint_shadows: false,
+        };
+        lib
+    }
+
     pub fn epub_dir(&self) -> Result<PathBuf, String> {
         let path = get_epub_dir();
         return if path.is_dir() {
@@ -95,20 +111,6 @@ impl Library<Book> {
 
 impl GUILibrary for Library<Book> {
     type B = Book;
-    // fn add_book(&mut self, path: impl Into<String>) {
-    // let path: String = path.into();
-    // let file_name = path.split("/").last().unwrap();
-    // let folder_name = file_name.split(".").next().unwrap();
-    // // extract metadata and chapters
-    // if !get_saved_books_dir().join(folder_name).exists() {
-    // let _res = epub_utils::extract_all(&path)
-    // .expect(format!("Failed to extract {}", file_name).as_str());
-    // }
-
-    // let book = Book::new(path).with_index(self.books.len());
-    // self.books.push_back(book);
-    // self.visible_books += 1;
-    // }
     fn check_books_loaded(&mut self) -> bool {
         if let Some(result) = self.book_loader.try_recv() {
             self.add_book(result.value());
@@ -116,6 +118,12 @@ impl GUILibrary for Library<Book> {
         } else {
             false
         }
+    }
+
+    #[cfg(test)]
+    fn check_books_loaded_blocking(&mut self) {
+        let book = self.book_loader.recv();
+        self.add_book(book.value());
     }
 
     fn schedule_book_loading(&mut self, path: impl Into<String>) {
@@ -143,10 +151,15 @@ impl GUILibrary for Library<Book> {
         self.visible_books += 1;
     }
 
-    fn remove_book(&mut self, idx: usize) {
-        if let Some(_) = self.books.get(idx) {
+    fn remove_book(&mut self, idx: usize) -> bool {
+        if let Some(book) = self.books.get(idx) {
+            if !book.is_filtered_out() {
+                self.visible_books -= 1;
+            }
             self.books.remove(idx);
+            return true;
         }
+        false
     }
 
     fn get_book_mut(&mut self, idx: usize) -> Option<&mut Book> {
@@ -295,10 +308,22 @@ impl Library<Book> {
         let mut new_idx = None;
 
         self.books.sort_by(|one, other| match by {
-            SortBy::Title => one.get_title().cmp(&other.get_title()),
-            SortBy::TitleRev => other.get_title().cmp(&one.get_title()),
-            SortBy::Author => one.get_author().cmp(&other.get_author()),
-            SortBy::AuthorRev => other.get_author().cmp(&one.get_author()),
+            SortBy::Title => one
+                .get_title()
+                .to_lowercase()
+                .cmp(&other.get_title().to_lowercase()),
+            SortBy::TitleRev => other
+                .get_title()
+                .to_lowercase()
+                .cmp(&one.get_title().to_lowercase()),
+            SortBy::Author => one
+                .get_author()
+                .to_lowercase()
+                .cmp(&other.get_author().to_lowercase()),
+            SortBy::AuthorRev => other
+                .get_author()
+                .to_lowercase()
+                .cmp(&one.get_author().to_lowercase()),
             SortBy::PercRead => one
                 .get_perc_read()
                 .partial_cmp(&other.get_perc_read())
@@ -371,5 +396,166 @@ impl<L: GUILibrary<B = Book>> Lens<L, Book> for LibrarySelectedBookLens {
             return f(&mut Book::empty_book());
         };
         f(book)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EPUBS_PATHS: [&str; 3] = [
+        "bibbia_la_sacra_bibbia.epub",
+        "collodi_pinocchio.epub",
+        "svevo_la_coscienza_di_zeno.epub",
+    ];
+
+    #[test]
+    fn library_starts_empty() {
+        let lib = Library::new_no_cache();
+        assert_eq!(lib.number_of_books(), 0);
+        assert_eq!(lib.get_number_of_visible_books(), 0);
+    }
+
+    #[test]
+    fn library_test_epubs_present() {
+        let cwd = std::env::current_dir().expect("Could not get current directory");
+        let dir = cwd
+            .join("test_books")
+            .read_dir()
+            .expect("Could not read test_epubs");
+        assert!(dir
+            .into_iter()
+            .map(|p| p
+                .expect("Could not get path")
+                .file_name()
+                .into_string()
+                .expect("Could not get path string"))
+            .all(|p| EPUBS_PATHS.contains(&p.as_str())));
+    }
+
+    #[test]
+    fn library_recv_book() {
+        let mut lib = Library::new_no_cache();
+        let first = EPUBS_PATHS[0];
+        let cwd = std::env::current_dir().expect("Could not get current directory");
+        let path = cwd.join("test_books").join(first);
+        let file = path.to_str().expect("Could not get path string");
+        lib.schedule_book_loading(file);
+
+        let book = lib.book_loader.recv().value();
+        assert_eq!(book.get_title(), "La Sacra Bibbia");
+        assert_eq!(book.get_author(), "Autori vari");
+    }
+
+    fn setup_load_books() -> Library<Book> {
+        let mut lib = Library::new_no_cache();
+        let cwd = std::env::current_dir().expect("Could not get current directory");
+        let path = cwd.join("test_books");
+
+        for book in EPUBS_PATHS {
+            let path = path.clone().join(book);
+            let path = path.as_path().to_str().expect("Could not get path string");
+            lib.schedule_book_loading(path);
+        }
+
+        for _ in 0..EPUBS_PATHS.len() {
+            lib.check_books_loaded_blocking();
+        }
+
+        lib
+    }
+
+    #[test]
+    fn library_load_books() {
+        let lib = setup_load_books();
+
+        assert_eq!(lib.number_of_books(), EPUBS_PATHS.len());
+        assert_eq!(lib.get_number_of_visible_books(), EPUBS_PATHS.len());
+    }
+
+    #[test]
+    fn library_favorites() {
+        let mut lib = setup_load_books();
+
+        assert!(lib.books.iter().all(|b| !b.is_favorite()));
+
+        lib.get_book_mut(0)
+            .expect("Could not get book")
+            .set_favorite(true);
+        let title = lib.get_book(0).expect("Could not get book").get_title();
+        let fav = lib
+            .books
+            .iter()
+            .filter(|b| b.is_favorite())
+            .take(1)
+            .map(|b| b.get_title())
+            .next()
+            .expect("Could not get favorite book");
+        lib.toggle_fav_filter();
+
+        assert_eq!(fav, title);
+        assert_eq!(lib.get_number_of_visible_books(), 1);
+        assert_eq!(lib.number_of_books(), EPUBS_PATHS.len());
+
+        lib.books.iter_mut().for_each(|b| b.set_favorite(false));
+    }
+
+    #[test]
+    fn library_search() {
+        let mut lib = setup_load_books();
+
+        if lib.only_fav() {
+            lib.toggle_fav_filter();
+        }
+
+        lib.filter_by = Rc::from("Pinocchio".to_string());
+        lib.filter_books();
+        assert_eq!(lib.get_number_of_visible_books(), 1);
+
+        lib.filter_by = Rc::from("Pnocchio".to_string()); // Fuzzy Search
+        lib.filter_books();
+        assert_eq!(lib.get_number_of_visible_books(), 1);
+
+        lib.filter_by = Rc::from("Collodi".to_string());
+        lib.filter_books();
+        assert_eq!(lib.get_number_of_visible_books(), 1);
+
+        lib.filter_by = Rc::from("Colodi".to_string()); // Fuzzy Search
+        lib.filter_books();
+        assert_eq!(lib.get_number_of_visible_books(), 1);
+    }
+
+    #[test]
+    fn library_remove_book() {
+        let mut lib = setup_load_books();
+        let title = lib.get_book(0).expect("Could not get book").get_title();
+        assert!(lib.remove_book(0));
+        assert_eq!(lib.get_number_of_visible_books(), EPUBS_PATHS.len() - 1);
+        assert_eq!(lib.number_of_books(), EPUBS_PATHS.len() - 1);
+        assert!(lib.books.iter().all(|b| b.get_title() != title));
+    }
+
+    #[test]
+    fn library_test_sorting() {
+        let mut lib = setup_load_books();
+
+        lib.sort_by(SortBy::PercRead);
+        lib.sort_by(SortBy::Title);
+        lib.books
+            .iter()
+            .map(|b| b.get_title())
+            .zip(["La coscienza di Zeno", "La Sacra Bibbia", "Pinocchio"])
+            .for_each(|(a, b)| assert_eq!(a, b));
+
+        lib.sort_by(SortBy::Author);
+        lib.books
+            .iter()
+            .map(|b| b.get_author())
+            .zip([
+                "Autori vari",
+                "Carlo Collodi",
+                "Italo (alias Ettore Schmitz) Svevo",
+            ])
+            .for_each(|(a, b)| assert_eq!(a, b));
     }
 }
