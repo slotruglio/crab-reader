@@ -1,4 +1,5 @@
 use derivative::Derivative;
+use druid::Selector;
 use druid::{im::Vector, Data, Lens};
 use epub::doc::EpubDoc;
 use image::io::Reader as ImageReader;
@@ -14,6 +15,8 @@ use crate::{
         epub_utils,
     },
 };
+
+pub const SELECTED_BOOK_SELECTOR: Selector<Option<usize>> = Selector::new("selected-book");
 
 pub struct LibraryFilterLens;
 

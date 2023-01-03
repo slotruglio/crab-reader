@@ -5,8 +5,9 @@ use druid::{
 };
 
 use crate::{
+    models::library::SELECTED_BOOK_SELECTOR,
     traits::gui::GUIBook,
-    utils::{colors, fonts, library::SELECTED_BOOK_SELECTOR},
+    utils::{colors, fonts},
 };
 
 pub struct BookListing<T> {

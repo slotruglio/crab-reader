@@ -5,8 +5,8 @@ use druid::{
 
 use crate::{
     components::book::book_listing::BookListing,
+    models::library::SELECTED_BOOK_SELECTOR,
     traits::gui::{GUIBook, GUILibrary},
-    utils::library::SELECTED_BOOK_SELECTOR,
 };
 
 pub struct ListLibrary<L: GUILibrary, B: GUIBook> {

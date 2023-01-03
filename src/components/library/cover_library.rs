@@ -6,8 +6,8 @@ use druid::{
 use crate::{
     components::book::book_cover::{BookCover, BOOK_WIDGET_SIZE},
     models::book::Book,
+    models::library::SELECTED_BOOK_SELECTOR,
     traits::gui::{GUIBook, GUILibrary},
-    utils::library::SELECTED_BOOK_SELECTOR,
     Library,
 };
 
@@ -139,9 +139,11 @@ impl Widget<Library<Book>> for CoverLibrary {
         let min_spacing = 30.0;
         let mut cnt = 0;
 
-        let books_per_row = ((width - min_spacing) / (book_w + min_spacing)).floor() as usize;
-        let rows =
-            (data.get_number_of_visible_books() as f64 / books_per_row as f64).ceil() as usize;
+        let books_per_row =
+            (((width - min_spacing) / (book_w + min_spacing)).floor() as usize).max(1);
+        let rows = ((data.get_number_of_visible_books() as f64 / books_per_row as f64).ceil()
+            as usize)
+            .max(1);
         let spacing = (width - (books_per_row as f64 * book_w)) / (books_per_row as f64 + 1.0);
         let xspacing = ((width - (data.get_number_of_visible_books() as f64 * book_w))
             / (data.get_number_of_visible_books() as f64 + 1.0))
