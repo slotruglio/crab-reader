@@ -48,11 +48,11 @@ impl PageCounterStyle {
             PageCounterStyle::ENDOFCHAPTER => {
                 let chapter_page_number = book.get_current_page_number();
                 let pages_to_end = book.get_last_page_number() - chapter_page_number;
-                format!("Pages to end of chapter: {}", pages_to_end.to_string())
+                format!("Pages to end of ch: {}", pages_to_end.to_string())
             }
             PageCounterStyle::ENDOFBOOK => {
                 let pages_to_end = book.get_number_of_pages() - page_number;
-                format!("Pages to end of book: {}", pages_to_end.to_string())
+                format!("Pages to end of bk: {}", pages_to_end.to_string())
             }
             PageCounterStyle::CUMULATIVE => {
                 let odd = page_number % 2;

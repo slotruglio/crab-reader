@@ -323,7 +323,7 @@ fn build_ui() -> impl Widget<CrabReaderState> {
             RoundedButton::dynamic(
                 |data: &CrabReaderState, _env: &Env| match data.display_mode {
                     DisplayMode::List => "Passa a visualizzazione a copertine".into(),
-                    DisplayMode::Cover => "Passa a visualiazione a liste".into(),
+                    DisplayMode::Cover => "Passa a visualizzazione a liste".into(),
                 },
             )
             .with_on_click(|ctx, data: &mut CrabReaderState, _| {
