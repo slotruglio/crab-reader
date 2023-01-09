@@ -12,17 +12,17 @@ use components::views::reader_view::{current_chapter_widget, ReaderView};
 use components::views::sidebar::Sidebar;
 use druid::widget::{Either, Flex, Label, Scroll, SizedBox, ViewSwitcher};
 use druid::{
-    AppLauncher, Command, Data, Env, FileDialogOptions, FileSpec, Lens, PlatformError, Selector,
-    Target, UnitPoint, Widget, WidgetExt, WindowDesc, FontDescriptor,
+    AppLauncher, Command, Data, Env, FileDialogOptions, FileSpec, FontDescriptor, Lens,
+    PlatformError, Selector, Target, UnitPoint, Widget, WidgetExt, WindowDesc,
 };
 
 use once_cell::sync::Lazy;
-use utils::fonts::{FONT, update_font_family};
 use std::rc::Rc;
 use std::sync::Mutex;
 use traits::gui::{GUIBook, GUILibrary};
 use utils::colors::{update_theme, CrabTheme};
 use utils::envmanager::MyEnv;
+use utils::fonts::{update_font_family, FONT};
 use utils::{ctx_menu, delegates, fonts};
 
 mod components;
@@ -453,9 +453,10 @@ fn main() -> Result<(), PlatformError> {
             update_theme(env, data);
             update_font_family(env, data);
         }))
-            .title("CrabReader")
-            .window_size((1280.0, 720.0))
-            .menu(|_, _, _| ctx_menu::main_window()),
+        .title("CrabReader")
+        .window_size((1280.0, 720.0))
+        .menu(|_, _, _| ctx_menu::main_window())
+        .with_min_size((800.0, 600.0)),
     )
     .configure_env(|env, _| {
         env.set(FONT, MYENV.lock().unwrap().font.clone());

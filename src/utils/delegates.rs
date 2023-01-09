@@ -148,8 +148,9 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                     file_path: &Path,
                     selected_book_mut: &mut Book,
                     delegate_ctx: &mut druid::DelegateCtx,
+                    font_size: f64
                 ) {
-                    let ebook_char_count = selected_book_mut.calculate_chars_until_current_page();
+                    let ebook_char_count = selected_book_mut.calculate_chars_until_current_page(font_size);
 
                     let num = ocrmanager::get_physical_page(
                         file_path.to_str().unwrap().to_string(),
@@ -236,6 +237,7 @@ impl AppDelegate<CrabReaderState> for ReadModeDelegate {
                         file_path,
                         data.library.get_selected_book_mut().unwrap(),
                         delegate_ctx,
+                        data.font.size
                     ),
 
                     Trigger::ADDBOOK => add_book_fn(file_path, &mut data.library, delegate_ctx),

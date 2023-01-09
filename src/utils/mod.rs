@@ -6,7 +6,6 @@ pub mod dir_manager;
 pub mod envmanager;
 pub mod epub_utils;
 pub mod fonts;
-pub mod library;
 pub mod ocrmanager;
 pub mod rich_text_fn;
 pub mod saveload;

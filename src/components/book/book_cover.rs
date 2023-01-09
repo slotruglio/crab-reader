@@ -9,8 +9,9 @@ use druid::{
 
 use crate::{
     components::library::cover_library::DO_PAINT_SHADOWS,
+    models::library::SELECTED_BOOK_SELECTOR,
     traits::gui::GUIBook,
-    utils::{colors, fonts, library::SELECTED_BOOK_SELECTOR},
+    utils::{colors, fonts},
 };
 
 pub const BOOK_WIDGET_SIZE: Size = Size::new(150.0, 250.0);
