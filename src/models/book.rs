@@ -456,7 +456,7 @@ impl GUIBook for Book {
     }
 
     fn get_number_of_read_pages(&self) -> usize {
-        self.current_page
+        self.cumulative_current_page
     }
 
     fn with_number_of_read_pages(mut self, read_pages: usize) -> Self {
