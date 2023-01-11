@@ -9,10 +9,10 @@ fn get_app_dir() -> PathBuf {
     dir.push(APP_NAME);
     let _ = std::fs::create_dir_all(&dir);
     // testing only
-    get_fake_app_dir()
+    //get_fake_app_dir()
 
     // todo: return the real app dir
-    //dir
+    dir
 }
 
 fn get_fake_app_dir() -> PathBuf {
